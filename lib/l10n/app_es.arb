@@ -1,0 +1,268 @@
+{
+  "@@locale": "es",
+  "appName": "Texi",
+  "driverAppTitle": "Texi Conductor",
+  "splashGettingLocation": "Obteniendo tu ubicación...",
+  "loginWelcome": "Bienvenido",
+  "loginSubtitle": "Ingresa tu número para continuar",
+  "loginCode": "Código",
+  "loginPhone": "Teléfono",
+  "loginContinue": "Continuar",
+  "loginErrorInvalidCredentials": "No se pudo iniciar sesión. Revisa tu número.",
+  "loginPhoneRequired": "Ingresa tu número de teléfono",
+  "homeRequestRide": "Solicitar viaje",
+  "homeNearbyDrivers": "{count} conductor cercano",
+  "@homeNearbyDrivers": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "homeNearbyDriversNone": "No hay conductores cercanos en este momento",
+  "homeUpdatesEvery": "Se actualiza cada {seconds} segundos",
+  "@homeUpdatesEvery": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
+  "homeLocationError": "Activa la ubicación para ver el mapa y conductores cercanos.",
+  "homeLocationErrorGps": "No se pudo obtener tu ubicación. Revisa el GPS.",
+  "homeRetry": "Reintentar",
+  "tripOrigin": "Origen",
+  "tripDestination": "Destino",
+  "tripYourLocation": "Tu ubicación actual",
+  "tripWherePickup": "¿Dónde te recogemos?",
+  "tripUseMyLocation": "Usar mi ubicación actual",
+  "tripSearchAddress": "Buscar dirección",
+  "tripChooseOnMap": "Elegir en el mapa",
+  "tripUseAsPickup": "Usar como punto de recogida",
+  "tripUseAsDestination": "Usar como destino",
+  "tripMoveMapSetPickup": "Mueve el mapa y toca el botón para fijar dónde te recogerán.",
+  "tripMoveMapSetDestination": "Mueve el mapa y toca el botón para fijar el destino.",
+  "tripTapMapDestination": "Toca el mapa o elige una opción abajo",
+  "tripSeePrices": "Ver precios",
+  "tripSearchPlaceholder": "Buscar dirección...",
+  "tripUseMapCenter": "Usar esta ubicación",
+  "tripWhereTo": "¿A dónde vas?",
+  "tripSearchError": "No se encontró la dirección",
+  "tripSearchingAddress": "Buscando...",
+  "tripNoCoverageInZone": "No tenemos cobertura del servicio en esta zona por el momento. Prueba en otra ubicación o acércate a una zona de servicio.",
+  "tripNoDriversAvailable": "No hay conductores disponibles en este momento. Intenta de nuevo en unos instantes.",
+  "tripNext": "Siguiente",
+  "quoteTitle": "Elige tu viaje",
+  "quoteSubtitle": "Selecciona un tipo de servicio",
+  "quotePerTrip": "por viaje",
+  "quoteConfirm": "Confirmar",
+  "confirmTitle": "Confirma tu viaje",
+  "confirmFrom": "Desde",
+  "confirmTo": "Hasta",
+  "confirmRequestRide": "Solicitar viaje",
+  "searchingTitle": "Buscando conductor",
+  "searchingSubtitle": "Estamos encontrando la mejor opción para ti",
+  "commonCancel": "Cancelar",
+  "commonLoading": "Cargando...",
+  "commonError": "Algo salió mal",
+  "settingsLanguage": "Idioma",
+  "languageSpanish": "Español",
+  "languageEnglish": "English",
+
+  "driverLoginWelcome": "Bienvenido, conductor",
+  "driverLoginSubtitle": "Ingresa con tu número y contraseña para comenzar a recibir viajes.",
+  "driverLoginPassword": "Contraseña",
+  "driverLoginButton": "Ingresar",
+  "driverLoginPhoneAndPasswordRequired": "Ingresa tu número y contraseña",
+  "driverLoginErrorGeneric": "No se pudo iniciar sesión",
+  "driverLoginRegisterHint": "¿No tienes credenciales? Puedes registrarte como conductor.",
+  "driverLoginRegisterCta": "Registrarme",
+
+  "driverHomeTitle": "Conductor",
+  "driverHomeOnlineTitle": "Estás en línea",
+  "driverHomeOfflineTitle": "Estás desconectado",
+  "driverHomeOnlineSubtitle": "Los pasajeros cercanos verán tu vehículo y podrás recibir solicitudes.",
+  "driverHomeOfflineSubtitle": "Activa el interruptor para comenzar a recibir viajes.",
+  "driverHomeRequestsTitle": "Solicitudes de viaje",
+  "driverHomeRequestsEmpty": "Aquí verás las solicitudes de los pasajeros\ncuando estés en línea.",
+  "driverHomeMiniStatusOnline": "En línea",
+  "driverHomeMiniStatusOffline": "Desconectado",
+  "driverHomeMiniConnecting": "Conectando…",
+  "driverHomeMiniVehicleEmpty": "Sin vehículo registrado",
+  "driverHomeMiniRating": "{rating} ★",
+  "@driverHomeMiniRating": {
+    "placeholders": { "rating": { "type": "String" } }
+  },
+  "driverLogout": "Cerrar sesión",
+
+  "driverOnlineAuthTitle": "Confirma tu identidad",
+  "driverOnlineAuthSubtitle": "Después te pediremos huella, rostro o PIN del dispositivo. Así protegemos tu cuenta al activar el servicio.",
+  "driverOnlineAuthContinue": "Continuar",
+  "driverOnlineAuthCancel": "Cancelar",
+  "driverOnlineAuthReasonBiometric": "Confirma tu identidad para conectarte como conductor",
+  "driverOnlineAuthReasonDeviceCredential": "Confirma con tu PIN o patrón para conectarte",
+  "driverOnlineAuthVerifyFailed": "No se pudo verificar la identidad del dispositivo",
+
+  "driverProfileMenu": "Mi perfil",
+  "driverProfileTitle": "Mi perfil",
+  "driverProfileBack": "Volver al inicio",
+  "driverProfileRefreshTooltip": "Actualizar",
+  "driverProfileRetry": "Reintentar",
+  "driverProfileErrorNoSession": "Sesión no disponible. Vuelve a iniciar sesión.",
+  "driverProfileErrorEmpty": "Respuesta vacía del servidor.",
+  "driverProfileErrorBadFormat": "No se pudo leer el perfil.",
+  "driverProfileRoleSubtitle": "Conductor TEXI",
+  "driverProfileBadgeActive": "Perfil activo",
+  "driverProfileBadgeSecure": "Cuenta segura",
+  "driverProfileVerificationTitle": "Estado de la cuenta: En revisión",
+  "driverProfileVerificationBody": "Tu documentación fue recibida correctamente. Nuestro equipo la está validando para habilitar tu servicio lo antes posible.",
+  "driverProfileSectionPersonal": "Información personal",
+  "driverProfileSectionContact": "Contacto",
+  "driverProfileSectionLocation": "Ubicación",
+  "driverProfileReadOnlyFooter": "Por ahora estos datos son de solo lectura. Muy pronto habilitaremos la edición desde la app.",
+  "driverProfileFieldName": "Nombre",
+  "driverProfileFieldBirthDate": "Fecha de nacimiento",
+  "driverProfileFieldGender": "Género",
+  "driverProfileFieldPhone": "Teléfono",
+  "driverProfileFieldEmail": "Correo",
+  "driverProfileFieldAddress": "Dirección",
+  "driverProfileFieldLocality": "Localidad",
+  "driverProfileGenderMale": "Masculino",
+  "driverProfileGenderFemale": "Femenino",
+  "driverProfileGenderOther": "Otro",
+  "driverProfileValueEmpty": "—",
+  "driverProfileDefaultName": "Conductor TEXI",
+
+  "driverOnlineErrorNoInternet": "Sin conexión a internet. Conéctate para ponerte en línea.",
+  "driverOnlineErrorNoGps": "Activa los permisos de ubicación para poder compartir tu posición.",
+  "driverOnlineErrorNoToken": "Sesión inválida. Vuelve a iniciar sesión.",
+  "driverOnlineErrorSocket": "No se pudo conectar al servidor. Intenta de nuevo.",
+  "driverOnlineErrorUnknown": "No se pudo poner en línea. Intenta de nuevo.",
+
+  "driverTripInProgressTitle": "Viaje en curso",
+  "driverTripStatusAccepted": "Ir a recoger",
+  "driverTripStatusArrived": "En punto de recogida",
+  "driverTripStatusStarted": "En trayecto",
+  "driverTripStatusCompleted": "Viaje completado",
+  "driverTripStatusCancelled": "Viaje cancelado",
+  "driverTripStatusInProgress": "Viaje en curso",
+
+  "driverTripEstimatedPrice": "Precio estimado: {amount}",
+  "@driverTripEstimatedPrice": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+
+  "driverTripArrivedButton": "Llegué al punto de recogida",
+  "driverTripStartButton": "Iniciar viaje",
+  "driverTripCompleteButton": "Finalizar viaje",
+
+  "driverTripOfferTitle": "Nueva solicitud de viaje",
+  "driverTripOfferPrice": "Precio estimado: {amount}",
+  "@driverTripOfferPrice": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "driverTripOfferEta": "Tiempo estimado de llegada: {minutes} min",
+  "@driverTripOfferEta": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+
+  "driverTripReject": "Rechazar",
+  "driverTripAccept": "Aceptar",
+  "driverTripOfferPriceTbd": "A acordar",
+  "driverTripOfferBadgeNew": "Nueva",
+  "driverTripOfferPickupEta": "~{minutes} min a la recogida",
+  "@driverTripOfferPickupEta": {
+    "placeholders": { "minutes": { "type": "String" } }
+  },
+  "driverTripOfferRouteEta": "~{minutes} min al destino",
+  "@driverTripOfferRouteEta": {
+    "placeholders": { "minutes": { "type": "String" } }
+  },
+  "driverTripOfferRouteKm": "{distance} de ruta",
+  "@driverTripOfferRouteKm": {
+    "placeholders": { "distance": { "type": "String" } }
+  },
+
+  "driverOfferErrorNoConnection": "Sin conexión con el servidor.",
+  "driverOfferErrorExpired": "Esta oferta ya no está disponible.",
+  "driverOfferErrorTaken": "El viaje ya fue asignado o no está disponible.",
+  "driverOfferErrorGeneric": "No se pudo actualizar la solicitud.",
+  "driverTripNavigatePickup": "Navegar al origen",
+  "driverTripNavigateDestination": "Navegar al destino",
+  "driverTripReactivate": "Volver a recibir viajes",
+  "driverTripSnackbarNavigationFailed": "No se pudo abrir la navegación ({label})",
+  "@driverTripSnackbarNavigationFailed": {
+    "placeholders": { "label": { "type": "String" } }
+  },
+  "driverTripBackgroundPromptTitle": "¿Mantener servicio activo?",
+  "driverTripBackgroundPromptDisconnect": "Desconectar",
+  "driverTripBackgroundPromptKeep": "Mantener activo",
+  "driverTripBackgroundPromptBody": "Estuviste fuera de la app por más de 15 minutos.\nSi deseas seguir recibiendo solicitudes, confirma ahora.\n\nDesconexión automática en {seconds}s",
+  "@driverTripBackgroundPromptBody": {
+    "placeholders": { "seconds": { "type": "String" } }
+  },
+  "driverHomeBackgroundLocationTitle": "Ubicación en segundo plano",
+  "driverHomeBackgroundLocationBody": "Para que los pasajeros puedan encontrarte cuando la app no está a la vista, concede ubicación «Todo el tiempo» en el siguiente paso. Solo se usa mientras estás conectado como conductor. Puedes cambiarlo en los ajustes del sistema cuando quieras.",
+  "driverHomeBackgroundLocationLater": "Ahora no",
+  "driverHomeBackgroundLocationContinue": "Continuar",
+
+  "driverMapDriverPosition": "Tu posición",
+  "driverMapPickupPoint": "Punto de recogida",
+  "driverMapDestinationPoint": "Destino",
+  "driverMapCalculatingRoute": "Calculando ruta...",
+
+  "driverTripRatingHeaderTitle": "Viaje completado",
+  "driverTripRatingTitle": "Califica al pasajero",
+  "driverTripRatingSubtitle": "Tu opinión nos ayuda a mantener un buen servicio para todos.",
+  "driverTripRatingSubmit": "Enviar calificación",
+  "driverTripRatingSkip": "Omitir por ahora",
+  "driverTripRatingSummaryLabel": "Resumen del viaje",
+  "driverTripRatingPassengerDefault": "Pasajero",
+  "driverTripRatingOriginDefault": "Recogida",
+  "driverTripRatingDestinationDefault": "Destino",
+  "driverTripRatingDistanceKm": "{distance} km",
+  "@driverTripRatingDistanceKm": {
+    "placeholders": { "distance": { "type": "String" } }
+  },
+  "driverTripRatingEtaMinutes": "~{minutes} min",
+  "@driverTripRatingEtaMinutes": {
+    "placeholders": { "minutes": { "type": "String" } }
+  },
+  "driverTripRatingPriceLabel": "Tarifa",
+  "driverTripRatingYourRating": "Tu valoración",
+  "driverTripRatingRouteHint": "{origin} → {destination}",
+  "@driverTripRatingRouteHint": {
+    "placeholders": {
+      "origin": { "type": "String" },
+      "destination": { "type": "String" }
+    }
+  },
+  "driverRegImageTakePhoto": "Tomar foto",
+  "driverRegImageChooseGallery": "Elegir de galería",
+  "driverRegImageTooLarge": "La imagen es muy pesada (máx. {maxKb} KB). Elige otra o reduce la resolución.",
+  "@driverRegImageTooLarge": {
+    "placeholders": { "maxKb": { "type": "int" } }
+  },
+  "driverRegImageReadError": "No se pudo obtener la imagen.",
+  "driverRegStepData": "Datos",
+  "driverRegStepIdentity": "Identidad",
+  "driverRegStepLicense": "Licencia",
+  "driverRegStepAccess": "Acceso",
+  "driverRegStepVehicle": "Vehículo",
+  "driverRegStepPhotos": "Fotos",
+  "driverRegGenderOther": "Otro / prefiero no indicar",
+  "driverRegTitle": "Registro de conductor",
+  "driverRegStepCounter": "Paso {current} de {total}",
+  "@driverRegStepCounter": {
+    "placeholders": {
+      "current": { "type": "String" },
+      "total": { "type": "String" }
+    }
+  },
+  "driverRegSnackSelectCountryCoverage": "Selecciona un país con cobertura del servicio.",
+  "driverRegSnackSelectDepartmentLocality": "Elige departamento y localidad (provincia).",
+  "driverRegSnackPasswordsMismatch": "Las contraseñas no coinciden.",
+  "driverRegSnackIdentityIncomplete": "Completa número, vencimiento y las tres imágenes.",
+  "driverRegSnackLicenseIncomplete": "Necesitamos la categoría, la fecha de vencimiento y una foto de cada lado de la licencia.",
+  "driverRegSnackVehicleYearInvalid": "Año del vehículo no válido.",
+  "driverRegSnackVehiclePhotosIncomplete": "Necesitamos las cuatro vistas: frente, parte trasera y ambos laterales del vehículo.",
+  "driverRegDoneTitle": "¡Listo!",
+  "driverRegDoneBody": "Gracias por unirte a Texi. Tus datos y documentos ya fueron registrados y entrarán a revisión para validación. En la brevedad activaremos tu servicio para que puedas atender viajes. Ahora inicia sesión con tus credenciales.",
+  "driverRegDoneGoLogin": "Ir a iniciar sesión"
+}

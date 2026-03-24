@@ -1,0 +1,268 @@
+{
+  "@@locale": "en",
+  "appName": "Texi",
+  "driverAppTitle": "Texi Driver",
+  "splashGettingLocation": "Getting your location...",
+  "loginWelcome": "Welcome",
+  "loginSubtitle": "Enter your number to continue",
+  "loginCode": "Code",
+  "loginPhone": "Phone",
+  "loginContinue": "Continue",
+  "loginErrorInvalidCredentials": "Could not sign in. Check your number.",
+  "loginPhoneRequired": "Enter your phone number",
+  "homeRequestRide": "Request ride",
+  "homeNearbyDrivers": "{count} nearby driver",
+  "@homeNearbyDrivers": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "homeNearbyDriversNone": "No nearby drivers at the moment",
+  "homeUpdatesEvery": "Updates every {seconds} seconds",
+  "@homeUpdatesEvery": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
+  "homeLocationError": "Enable location to see the map and nearby drivers.",
+  "homeLocationErrorGps": "Could not get your location. Check GPS.",
+  "homeRetry": "Retry",
+  "tripOrigin": "Origin",
+  "tripDestination": "Destination",
+  "tripYourLocation": "Your current location",
+  "tripWherePickup": "Where should we pick you up?",
+  "tripUseMyLocation": "Use my current location",
+  "tripSearchAddress": "Search address",
+  "tripChooseOnMap": "Choose on map",
+  "tripUseAsPickup": "Use as pickup point",
+  "tripUseAsDestination": "Use as destination",
+  "tripMoveMapSetPickup": "Move the map and tap the button to set where you'll be picked up.",
+  "tripMoveMapSetDestination": "Move the map and tap the button to set the destination.",
+  "tripTapMapDestination": "Tap the map or choose an option below",
+  "tripSeePrices": "See prices",
+  "tripSearchPlaceholder": "Search address...",
+  "tripUseMapCenter": "Use this location",
+  "tripWhereTo": "Where to?",
+  "tripSearchError": "Address not found",
+  "tripSearchingAddress": "Searching...",
+  "tripNoCoverageInZone": "We don't have service coverage in this area at the moment. Try another location or move to a service zone.",
+  "tripNoDriversAvailable": "No drivers available at the moment. Please try again in a few moments.",
+  "tripNext": "Next",
+  "quoteTitle": "Choose your ride",
+  "quoteSubtitle": "Select a service type",
+  "quotePerTrip": "per trip",
+  "quoteConfirm": "Confirm",
+  "confirmTitle": "Confirm your ride",
+  "confirmFrom": "From",
+  "confirmTo": "To",
+  "confirmRequestRide": "Request ride",
+  "searchingTitle": "Looking for a driver",
+  "searchingSubtitle": "We are finding the best option for you",
+  "commonCancel": "Cancel",
+  "commonLoading": "Loading...",
+  "commonError": "Something went wrong",
+  "settingsLanguage": "Language",
+  "languageSpanish": "Español",
+  "languageEnglish": "English",
+
+  "driverLoginWelcome": "Welcome, driver",
+  "driverLoginSubtitle": "Sign in with your number and password to start receiving rides.",
+  "driverLoginPassword": "Password",
+  "driverLoginButton": "Sign in",
+  "driverLoginPhoneAndPasswordRequired": "Enter your number and password",
+  "driverLoginErrorGeneric": "Could not sign in",
+  "driverLoginRegisterHint": "Don't have credentials? You can register as a driver.",
+  "driverLoginRegisterCta": "Register",
+
+  "driverHomeTitle": "Driver",
+  "driverHomeOnlineTitle": "You are online",
+  "driverHomeOfflineTitle": "You are offline",
+  "driverHomeOnlineSubtitle": "Nearby passengers will see your vehicle and you can receive ride requests.",
+  "driverHomeOfflineSubtitle": "Turn the switch on to start receiving rides.",
+  "driverHomeRequestsTitle": "Ride requests",
+  "driverHomeRequestsEmpty": "You will see passenger requests here\nwhen you are online.",
+  "driverHomeMiniStatusOnline": "Online",
+  "driverHomeMiniStatusOffline": "Offline",
+  "driverHomeMiniConnecting": "Connecting…",
+  "driverHomeMiniVehicleEmpty": "Vehicle not registered yet",
+  "driverHomeMiniRating": "{rating} ★",
+  "@driverHomeMiniRating": {
+    "placeholders": { "rating": { "type": "String" } }
+  },
+  "driverLogout": "Sign out",
+
+  "driverOnlineAuthTitle": "Confirm your identity",
+  "driverOnlineAuthSubtitle": "Next, you'll use your fingerprint, Face ID, or device PIN. This keeps your account safe when you go online.",
+  "driverOnlineAuthContinue": "Continue",
+  "driverOnlineAuthCancel": "Cancel",
+  "driverOnlineAuthReasonBiometric": "Confirm your identity to go online as a driver",
+  "driverOnlineAuthReasonDeviceCredential": "Confirm with your PIN or pattern to go online",
+  "driverOnlineAuthVerifyFailed": "Could not verify device identity",
+
+  "driverProfileMenu": "My profile",
+  "driverProfileTitle": "My profile",
+  "driverProfileBack": "Back to home",
+  "driverProfileRefreshTooltip": "Refresh",
+  "driverProfileRetry": "Try again",
+  "driverProfileErrorNoSession": "Session unavailable. Please sign in again.",
+  "driverProfileErrorEmpty": "Empty server response.",
+  "driverProfileErrorBadFormat": "Could not read profile data.",
+  "driverProfileRoleSubtitle": "TEXI driver",
+  "driverProfileBadgeActive": "Active profile",
+  "driverProfileBadgeSecure": "Secure account",
+  "driverProfileVerificationTitle": "Account status: Under review",
+  "driverProfileVerificationBody": "Your documents were received successfully. Our team is validating them so we can enable your service as soon as possible.",
+  "driverProfileSectionPersonal": "Personal information",
+  "driverProfileSectionContact": "Contact",
+  "driverProfileSectionLocation": "Location",
+  "driverProfileReadOnlyFooter": "These details are read-only for now. Editing from the app will be available soon.",
+  "driverProfileFieldName": "Name",
+  "driverProfileFieldBirthDate": "Date of birth",
+  "driverProfileFieldGender": "Gender",
+  "driverProfileFieldPhone": "Phone",
+  "driverProfileFieldEmail": "Email",
+  "driverProfileFieldAddress": "Address",
+  "driverProfileFieldLocality": "City / locality",
+  "driverProfileGenderMale": "Male",
+  "driverProfileGenderFemale": "Female",
+  "driverProfileGenderOther": "Other",
+  "driverProfileValueEmpty": "—",
+  "driverProfileDefaultName": "TEXI driver",
+
+  "driverOnlineErrorNoInternet": "No internet connection. Connect to go online.",
+  "driverOnlineErrorNoGps": "Enable location permissions to share your position.",
+  "driverOnlineErrorNoToken": "Invalid session. Please sign in again.",
+  "driverOnlineErrorSocket": "Could not connect to the server. Please try again.",
+  "driverOnlineErrorUnknown": "Could not go online. Please try again.",
+
+  "driverTripInProgressTitle": "Trip in progress",
+  "driverTripStatusAccepted": "Go to pickup",
+  "driverTripStatusArrived": "At pickup point",
+  "driverTripStatusStarted": "On the way",
+  "driverTripStatusCompleted": "Trip completed",
+  "driverTripStatusCancelled": "Trip cancelled",
+  "driverTripStatusInProgress": "Trip in progress",
+
+  "driverTripEstimatedPrice": "Estimated price: {amount}",
+  "@driverTripEstimatedPrice": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+
+  "driverTripArrivedButton": "I arrived at pickup",
+  "driverTripStartButton": "Start trip",
+  "driverTripCompleteButton": "Finish trip",
+
+  "driverTripOfferTitle": "New ride request",
+  "driverTripOfferPrice": "Estimated price: {amount}",
+  "@driverTripOfferPrice": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "driverTripOfferEta": "Estimated arrival: {minutes} min",
+  "@driverTripOfferEta": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+
+  "driverTripReject": "Reject",
+  "driverTripAccept": "Accept",
+  "driverTripOfferPriceTbd": "To be agreed",
+  "driverTripOfferBadgeNew": "New",
+  "driverTripOfferPickupEta": "~{minutes} min to pickup",
+  "@driverTripOfferPickupEta": {
+    "placeholders": { "minutes": { "type": "String" } }
+  },
+  "driverTripOfferRouteEta": "~{minutes} min to destination",
+  "@driverTripOfferRouteEta": {
+    "placeholders": { "minutes": { "type": "String" } }
+  },
+  "driverTripOfferRouteKm": "{distance} trip",
+  "@driverTripOfferRouteKm": {
+    "placeholders": { "distance": { "type": "String" } }
+  },
+
+  "driverOfferErrorNoConnection": "No connection to server.",
+  "driverOfferErrorExpired": "This offer is no longer available.",
+  "driverOfferErrorTaken": "Trip already assigned or cancelled.",
+  "driverOfferErrorGeneric": "Could not update the request.",
+  "driverTripNavigatePickup": "Navigate to pickup",
+  "driverTripNavigateDestination": "Navigate to destination",
+  "driverTripReactivate": "Resume receiving rides",
+  "driverTripSnackbarNavigationFailed": "Could not open navigation ({label})",
+  "@driverTripSnackbarNavigationFailed": {
+    "placeholders": { "label": { "type": "String" } }
+  },
+  "driverTripBackgroundPromptTitle": "Keep service active?",
+  "driverTripBackgroundPromptDisconnect": "Disconnect",
+  "driverTripBackgroundPromptKeep": "Keep active",
+  "driverTripBackgroundPromptBody": "You were out of the app for more than 15 minutes.\nIf you want to keep receiving requests, confirm now.\n\nAuto disconnect in {seconds}s",
+  "@driverTripBackgroundPromptBody": {
+    "placeholders": { "seconds": { "type": "String" } }
+  },
+  "driverHomeBackgroundLocationTitle": "Location in the background",
+  "driverHomeBackgroundLocationBody": "So passengers can find you while the app is not open, allow \"Always\" (or \"Allow all the time\") location on the next step. It is only used while you are available as a driver. You can change this in system settings at any time.",
+  "driverHomeBackgroundLocationLater": "Not now",
+  "driverHomeBackgroundLocationContinue": "Continue",
+
+  "driverMapDriverPosition": "Your position",
+  "driverMapPickupPoint": "Pickup point",
+  "driverMapDestinationPoint": "Destination",
+  "driverMapCalculatingRoute": "Calculating route...",
+
+  "driverTripRatingHeaderTitle": "Trip completed",
+  "driverTripRatingTitle": "Rate your passenger",
+  "driverTripRatingSubtitle": "Your feedback helps us keep the service great for everyone.",
+  "driverTripRatingSubmit": "Send rating",
+  "driverTripRatingSkip": "Skip for now",
+  "driverTripRatingSummaryLabel": "Trip summary",
+  "driverTripRatingPassengerDefault": "Passenger",
+  "driverTripRatingOriginDefault": "Pickup",
+  "driverTripRatingDestinationDefault": "Destination",
+  "driverTripRatingDistanceKm": "{distance} km",
+  "@driverTripRatingDistanceKm": {
+    "placeholders": { "distance": { "type": "String" } }
+  },
+  "driverTripRatingEtaMinutes": "~{minutes} min",
+  "@driverTripRatingEtaMinutes": {
+    "placeholders": { "minutes": { "type": "String" } }
+  },
+  "driverTripRatingPriceLabel": "Fare",
+  "driverTripRatingYourRating": "Your rating",
+  "driverTripRatingRouteHint": "{origin} → {destination}",
+  "@driverTripRatingRouteHint": {
+    "placeholders": {
+      "origin": { "type": "String" },
+      "destination": { "type": "String" }
+    }
+  },
+  "driverRegImageTakePhoto": "Take photo",
+  "driverRegImageChooseGallery": "Choose from gallery",
+  "driverRegImageTooLarge": "Image is too large (max {maxKb} KB). Choose another one or reduce resolution.",
+  "@driverRegImageTooLarge": {
+    "placeholders": { "maxKb": { "type": "int" } }
+  },
+  "driverRegImageReadError": "Could not read image.",
+  "driverRegStepData": "Data",
+  "driverRegStepIdentity": "Identity",
+  "driverRegStepLicense": "License",
+  "driverRegStepAccess": "Access",
+  "driverRegStepVehicle": "Vehicle",
+  "driverRegStepPhotos": "Photos",
+  "driverRegGenderOther": "Other / prefer not to say",
+  "driverRegTitle": "Driver registration",
+  "driverRegStepCounter": "Step {current} of {total}",
+  "@driverRegStepCounter": {
+    "placeholders": {
+      "current": { "type": "String" },
+      "total": { "type": "String" }
+    }
+  },
+  "driverRegSnackSelectCountryCoverage": "Select a country with service coverage.",
+  "driverRegSnackSelectDepartmentLocality": "Choose department and locality (province).",
+  "driverRegSnackPasswordsMismatch": "Passwords do not match.",
+  "driverRegSnackIdentityIncomplete": "Complete number, expiry date, and the three images.",
+  "driverRegSnackLicenseIncomplete": "We need category, expiry date, and one photo for each side of the license.",
+  "driverRegSnackVehicleYearInvalid": "Invalid vehicle year.",
+  "driverRegSnackVehiclePhotosIncomplete": "We need all four views: front, rear, and both sides of the vehicle.",
+  "driverRegDoneTitle": "Done!",
+  "driverRegDoneBody": "Thanks for joining Texi. Your data and documents were registered and are now under review. We will activate your service soon so you can start taking trips. Now sign in with your credentials.",
+  "driverRegDoneGoLogin": "Go to sign in"
+}
