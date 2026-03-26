@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_colors.dart';
+
 /// Tokens base para mantener consistencia visual en toda la app.
 abstract final class AppFoundation {
   AppFoundation._();
@@ -27,5 +29,28 @@ abstract final class AppShadows {
       offset: const Offset(0, 8),
     ),
   ];
+
+  /// Resplandor primario muy suave + penumbra difusa para avatares circulares
+  /// (mini perfil en home, foto del conductor en perfil).
+  static List<BoxShadow> get circularAvatarAmbient => [
+        BoxShadow(
+          color: AppColors.primary.withValues(alpha: 0.045),
+          blurRadius: 28,
+          spreadRadius: 1,
+          offset: const Offset(0, 5),
+        ),
+        BoxShadow(
+          color: AppColors.primary.withValues(alpha: 0.022),
+          blurRadius: 46,
+          spreadRadius: -8,
+          offset: const Offset(0, 12),
+        ),
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.048),
+          blurRadius: 38,
+          spreadRadius: -6,
+          offset: const Offset(0, 11),
+        ),
+      ];
 }
 

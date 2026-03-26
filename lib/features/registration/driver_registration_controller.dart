@@ -23,6 +23,7 @@ class DriverRegistrationFlowState {
     this.selectedLocalityLabel,
     this.userUuid,
     this.carUuid,
+    this.identityFaceImageB64,
     this.boliviaOnlyMessage,
     this.registrationTokenSaved = false,
   });
@@ -44,6 +45,9 @@ class DriverRegistrationFlowState {
   final String? userUuid;
   final String? carUuid;
 
+  /// Foto de perfil (misma Base64 que `face_image` en documento de identidad), reutilizada en licencia.
+  final String? identityFaceImageB64;
+
   /// Si el país no es Bolivia, mensaje informativo (cobertura geo).
   final String? boliviaOnlyMessage;
 
@@ -63,6 +67,7 @@ class DriverRegistrationFlowState {
     String? selectedLocalityLabel,
     String? userUuid,
     String? carUuid,
+    String? identityFaceImageB64,
     String? boliviaOnlyMessage,
     bool? registrationTokenSaved,
     bool clearGlobalError = false,
@@ -92,6 +97,7 @@ class DriverRegistrationFlowState {
           clearLocality ? null : (selectedLocalityLabel ?? this.selectedLocalityLabel),
       userUuid: userUuid ?? this.userUuid,
       carUuid: carUuid ?? this.carUuid,
+      identityFaceImageB64: identityFaceImageB64 ?? this.identityFaceImageB64,
       boliviaOnlyMessage:
           clearBoliviaMessage ? null : (boliviaOnlyMessage ?? this.boliviaOnlyMessage),
       registrationTokenSaved: registrationTokenSaved ?? this.registrationTokenSaved,
@@ -285,6 +291,7 @@ class DriverRegistrationFlowController
       state = state.copyWith(
         loading: false,
         step: 2,
+        identityFaceImageB64: faceB64,
         registrationTokenSaved: tok || state.registrationTokenSaved,
       );
     } catch (e) {
@@ -304,6 +311,16 @@ class DriverRegistrationFlowController
     required String expireDateIso,
   }) async {
     state = state.copyWith(loading: true, clearGlobalError: true);
+    final faceB64 = state.identityFaceImageB64;
+    if (faceB64 == null || faceB64.isEmpty) {
+      state = state.copyWith(
+        loading: false,
+        globalError:
+            'No se encontró la foto de perfil del paso de documento de identidad. '
+            'Volvé a ese paso o reiniciá el registro.',
+      );
+      return;
+    }
     try {
       final tok = await _repo.submitDocumentInfo({
         'uuid': uuid,
@@ -311,6 +328,7 @@ class DriverRegistrationFlowController
         'document_number': documentNumber,
         'front_document': frontB64,
         'back_document': backB64,
+        'face_image': faceB64,
         'expire_date': expireDateIso,
       });
       state = state.copyWith(

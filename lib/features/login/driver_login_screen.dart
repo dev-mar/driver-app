@@ -181,7 +181,7 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                               controller: _countryCodeController,
                               decoration: InputDecoration(
                                 labelText: l10n.loginCode,
-                                hintText: '+591',
+                                hintText: l10n.driverLoginCountryCodeHint,
                               ),
                               keyboardType: TextInputType.phone,
                               readOnly: true,
@@ -193,7 +193,7 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                               controller: _phoneController,
                               decoration: InputDecoration(
                                 labelText: l10n.loginPhone,
-                                hintText: '7 123 4567',
+                                hintText: l10n.driverLoginPhoneHint,
                               ),
                               keyboardType: TextInputType.phone,
                               autofillHints: const [AutofillHints.telephoneNumber],

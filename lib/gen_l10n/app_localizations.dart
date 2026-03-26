@@ -452,6 +452,18 @@ abstract class AppLocalizations {
   /// **'Enter your number and password'**
   String get driverLoginPhoneAndPasswordRequired;
 
+  /// No description provided for @driverLoginCountryCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'+591'**
+  String get driverLoginCountryCodeHint;
+
+  /// No description provided for @driverLoginPhoneHint.
+  ///
+  /// In en, this message translates to:
+  /// **'7 123 4567'**
+  String get driverLoginPhoneHint;
+
   /// No description provided for @driverLoginErrorGeneric.
   ///
   /// In en, this message translates to:
@@ -956,6 +968,18 @@ abstract class AppLocalizations {
   /// **'Navigate to destination'**
   String get driverTripNavigateDestination;
 
+  /// No description provided for @driverTripNavAssistedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assisted navigation'**
+  String get driverTripNavAssistedTitle;
+
+  /// No description provided for @driverTripNavAssistedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens your maps or GPS app (Maps, Waze…)'**
+  String get driverTripNavAssistedSubtitle;
+
   /// No description provided for @driverTripReactivate.
   ///
   /// In en, this message translates to:
@@ -1261,6 +1285,744 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Go to sign in'**
   String get driverRegDoneGoLogin;
+
+  /// No description provided for @driverRegRetryLoadCountries.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry loading countries'**
+  String get driverRegRetryLoadCountries;
+
+  /// No description provided for @driverRegSectionOperationRegion.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation region'**
+  String get driverRegSectionOperationRegion;
+
+  /// No description provided for @driverRegFieldCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get driverRegFieldCountry;
+
+  /// No description provided for @driverRegValidationSelectCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Select country'**
+  String get driverRegValidationSelectCountry;
+
+  /// No description provided for @driverRegFieldDepartment.
+  ///
+  /// In en, this message translates to:
+  /// **'Department'**
+  String get driverRegFieldDepartment;
+
+  /// No description provided for @driverRegNoCoverageInCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'No coverage in this country'**
+  String get driverRegNoCoverageInCountry;
+
+  /// No description provided for @driverRegValidationSelectDepartment.
+  ///
+  /// In en, this message translates to:
+  /// **'Select department'**
+  String get driverRegValidationSelectDepartment;
+
+  /// No description provided for @driverRegFieldLocality.
+  ///
+  /// In en, this message translates to:
+  /// **'Locality (province)'**
+  String get driverRegFieldLocality;
+
+  /// No description provided for @driverRegChooseDepartmentFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a department'**
+  String get driverRegChooseDepartmentFirst;
+
+  /// No description provided for @driverRegValidationSelectLocality.
+  ///
+  /// In en, this message translates to:
+  /// **'Select locality'**
+  String get driverRegValidationSelectLocality;
+
+  /// No description provided for @driverRegSectionPersonalData.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal data'**
+  String get driverRegSectionPersonalData;
+
+  /// No description provided for @driverRegFieldFirstName.
+  ///
+  /// In en, this message translates to:
+  /// **'First names'**
+  String get driverRegFieldFirstName;
+
+  /// No description provided for @driverRegFieldLastName.
+  ///
+  /// In en, this message translates to:
+  /// **'Last names'**
+  String get driverRegFieldLastName;
+
+  /// No description provided for @driverRegFieldEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get driverRegFieldEmail;
+
+  /// No description provided for @driverRegHintOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get driverRegHintOptional;
+
+  /// No description provided for @driverRegValidationRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get driverRegValidationRequired;
+
+  /// No description provided for @driverRegValidationSelectOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an option'**
+  String get driverRegValidationSelectOption;
+
+  /// No description provided for @driverRegSectionContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get driverRegSectionContact;
+
+  /// No description provided for @driverRegFieldPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number'**
+  String get driverRegFieldPhoneNumber;
+
+  /// No description provided for @driverRegHintLocalDigitsOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Local digits only'**
+  String get driverRegHintLocalDigitsOnly;
+
+  /// No description provided for @driverRegChooseCountryFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose country first'**
+  String get driverRegChooseCountryFirst;
+
+  /// No description provided for @driverRegValidationIncompleteNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Incomplete number'**
+  String get driverRegValidationIncompleteNumber;
+
+  /// No description provided for @driverRegSectionAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get driverRegSectionAddress;
+
+  /// No description provided for @driverRegFieldAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Home address'**
+  String get driverRegFieldAddress;
+
+  /// No description provided for @driverRegHintAddressReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Street, area or reference'**
+  String get driverRegHintAddressReference;
+
+  /// No description provided for @driverRegSectionPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Access password'**
+  String get driverRegSectionPassword;
+
+  /// No description provided for @driverRegHintMin8Chars.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters'**
+  String get driverRegHintMin8Chars;
+
+  /// No description provided for @driverRegValidationMin8Chars.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters'**
+  String get driverRegValidationMin8Chars;
+
+  /// No description provided for @driverRegFieldConfirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get driverRegFieldConfirmPassword;
+
+  /// No description provided for @driverRegIntroPersonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Provide real data aligned with your documents.'**
+  String get driverRegIntroPersonal;
+
+  /// No description provided for @driverRegIntroIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Readable document and profile photo where you can be clearly identified: full face, no cap or dark glasses, no mask, no heavy shadows.'**
+  String get driverRegIntroIdentity;
+
+  /// No description provided for @driverRegSectionIdentityDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity document'**
+  String get driverRegSectionIdentityDocument;
+
+  /// No description provided for @driverRegSubtitleIdentityDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Number and expiration according to the document.'**
+  String get driverRegSubtitleIdentityDocument;
+
+  /// No description provided for @driverRegFieldDocumentNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Document number'**
+  String get driverRegFieldDocumentNumber;
+
+  /// No description provided for @driverRegFieldDocumentExpiry.
+  ///
+  /// In en, this message translates to:
+  /// **'Document expiration'**
+  String get driverRegFieldDocumentExpiry;
+
+  /// No description provided for @driverRegSectionFrontBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Front and back'**
+  String get driverRegSectionFrontBack;
+
+  /// No description provided for @driverRegSubtitleOneImagePerSide.
+  ///
+  /// In en, this message translates to:
+  /// **'One image for each side.'**
+  String get driverRegSubtitleOneImagePerSide;
+
+  /// No description provided for @driverRegSectionProfilePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile photo'**
+  String get driverRegSectionProfilePhoto;
+
+  /// No description provided for @driverRegSubtitleProfilePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'To validate your identity: uncovered face, no cap, no glasses covering your eyes, good lighting.'**
+  String get driverRegSubtitleProfilePhoto;
+
+  /// No description provided for @driverRegIntroLicense.
+  ///
+  /// In en, this message translates to:
+  /// **'Category, expiration, and clear photos of both sides of the license.'**
+  String get driverRegIntroLicense;
+
+  /// No description provided for @driverRegSectionCategoryValidity.
+  ///
+  /// In en, this message translates to:
+  /// **'Category and validity'**
+  String get driverRegSectionCategoryValidity;
+
+  /// No description provided for @driverRegSubtitleCategoryValidity.
+  ///
+  /// In en, this message translates to:
+  /// **'License category and expiration date (YYYY-MM-DD format).'**
+  String get driverRegSubtitleCategoryValidity;
+
+  /// No description provided for @driverRegFieldCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get driverRegFieldCategory;
+
+  /// No description provided for @driverRegHintCategoryExample.
+  ///
+  /// In en, this message translates to:
+  /// **'Ex. B'**
+  String get driverRegHintCategoryExample;
+
+  /// No description provided for @driverRegValidationChooseCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a category'**
+  String get driverRegValidationChooseCategory;
+
+  /// No description provided for @driverRegFieldExpiry.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiration'**
+  String get driverRegFieldExpiry;
+
+  /// No description provided for @driverRegHintLicenseExpiryDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date when your license expires'**
+  String get driverRegHintLicenseExpiryDate;
+
+  /// No description provided for @driverRegValidationIndicateExpiryDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Provide expiration date'**
+  String get driverRegValidationIndicateExpiryDate;
+
+  /// No description provided for @driverRegSectionLicenseFrontBack.
+  ///
+  /// In en, this message translates to:
+  /// **'License — front and back'**
+  String get driverRegSectionLicenseFrontBack;
+
+  /// No description provided for @driverRegSectionActivateAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate your account'**
+  String get driverRegSectionActivateAccount;
+
+  /// No description provided for @driverRegSubtitleReviewBeforeContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Review your data before continuing.'**
+  String get driverRegSubtitleReviewBeforeContinue;
+
+  /// No description provided for @driverRegSectionYourSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Your summary'**
+  String get driverRegSectionYourSummary;
+
+  /// No description provided for @driverRegSubtitleProfileWorkZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile and work area.'**
+  String get driverRegSubtitleProfileWorkZone;
+
+  /// No description provided for @driverRegFieldFullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get driverRegFieldFullName;
+
+  /// No description provided for @driverRegFieldServiceArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Service area'**
+  String get driverRegFieldServiceArea;
+
+  /// No description provided for @driverRegIdentityLicenseRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity and license documents registered.'**
+  String get driverRegIdentityLicenseRegistered;
+
+  /// No description provided for @driverRegIntroVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the data exactly as shown on your policy and plate; then upload photos of all four sides.'**
+  String get driverRegIntroVehicle;
+
+  /// No description provided for @driverRegSectionVehicleData.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle data'**
+  String get driverRegSectionVehicleData;
+
+  /// No description provided for @driverRegSubtitleVehicleData.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand, model, year and color (as in document or policy).'**
+  String get driverRegSubtitleVehicleData;
+
+  /// No description provided for @driverRegFieldBrand.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand'**
+  String get driverRegFieldBrand;
+
+  /// No description provided for @driverRegHintBrandExample.
+  ///
+  /// In en, this message translates to:
+  /// **'Ex. Toyota'**
+  String get driverRegHintBrandExample;
+
+  /// No description provided for @driverRegFieldModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get driverRegFieldModel;
+
+  /// No description provided for @driverRegHintModelExample.
+  ///
+  /// In en, this message translates to:
+  /// **'Ex. Corolla'**
+  String get driverRegHintModelExample;
+
+  /// No description provided for @driverRegFieldYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get driverRegFieldYear;
+
+  /// No description provided for @driverRegFieldColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Color'**
+  String get driverRegFieldColor;
+
+  /// No description provided for @driverRegHintTypeOrPickColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Type or pick below'**
+  String get driverRegHintTypeOrPickColor;
+
+  /// No description provided for @driverRegSectionPlateVin.
+  ///
+  /// In en, this message translates to:
+  /// **'Plate and chassis number (VIN)'**
+  String get driverRegSectionPlateVin;
+
+  /// No description provided for @driverRegSubtitlePlateUppercase.
+  ///
+  /// In en, this message translates to:
+  /// **'Plate is saved in uppercase.'**
+  String get driverRegSubtitlePlateUppercase;
+
+  /// No description provided for @driverRegFieldPlate.
+  ///
+  /// In en, this message translates to:
+  /// **'Plate'**
+  String get driverRegFieldPlate;
+
+  /// No description provided for @driverRegHintPlateExample.
+  ///
+  /// In en, this message translates to:
+  /// **'Ex. ABC1231'**
+  String get driverRegHintPlateExample;
+
+  /// No description provided for @driverRegHelperUppercaseSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved in UPPERCASE'**
+  String get driverRegHelperUppercaseSaved;
+
+  /// No description provided for @driverRegFieldVinChassis.
+  ///
+  /// In en, this message translates to:
+  /// **'VIN / chassis'**
+  String get driverRegFieldVinChassis;
+
+  /// No description provided for @driverRegHintVin17Chars.
+  ///
+  /// In en, this message translates to:
+  /// **'17 alphanumeric characters'**
+  String get driverRegHintVin17Chars;
+
+  /// No description provided for @driverRegHelperVehicleDocumentReference.
+  ///
+  /// In en, this message translates to:
+  /// **'As shown in vehicle card or document'**
+  String get driverRegHelperVehicleDocumentReference;
+
+  /// No description provided for @driverRegSectionInsuranceOwnership.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance and ownership'**
+  String get driverRegSectionInsuranceOwnership;
+
+  /// No description provided for @driverRegSubtitleInsuranceOwnership.
+  ///
+  /// In en, this message translates to:
+  /// **'Policy number and ownership title details or equivalent document.'**
+  String get driverRegSubtitleInsuranceOwnership;
+
+  /// No description provided for @driverRegFieldInsurancePolicyNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance policy number'**
+  String get driverRegFieldInsurancePolicyNumber;
+
+  /// No description provided for @driverRegHintAsPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'As shown on active policy'**
+  String get driverRegHintAsPolicy;
+
+  /// No description provided for @driverRegFieldTitleDocData.
+  ///
+  /// In en, this message translates to:
+  /// **'Ownership title / document details'**
+  String get driverRegFieldTitleDocData;
+
+  /// No description provided for @driverRegHintReferenceFromDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference from your document'**
+  String get driverRegHintReferenceFromDocument;
+
+  /// No description provided for @driverRegIntroVehiclePhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'One photo for each side of the car: front, rear, left side and right side. Good lighting and full vehicle in frame.'**
+  String get driverRegIntroVehiclePhotos;
+
+  /// No description provided for @driverRegSectionVehicleViews.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle views'**
+  String get driverRegSectionVehicleViews;
+
+  /// No description provided for @driverRegSubtitleVehicleViews.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap each card to take or change photo; you\'ll see a preview once uploaded.'**
+  String get driverRegSubtitleVehicleViews;
+
+  /// No description provided for @driverRegPhotoFrontTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Front'**
+  String get driverRegPhotoFrontTitle;
+
+  /// No description provided for @driverRegPhotoFrontHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Frame the front; show the plate when possible.'**
+  String get driverRegPhotoFrontHint;
+
+  /// No description provided for @driverRegPhotoRearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rear'**
+  String get driverRegPhotoRearTitle;
+
+  /// No description provided for @driverRegPhotoRearHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Entire rear side of the vehicle.'**
+  String get driverRegPhotoRearHint;
+
+  /// No description provided for @driverRegPhotoLeftTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Left side'**
+  String get driverRegPhotoLeftTitle;
+
+  /// No description provided for @driverRegPhotoLeftHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Side view, full left side.'**
+  String get driverRegPhotoLeftHint;
+
+  /// No description provided for @driverRegPhotoRightTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Right side'**
+  String get driverRegPhotoRightTitle;
+
+  /// No description provided for @driverRegPhotoRightHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Side view, full right side.'**
+  String get driverRegPhotoRightHint;
+
+  /// No description provided for @driverRegActionActivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate'**
+  String get driverRegActionActivate;
+
+  /// No description provided for @driverRegActionFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish'**
+  String get driverRegActionFinish;
+
+  /// No description provided for @driverRegActionContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get driverRegActionContinue;
+
+  /// No description provided for @driverRegActionBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get driverRegActionBack;
+
+  /// No description provided for @driverRegImageReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Image ready'**
+  String get driverRegImageReady;
+
+  /// No description provided for @driverRegTapToUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to upload'**
+  String get driverRegTapToUpload;
+
+  /// No description provided for @driverRegDocFrontTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Front'**
+  String get driverRegDocFrontTitle;
+
+  /// No description provided for @driverRegDocFrontHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo and main data.'**
+  String get driverRegDocFrontHint;
+
+  /// No description provided for @driverRegDocBackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get driverRegDocBackTitle;
+
+  /// No description provided for @driverRegDocBackHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Code, signature, or additional data.'**
+  String get driverRegDocBackHint;
+
+  /// No description provided for @driverRegLicenseFrontTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Front'**
+  String get driverRegLicenseFrontTitle;
+
+  /// No description provided for @driverRegLicenseFrontHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo and categories.'**
+  String get driverRegLicenseFrontHint;
+
+  /// No description provided for @driverRegLicenseBackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get driverRegLicenseBackTitle;
+
+  /// No description provided for @driverRegLicenseBackHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Restrictions or notes.'**
+  String get driverRegLicenseBackHint;
+
+  /// No description provided for @driverRegProfilePhotoReadyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo ready. Tap the circle to change it.'**
+  String get driverRegProfilePhotoReadyHint;
+
+  /// No description provided for @driverRegProfilePhotoGuideHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Make sure your face is centered and well lit.'**
+  String get driverRegProfilePhotoGuideHint;
+
+  /// No description provided for @driverRegTapCardToReplacePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the card to replace this photo.'**
+  String get driverRegTapCardToReplacePhoto;
+
+  /// No description provided for @driverRegChangePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get driverRegChangePhoto;
+
+  /// No description provided for @driverRegTakeOrChoosePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take or choose photo'**
+  String get driverRegTakeOrChoosePhoto;
+
+  /// No description provided for @driverRegColorBlack.
+  ///
+  /// In en, this message translates to:
+  /// **'Black'**
+  String get driverRegColorBlack;
+
+  /// No description provided for @driverRegColorWhite.
+  ///
+  /// In en, this message translates to:
+  /// **'White'**
+  String get driverRegColorWhite;
+
+  /// No description provided for @driverRegColorGray.
+  ///
+  /// In en, this message translates to:
+  /// **'Gray'**
+  String get driverRegColorGray;
+
+  /// No description provided for @driverRegColorSilver.
+  ///
+  /// In en, this message translates to:
+  /// **'Silver'**
+  String get driverRegColorSilver;
+
+  /// No description provided for @driverRegColorRed.
+  ///
+  /// In en, this message translates to:
+  /// **'Red'**
+  String get driverRegColorRed;
+
+  /// No description provided for @driverRegColorBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get driverRegColorBlue;
+
+  /// No description provided for @driverRegColorGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get driverRegColorGreen;
+
+  /// No description provided for @driverRegColorYellow.
+  ///
+  /// In en, this message translates to:
+  /// **'Yellow'**
+  String get driverRegColorYellow;
+
+  /// No description provided for @driverRegColorOrange.
+  ///
+  /// In en, this message translates to:
+  /// **'Orange'**
+  String get driverRegColorOrange;
+
+  /// No description provided for @driverRegColorViolet.
+  ///
+  /// In en, this message translates to:
+  /// **'Violet'**
+  String get driverRegColorViolet;
+
+  /// No description provided for @driverRegColorBrown.
+  ///
+  /// In en, this message translates to:
+  /// **'Brown'**
+  String get driverRegColorBrown;
+
+  /// No description provided for @driverRegColorBeige.
+  ///
+  /// In en, this message translates to:
+  /// **'Beige'**
+  String get driverRegColorBeige;
+
+  /// No description provided for @driverRegColorGold.
+  ///
+  /// In en, this message translates to:
+  /// **'Gold'**
+  String get driverRegColorGold;
 }
 
 class _AppLocalizationsDelegate

@@ -6,6 +6,7 @@ Este documento ordena el trabajo pendiente de Flutter (conductor) según lo ya i
 
 ### 0) Referencias que NO deben duplicarse
 
+- **Reglas de trabajo (i18n, strings, UX, PRs):** [TEAM-WORKING-RULES.md](TEAM-WORKING-RULES.md)
 - Contrato HTTP (REST): `app_texi_WebSocket/docs/API-CONTRACT.md`
 - Contrato WebSocket (conductor): `texi_driver_app/docs/DRIVER-REALTIME-BACKEND-CONTRACT.md`
 - Play Store / privacidad / seguridad: `texi_driver_app/docs/GOOGLE-PLAY-CONSOLE-Y-CUMPLIMIENTO.md`

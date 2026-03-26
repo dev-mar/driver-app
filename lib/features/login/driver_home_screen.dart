@@ -14,6 +14,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_foundation.dart';
 import '../../core/theme/app_motion.dart';
 import '../../core/ui/driver_ui_states.dart';
+import '../../core/ui/texi_circular_avatar.dart';
 import '../../core/router/app_router.dart';
 import '../../core/config/locale_provider.dart';
 import '../../gen_l10n/app_localizations.dart';
@@ -522,23 +523,8 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.surface,
-                      border: Border.all(
-                        color: AppColors.border.withValues(alpha: 0.8),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 12,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
+                  TexiCircularAvatar(
+                    diameter: 52,
                     child: Icon(
                       Icons.directions_car_filled_rounded,
                       color: AppColors.primary.withValues(alpha: 0.9),
@@ -1343,6 +1329,266 @@ class _RetractableTripCardState extends State<_RetractableTripCard>
   }
 }
 
+/// Botones de apertura de navegación externa con pulso suave y copy que clarifica el gesto.
+class _AssistedTripNavButtons extends StatefulWidget {
+  const _AssistedTripNavButtons({
+    required this.showPickup,
+    required this.showDestination,
+    required this.l10n,
+    required this.onNavigateToPickup,
+    required this.onNavigateToDestination,
+  });
+
+  final bool showPickup;
+  final bool showDestination;
+  final AppLocalizations l10n;
+  final VoidCallback onNavigateToPickup;
+  final VoidCallback onNavigateToDestination;
+
+  @override
+  State<_AssistedTripNavButtons> createState() => _AssistedTripNavButtonsState();
+}
+
+class _AssistedTripNavButtonsState extends State<_AssistedTripNavButtons>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulse;
+  late Animation<double> _t;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
+    _t = CurvedAnimation(parent: _pulse, curve: Curves.easeInOutCubic);
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Padding(
+                padding: EdgeInsets.all(8),
+                child: Icon(
+                  Icons.maps_ugc_rounded,
+                  size: 20,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.l10n.driverTripNavAssistedTitle,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    widget.l10n.driverTripNavAssistedSubtitle,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      height: 1.25,
+                      color:
+                          AppColors.textSecondary.withValues(alpha: 0.95),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            if (widget.showPickup) ...[
+              Expanded(
+                child: AnimatedBuilder(
+                  animation: _t,
+                  builder: (context, child) {
+                    return _assistedNavPill(
+                      context,
+                      glow: 0.28 + 0.55 * _t.value,
+                      iconScale: 1.0 + 0.09 * _t.value,
+                      isPickup: true,
+                      title: widget.l10n.driverTripNavigatePickup,
+                      subtitle: widget.l10n.tripOrigin,
+                      icon: Icons.near_me_rounded,
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        widget.onNavigateToPickup();
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+            if (widget.showPickup && widget.showDestination)
+              const SizedBox(width: 10),
+            if (widget.showDestination) ...[
+              Expanded(
+                child: AnimatedBuilder(
+                  animation: _t,
+                  builder: (context, child) {
+                    return _assistedNavPill(
+                      context,
+                      glow: 0.22 + 0.5 * (1 - _t.value),
+                      iconScale: 1.0 + 0.09 * (1 - _t.value),
+                      isPickup: false,
+                      title: widget.l10n.driverTripNavigateDestination,
+                      subtitle: widget.l10n.tripDestination,
+                      icon: Icons.turn_right_rounded,
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        widget.onNavigateToDestination();
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _assistedNavPill(
+    BuildContext context, {
+    required double glow,
+    required double iconScale,
+    required bool isPickup,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    final borderColor =
+        AppColors.primary.withValues(alpha: isPickup ? glow * 0.55 : glow * 0.7);
+    final bg = isPickup
+        ? AppColors.primary.withValues(alpha: 0.12 + 0.06 * glow)
+        : AppColors.primary.withValues(alpha: 0.88 + 0.06 * glow);
+    final fg = isPickup ? AppColors.textPrimary : AppColors.onPrimary;
+    final subFg = isPickup
+        ? AppColors.textSecondary.withValues(alpha: 0.9)
+        : AppColors.onPrimary.withValues(alpha: 0.88);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: borderColor,
+              width: isPickup ? 1.25 : 1.15,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: isPickup ? 0.08 : 0.2),
+                blurRadius: 10 + 6 * glow,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
+            child: Row(
+              children: [
+                Transform.scale(
+                  scale: iconScale,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: (isPickup
+                              ? AppColors.primary
+                              : AppColors.onPrimary)
+                          .withValues(alpha: isPickup ? 0.18 : 0.22),
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 22,
+                      color: isPickup ? AppColors.primary : AppColors.onPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: fg,
+                                height: 1.15,
+                              ),
+                            ),
+                          ),
+                          Icon(
+                            Icons.open_in_new_rounded,
+                            size: 16,
+                            color: subFg,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
+                          color: subFg,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ActiveTripCard extends StatelessWidget {
   final DriverActiveTrip trip;
   final String? processingAction;
@@ -1585,44 +1831,14 @@ class _ActiveTripCard extends StatelessWidget {
             const SizedBox(height: 10),
             section(
               padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-              child: Row(
-                children: [
-                  if (trip.pickupLat != null && trip.pickupLng != null)
-                    Expanded(
-                      child: FilledButton.tonalIcon(
-                        onPressed: onNavigateToPickup,
-                        icon: const Icon(Icons.navigation_rounded, size: 18),
-                        label: Text(l10n.tripOrigin),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          backgroundColor: AppColors.primary.withValues(alpha: 0.16),
-                          foregroundColor: AppColors.textPrimary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (trip.pickupLat != null &&
-                      trip.pickupLng != null &&
-                      trip.destinationLat != null &&
-                      trip.destinationLng != null)
-                    const SizedBox(width: 8),
-                  if (trip.destinationLat != null && trip.destinationLng != null)
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: onNavigateToDestination,
-                        icon: const Icon(Icons.route_rounded, size: 18),
-                        label: Text(l10n.tripDestination),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+              child: _AssistedTripNavButtons(
+                showPickup:
+                    trip.pickupLat != null && trip.pickupLng != null,
+                showDestination: trip.destinationLat != null &&
+                    trip.destinationLng != null,
+                l10n: l10n,
+                onNavigateToPickup: onNavigateToPickup,
+                onNavigateToDestination: onNavigateToDestination,
               ),
             ),
           ],

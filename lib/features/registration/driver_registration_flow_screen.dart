@@ -114,6 +114,42 @@ class _DriverRegistrationFlowScreenState
     'Otro',
   ];
 
+  String _localizedColor(BuildContext context, String color) {
+    final l10n = AppLocalizations.of(context);
+    switch (color) {
+      case 'Negro':
+        return l10n.driverRegColorBlack;
+      case 'Blanco':
+        return l10n.driverRegColorWhite;
+      case 'Gris':
+        return l10n.driverRegColorGray;
+      case 'Plata':
+        return l10n.driverRegColorSilver;
+      case 'Rojo':
+        return l10n.driverRegColorRed;
+      case 'Azul':
+        return l10n.driverRegColorBlue;
+      case 'Verde':
+        return l10n.driverRegColorGreen;
+      case 'Amarillo':
+        return l10n.driverRegColorYellow;
+      case 'Naranja':
+        return l10n.driverRegColorOrange;
+      case 'Violeta':
+        return l10n.driverRegColorViolet;
+      case 'Marrón':
+        return l10n.driverRegColorBrown;
+      case 'Beige':
+        return l10n.driverRegColorBeige;
+      case 'Dorado':
+        return l10n.driverRegColorGold;
+      case 'Otro':
+        return l10n.driverProfileGenderOther;
+      default:
+        return color;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -554,9 +590,8 @@ class _DriverRegistrationFlowScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const _StepIntroBanner(
-              message:
-                  'Datos verídicos y alineados con tu documentación.',
+            _StepIntroBanner(
+              message: l10n.driverRegIntroPersonal,
             ),
             const SizedBox(height: 16),
             if (flow.loading && flow.countries.isEmpty)
@@ -570,7 +605,7 @@ class _DriverRegistrationFlowScreenState
               OutlinedButton.icon(
                 onPressed: () => notifier.loadCountries(),
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Reintentar cargar países'),
+                label: Text(l10n.driverRegRetryLoadCountries),
               ),
             if (flow.boliviaOnlyMessage != null) ...[
               const SizedBox(height: 8),
@@ -578,13 +613,13 @@ class _DriverRegistrationFlowScreenState
             ],
             const SizedBox(height: 12),
             _RegistrationSectionCard(
-              title: 'Región de operación',
+              title: l10n.driverRegSectionOperationRegion,
               icon: Icons.public_rounded,
               children: [
                 DropdownButtonFormField<String>(
                   key: ValueKey<String>('country-${flow.selectedCountryName ?? 'none'}'),
                   initialValue: flow.selectedCountryName,
-                  decoration: const InputDecoration(labelText: 'País'),
+                  decoration: InputDecoration(labelText: l10n.driverRegFieldCountry),
                   items: flow.countries
                       .map(
                         (c) => DropdownMenuItem(
@@ -599,7 +634,7 @@ class _DriverRegistrationFlowScreenState
                           notifier.selectCountry(v);
                           setState(() {});
                         },
-                  validator: (v) => v == null || v.isEmpty ? 'Selecciona país' : null,
+                  validator: (v) => v == null || v.isEmpty ? l10n.driverRegValidationSelectCountry : null,
                 ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
@@ -608,10 +643,10 @@ class _DriverRegistrationFlowScreenState
                   ),
                   initialValue: flow.selectedDepartmentName,
                   decoration: InputDecoration(
-                    labelText: 'Departamento',
+                    labelText: l10n.driverRegFieldDepartment,
                     hintText: flow.isBoliviaSelected
                         ? null
-                        : 'Sin cobertura en este país',
+                        : l10n.driverRegNoCoverageInCountry,
                   ),
                   items: flow.departments
                       .map((d) => DropdownMenuItem(value: d.name, child: Text(d.name)))
@@ -624,7 +659,7 @@ class _DriverRegistrationFlowScreenState
                         },
                   validator: (v) {
                     if (!flow.isBoliviaSelected) return null;
-                    return v == null || v.isEmpty ? 'Selecciona departamento' : null;
+                    return v == null || v.isEmpty ? l10n.driverRegValidationSelectDepartment : null;
                   },
                 ),
                 const SizedBox(height: 10),
@@ -639,10 +674,10 @@ class _DriverRegistrationFlowScreenState
                       ),
                       initialValue: locOk ? flow.selectedLocalityId : null,
                       decoration: InputDecoration(
-                        labelText: 'Localidad (provincia)',
+                        labelText: l10n.driverRegFieldLocality,
                         hintText: flow.isBoliviaSelected && locs.isEmpty
-                            ? 'Elige un departamento'
-                            : (!flow.isBoliviaSelected ? 'Sin cobertura en este país' : null),
+                            ? l10n.driverRegChooseDepartmentFirst
+                            : (!flow.isBoliviaSelected ? l10n.driverRegNoCoverageInCountry : null),
                       ),
                       items: locs
                           .map(
@@ -662,7 +697,7 @@ class _DriverRegistrationFlowScreenState
                             },
                       validator: (v) {
                         if (!flow.isBoliviaSelected) return null;
-                        return v == null ? 'Selecciona localidad' : null;
+                        return v == null ? l10n.driverRegValidationSelectLocality : null;
                       },
                     );
                   },
@@ -671,30 +706,30 @@ class _DriverRegistrationFlowScreenState
             ),
             const SizedBox(height: 14),
             _RegistrationSectionCard(
-              title: 'Datos personales',
+              title: l10n.driverRegSectionPersonalData,
               icon: Icons.person_outline_rounded,
               children: [
                 TextFormField(
                   controller: _firstNameCtrl,
-                  decoration: const InputDecoration(labelText: 'Nombres'),
+                  decoration: InputDecoration(labelText: l10n.driverRegFieldFirstName),
                   textCapitalization: TextCapitalization.words,
                   validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Requerido' : null,
+                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _lastNameCtrl,
-                  decoration: const InputDecoration(labelText: 'Apellidos'),
+                  decoration: InputDecoration(labelText: l10n.driverRegFieldLastName),
                   textCapitalization: TextCapitalization.words,
                   validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Requerido' : null,
+                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _emailCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Correo electrónico',
-                    hintText: 'Opcional',
+                  decoration: InputDecoration(
+                    labelText: l10n.driverRegFieldEmail,
+                    hintText: l10n.driverRegHintOptional,
                   ),
                   keyboardType: TextInputType.emailAddress,
                 ),
@@ -703,7 +738,7 @@ class _DriverRegistrationFlowScreenState
                   controller: _birthDateCtrl,
                   readOnly: true,
                   decoration: InputDecoration(
-                    labelText: 'Fecha de nacimiento',
+                    labelText: l10n.driverProfileFieldBirthDate,
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.calendar_today_rounded),
                       onPressed: () => _pickDateToField(_birthDateCtrl),
@@ -711,7 +746,7 @@ class _DriverRegistrationFlowScreenState
                   ),
                   onTap: () => _pickDateToField(_birthDateCtrl),
                   validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Requerido' : null,
+                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                 ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
@@ -726,13 +761,13 @@ class _DriverRegistrationFlowScreenState
                       )
                       .toList(),
                   onChanged: (v) => setState(() => _genderValue = v),
-                  validator: (v) => v == null ? 'Selecciona una opción' : null,
+                  validator: (v) => v == null ? l10n.driverRegValidationSelectOption : null,
                 ),
               ],
             ),
             const SizedBox(height: 14),
             _RegistrationSectionCard(
-              title: 'Contacto',
+              title: l10n.driverRegSectionContact,
               icon: Icons.phone_android_rounded,
               children: [
                 Row(
@@ -764,19 +799,19 @@ class _DriverRegistrationFlowScreenState
                         controller: _phoneLocalCtrl,
                         enabled: flow.selectedCountryPhoneCode != null,
                         decoration: InputDecoration(
-                          labelText: 'Número de teléfono',
+                          labelText: l10n.driverRegFieldPhoneNumber,
                           hintText: flow.selectedCountryPhoneCode != null
-                              ? 'Solo dígitos locales'
-                              : 'Selecciona país primero',
+                              ? l10n.driverRegHintLocalDigitsOnly
+                              : l10n.driverRegChooseCountryFirst,
                         ),
                         keyboardType: TextInputType.phone,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                         validator: (v) {
                           if (flow.selectedCountryPhoneCode == null) {
-                            return 'Selecciona país';
+                            return l10n.driverRegValidationSelectCountry;
                           }
                           final d = (v ?? '').replaceAll(RegExp(r'\D'), '');
-                          if (d.length < 6) return 'Número incompleto';
+                          if (d.length < 6) return l10n.driverRegValidationIncompleteNumber;
                           return null;
                         },
                       ),
@@ -787,44 +822,44 @@ class _DriverRegistrationFlowScreenState
             ),
             const SizedBox(height: 14),
             _RegistrationSectionCard(
-              title: 'Domicilio',
+              title: l10n.driverRegSectionAddress,
               icon: Icons.home_work_outlined,
               children: [
                 TextFormField(
                   controller: _addressCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Dirección de domicilio',
-                    hintText: 'Calle, zona o referencia',
+                  decoration: InputDecoration(
+                    labelText: l10n.driverRegFieldAddress,
+                    hintText: l10n.driverRegHintAddressReference,
                   ),
                   maxLines: 2,
                   textCapitalization: TextCapitalization.sentences,
                   validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Requerido' : null,
+                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                 ),
               ],
             ),
             const SizedBox(height: 14),
             _RegistrationSectionCard(
-              title: 'Contraseña de acceso',
+              title: l10n.driverRegSectionPassword,
               icon: Icons.lock_outline_rounded,
               children: [
                 TextFormField(
                   controller: _passwordCtrl,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Contraseña',
-                    hintText: 'Mínimo 8 caracteres',
+                  decoration: InputDecoration(
+                    labelText: l10n.driverLoginPassword,
+                    hintText: l10n.driverRegHintMin8Chars,
                   ),
                   validator: (v) =>
-                      v == null || v.length < 8 ? 'Mínimo 8 caracteres' : null,
+                      v == null || v.length < 8 ? l10n.driverRegValidationMin8Chars : null,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _passwordConfirmCtrl,
                   obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Confirmar contraseña'),
+                  decoration: InputDecoration(labelText: l10n.driverRegFieldConfirmPassword),
                   validator: (v) =>
-                      v == null || v.isEmpty ? 'Requerido' : null,
+                      v == null || v.isEmpty ? l10n.driverRegValidationRequired : null,
                 ),
               ],
             ),
@@ -835,6 +870,7 @@ class _DriverRegistrationFlowScreenState
   }
 
   Widget _buildIdentityStep() {
+    final l10n = AppLocalizations.of(context);
     return Theme(
       data: _registrationInputTheme(context),
       child: Form(
@@ -842,30 +878,26 @@ class _DriverRegistrationFlowScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const _StepIntroBanner(
-              message:
-                  'Documento legible y foto de perfil donde se te identifique bien: rostro completo, '
-                  'sin gorra ni lentes oscuros, sin tapabocas ni sombra en la cara.',
-            ),
+            _StepIntroBanner(message: l10n.driverRegIntroIdentity),
             const SizedBox(height: 14),
             _RegistrationSectionCard(
-              title: 'Documento de identidad',
+              title: l10n.driverRegSectionIdentityDocument,
               icon: Icons.perm_identity_rounded,
-              subtitle: 'Número y vigencia según el documento.',
+              subtitle: l10n.driverRegSubtitleIdentityDocument,
               children: [
                 TextFormField(
                   controller: _docNumberCtrl,
-                  decoration: const InputDecoration(labelText: 'Número de documento'),
+                  decoration: InputDecoration(labelText: l10n.driverRegFieldDocumentNumber),
                   keyboardType: TextInputType.text,
                   validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Requerido' : null,
+                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _docExpireCtrl,
                   readOnly: true,
                   decoration: InputDecoration(
-                    labelText: 'Vencimiento del documento',
+                    labelText: l10n.driverRegFieldDocumentExpiry,
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.event_rounded),
                       onPressed: () => _pickDateToField(_docExpireCtrl, future: true),
@@ -873,15 +905,15 @@ class _DriverRegistrationFlowScreenState
                   ),
                   onTap: () => _pickDateToField(_docExpireCtrl, future: true),
                   validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Requerido' : null,
+                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                 ),
               ],
             ),
             const SizedBox(height: 14),
             _RegistrationSectionCard(
-              title: 'Anverso y reverso',
+              title: l10n.driverRegSectionFrontBack,
               icon: Icons.chrome_reader_mode_outlined,
-              subtitle: 'Una imagen por cada lado.',
+              subtitle: l10n.driverRegSubtitleOneImagePerSide,
               children: [
                 _CarnetUploadTile(
                   kind: _CarnetSlotKind.idFront,
@@ -904,10 +936,9 @@ class _DriverRegistrationFlowScreenState
             ),
             const SizedBox(height: 14),
             _RegistrationSectionCard(
-              title: 'Foto de perfil',
+              title: l10n.driverRegSectionProfilePhoto,
               icon: Icons.face_retouching_natural,
-              subtitle:
-                  'Para validar tu identidad: cara descubierta, sin gorra, sin lentes que tapen los ojos, buena luz.',
+              subtitle: l10n.driverRegSubtitleProfilePhoto,
               children: [
                 _ProfilePhotoCircleSlot(
                   base64Image: _faceB64,
@@ -925,6 +956,7 @@ class _DriverRegistrationFlowScreenState
   }
 
   Widget _buildLicenseStep() {
+    final l10n = AppLocalizations.of(context);
     return Theme(
       data: _registrationInputTheme(context),
       child: Form(
@@ -932,22 +964,19 @@ class _DriverRegistrationFlowScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const _StepIntroBanner(
-              message:
-                  'Categoría, vencimiento y fotos claras de ambos lados de la licencia.',
-            ),
+            _StepIntroBanner(message: l10n.driverRegIntroLicense),
             const SizedBox(height: 14),
             _RegistrationSectionCard(
-              title: 'Categoría y vigencia',
+              title: l10n.driverRegSectionCategoryValidity,
               icon: Icons.category_outlined,
-              subtitle: 'Categoría de licencia y fecha de vencimiento (formato YYYY-MM-DD).',
+              subtitle: l10n.driverRegSubtitleCategoryValidity,
               children: [
                 DropdownButtonFormField<DriverLicenseCategory>(
                   key: ValueKey<int?>(_licenseCategory?.id),
                   initialValue: _licenseCategory,
-                  decoration: const InputDecoration(
-                    labelText: 'Categoría',
-                    hintText: 'Ej. B',
+                  decoration: InputDecoration(
+                    labelText: l10n.driverRegFieldCategory,
+                    hintText: l10n.driverRegHintCategoryExample,
                   ),
                   items: DriverLicenseCategory.all
                       .map(
@@ -958,15 +987,15 @@ class _DriverRegistrationFlowScreenState
                       )
                       .toList(),
                   onChanged: (v) => setState(() => _licenseCategory = v),
-                  validator: (v) => v == null ? 'Elegí una categoría' : null,
+                  validator: (v) => v == null ? l10n.driverRegValidationChooseCategory : null,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _licenseExpireCtrl,
                   readOnly: true,
                   decoration: InputDecoration(
-                    labelText: 'Vencimiento',
-                    hintText: 'Fecha en la que vence tu licencia',
+                    labelText: l10n.driverRegFieldExpiry,
+                    hintText: l10n.driverRegHintLicenseExpiryDate,
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.event_rounded),
                       onPressed: () =>
@@ -975,15 +1004,15 @@ class _DriverRegistrationFlowScreenState
                   ),
                   onTap: () => _pickDateToField(_licenseExpireCtrl, future: true),
                   validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Indicá la fecha de vencimiento' : null,
+                      v == null || v.trim().isEmpty ? l10n.driverRegValidationIndicateExpiryDate : null,
                 ),
               ],
             ),
             const SizedBox(height: 14),
             _RegistrationSectionCard(
-              title: 'Licencia — anverso y reverso',
+              title: l10n.driverRegSectionLicenseFrontBack,
               icon: Icons.chrome_reader_mode_outlined,
-              subtitle: 'Una imagen por cada lado.',
+              subtitle: l10n.driverRegSubtitleOneImagePerSide,
               children: [
                 _CarnetUploadTile(
                   kind: _CarnetSlotKind.licenseFront,
@@ -1011,6 +1040,7 @@ class _DriverRegistrationFlowScreenState
   }
 
   Widget _buildAccessBridgeStep(DriverRegistrationFlowState flow) {
+    final l10n = AppLocalizations.of(context);
     final phone = _composeFullPhone(flow);
     final fullName = [
       _firstNameCtrl.text.trim(),
@@ -1022,46 +1052,46 @@ class _DriverRegistrationFlowScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _StepHeroCard(
+        _StepHeroCard(
           icon: Icons.verified_user_outlined,
-          title: 'Activar tu cuenta',
-          subtitle: 'Revisá los datos antes de continuar.',
+          title: l10n.driverRegSectionActivateAccount,
+          subtitle: l10n.driverRegSubtitleReviewBeforeContinue,
         ),
         const SizedBox(height: 14),
         _RegistrationSectionCard(
-          title: 'Tu resumen',
+          title: l10n.driverRegSectionYourSummary,
           icon: Icons.fact_check_outlined,
-          subtitle: 'Perfil y zona de trabajo.',
+          subtitle: l10n.driverRegSubtitleProfileWorkZone,
           children: [
             _InfoTileRow(
               icon: Icons.badge_outlined,
-              label: 'Nombre completo',
+              label: l10n.driverRegFieldFullName,
               value: fullName.isEmpty ? '—' : fullName,
             ),
             const SizedBox(height: 12),
             _InfoTileRow(
               icon: Icons.phone_android_rounded,
-              label: 'Teléfono',
+              label: l10n.driverProfileFieldPhone,
               value: phone.isEmpty ? '—' : phone,
             ),
             const SizedBox(height: 12),
             _InfoTileRow(
               icon: Icons.place_outlined,
-              label: 'Zona de servicio',
+              label: l10n.driverRegFieldServiceArea,
               value: location,
             ),
             if (email.isNotEmpty) ...[
               const SizedBox(height: 12),
               _InfoTileRow(
                 icon: Icons.mail_outline_rounded,
-                label: 'Correo',
+                label: l10n.driverProfileFieldEmail,
                 value: email,
               ),
             ],
             const SizedBox(height: 14),
-            const _SoftStatusChip(
+            _SoftStatusChip(
               icon: Icons.check_circle_outline_rounded,
-              text: 'Documentación de identidad y licencia registrada.',
+              text: l10n.driverRegIdentityLicenseRegistered,
             ),
           ],
         ),
@@ -1070,6 +1100,7 @@ class _DriverRegistrationFlowScreenState
   }
 
   Widget _buildVehicleStep() {
+    final l10n = AppLocalizations.of(context);
     return Theme(
       data: _registrationInputTheme(context),
       child: Form(
@@ -1077,53 +1108,50 @@ class _DriverRegistrationFlowScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const _StepIntroBanner(
-              message:
-                  'Completá los datos tal como figuren en la póliza y en la placa; luego subirás fotos de los cuatro lados.',
-            ),
+            _StepIntroBanner(message: l10n.driverRegIntroVehicle),
             const SizedBox(height: 14),
             _RegistrationSectionCard(
-              title: 'Datos del vehículo',
+              title: l10n.driverRegSectionVehicleData,
               icon: Icons.label_outline_rounded,
-              subtitle: 'Marca, modelo, año y color (como en el documento o póliza).',
+              subtitle: l10n.driverRegSubtitleVehicleData,
               children: [
                 TextFormField(
                   controller: _vehicleBrandCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Marca',
-                    hintText: 'Ej. Toyota',
+                  decoration: InputDecoration(
+                    labelText: l10n.driverRegFieldBrand,
+                    hintText: l10n.driverRegHintBrandExample,
                   ),
                   validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Requerido' : null,
+                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _vehicleModelCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Modelo',
-                    hintText: 'Ej. Corolla',
+                  decoration: InputDecoration(
+                    labelText: l10n.driverRegFieldModel,
+                    hintText: l10n.driverRegHintModelExample,
                   ),
                   validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Requerido' : null,
+                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _vehicleYearCtrl,
-                  decoration: const InputDecoration(labelText: 'Año'),
+                  decoration: InputDecoration(labelText: l10n.driverRegFieldYear),
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Requerido' : null,
+                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _vehicleColorCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Color',
-                    hintText: 'Escribe o elige abajo',
+                  decoration: InputDecoration(
+                    labelText: l10n.driverRegFieldColor,
+                    hintText: l10n.driverRegHintTypeOrPickColor,
                   ),
                   validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Requerido' : null,
+                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                 ),
                 const SizedBox(height: 8),
                 Wrap(
@@ -1132,7 +1160,7 @@ class _DriverRegistrationFlowScreenState
                   children: _carColorSuggestions
                       .map(
                         (c) => FilterChip(
-                          label: Text(c, style: const TextStyle(fontSize: 12)),
+                          label: Text(_localizedColor(context, c), style: const TextStyle(fontSize: 12)),
                           selected: _vehicleColorCtrl.text.trim() == c,
                           onSelected: (selected) {
                             if (selected) _vehicleColorCtrl.text = c;
@@ -1149,61 +1177,61 @@ class _DriverRegistrationFlowScreenState
             ),
             const SizedBox(height: 14),
             _RegistrationSectionCard(
-              title: 'Placa y número de chasis (VIN)',
+              title: l10n.driverRegSectionPlateVin,
               icon: Icons.pin_outlined,
-              subtitle: 'La placa se guarda en mayúsculas.',
+              subtitle: l10n.driverRegSubtitlePlateUppercase,
               children: [
                 TextFormField(
                   controller: _vehiclePlateCtrl,
                   textCapitalization: TextCapitalization.characters,
                   inputFormatters: [_UpperCasePlateFormatter()],
-                  decoration: const InputDecoration(
-                    labelText: 'Placa',
-                    hintText: 'Ej. ABC1231',
-                    helperText: 'Se registra en MAYÚSCULAS',
+                  decoration: InputDecoration(
+                    labelText: l10n.driverRegFieldPlate,
+                    hintText: l10n.driverRegHintPlateExample,
+                    helperText: l10n.driverRegHelperUppercaseSaved,
                   ),
                   validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Requerido' : null,
+                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _vehicleVinCtrl,
                   textCapitalization: TextCapitalization.characters,
                   inputFormatters: [_UpperCasePlateFormatter()],
-                  decoration: const InputDecoration(
-                    labelText: 'VIN / chasis',
-                    hintText: '17 caracteres alfanuméricos',
-                    helperText: 'Como en la tarjeta o documento del vehículo',
+                  decoration: InputDecoration(
+                    labelText: l10n.driverRegFieldVinChassis,
+                    hintText: l10n.driverRegHintVin17Chars,
+                    helperText: l10n.driverRegHelperVehicleDocumentReference,
                   ),
                   validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Requerido' : null,
+                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                 ),
               ],
             ),
             const SizedBox(height: 14),
             _RegistrationSectionCard(
-              title: 'Seguro y propiedad',
+              title: l10n.driverRegSectionInsuranceOwnership,
               icon: Icons.description_outlined,
-              subtitle: 'Número de póliza y datos del título de propiedad o documento equivalente.',
+              subtitle: l10n.driverRegSubtitleInsuranceOwnership,
               children: [
                 TextFormField(
                   controller: _vehicleInsuranceCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Número de póliza de seguro',
-                    hintText: 'Como en la póliza vigente',
+                  decoration: InputDecoration(
+                    labelText: l10n.driverRegFieldInsurancePolicyNumber,
+                    hintText: l10n.driverRegHintAsPolicy,
                   ),
                   validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Requerido' : null,
+                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _vehicleTitleCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Título de propiedad / datos del documento',
-                    hintText: 'Referencia según tu documento',
+                  decoration: InputDecoration(
+                    labelText: l10n.driverRegFieldTitleDocData,
+                    hintText: l10n.driverRegHintReferenceFromDocument,
                   ),
                   validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Requerido' : null,
+                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                 ),
               ],
             ),
@@ -1214,19 +1242,16 @@ class _DriverRegistrationFlowScreenState
   }
 
   Widget _buildVehiclePhotosStep() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _StepIntroBanner(
-          message:
-              'Una foto por cada lado del auto: frente, atrás, lateral izquierdo y lateral derecho. '
-              'Buena luz y el vehículo completo en el encuadre.',
-        ),
+        _StepIntroBanner(message: l10n.driverRegIntroVehiclePhotos),
         const SizedBox(height: 14),
         _RegistrationSectionCard(
-          title: 'Vistas del vehículo',
+          title: l10n.driverRegSectionVehicleViews,
           icon: Icons.grid_view_rounded,
-          subtitle: 'Toca cada recuadro para tomar o cambiar la foto; verás una miniatura al cargarla.',
+          subtitle: l10n.driverRegSubtitleVehicleViews,
           children: [
             LayoutBuilder(
               builder: (context, c) {
@@ -1241,8 +1266,8 @@ class _DriverRegistrationFlowScreenState
                   childAspectRatio: small ? 0.85 : 0.75,
                   children: [
                     _CarAngleCard(
-                      title: 'Frente',
-                      hint: 'Encuadre el frente; que se vea la placa si corresponde.',
+                      title: l10n.driverRegPhotoFrontTitle,
+                      hint: l10n.driverRegPhotoFrontHint,
                       icon: Icons.directions_car_filled_rounded,
                       isDone: _carFrontB64 != null,
                       previewBase64: _carFrontB64,
@@ -1256,8 +1281,8 @@ class _DriverRegistrationFlowScreenState
                       },
                     ),
                     _CarAngleCard(
-                      title: 'Parte trasera',
-                      hint: 'Toda la parte posterior del vehículo.',
+                      title: l10n.driverRegPhotoRearTitle,
+                      hint: l10n.driverRegPhotoRearHint,
                       icon: Icons.directions_car_rounded,
                       isDone: _carBackB64 != null,
                       previewBase64: _carBackB64,
@@ -1271,8 +1296,8 @@ class _DriverRegistrationFlowScreenState
                       },
                     ),
                     _CarAngleCard(
-                      title: 'Lado izquierdo',
-                      hint: 'De costado, costado izquierdo completo.',
+                      title: l10n.driverRegPhotoLeftTitle,
+                      hint: l10n.driverRegPhotoLeftHint,
                       icon: Icons.arrow_back_rounded,
                       isDone: _carLeftB64 != null,
                       previewBase64: _carLeftB64,
@@ -1286,8 +1311,8 @@ class _DriverRegistrationFlowScreenState
                       },
                     ),
                     _CarAngleCard(
-                      title: 'Lado derecho',
-                      hint: 'De costado, costado derecho completo.',
+                      title: l10n.driverRegPhotoRightTitle,
+                      hint: l10n.driverRegPhotoRightHint,
                       icon: Icons.arrow_forward_rounded,
                       isDone: _carRightB64 != null,
                       previewBase64: _carRightB64,
@@ -1329,12 +1354,13 @@ class _RegistrationBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isFirst = step == 0;
     final isLast = step == lastStepIndex;
     final isActivateStep = step == 3;
     final primaryLabel = isActivateStep
-        ? 'Activar'
-        : (isLast ? 'Finalizar' : 'Continuar');
+        ? l10n.driverRegActionActivate
+        : (isLast ? l10n.driverRegActionFinish : l10n.driverRegActionContinue);
     final primaryIcon = isActivateStep
         ? Icons.verified_rounded
         : (isLast ? Icons.check_rounded : Icons.arrow_forward_rounded);
@@ -1383,7 +1409,7 @@ class _RegistrationBottomBar extends StatelessWidget {
                         size: 20,
                       ),
                       const SizedBox(width: 8),
-                      Text(isFirst ? 'Cancelar' : 'Anterior'),
+                      Text(isFirst ? l10n.commonCancel : l10n.driverRegActionBack),
                     ],
                   ),
                 ),
@@ -1766,6 +1792,7 @@ class _CarnetUploadTileState extends State<_CarnetUploadTile> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final (title, hint, miniIcon, miniAccent) = _metaForKind(widget.kind);
 
     return AnimatedScale(
@@ -1839,7 +1866,9 @@ class _CarnetUploadTileState extends State<_CarnetUploadTile> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              widget.isSet ? 'Imagen lista' : 'Toca para subir',
+                              widget.isSet
+                                  ? l10n.driverRegImageReady
+                                  : l10n.driverRegTapToUpload,
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -1867,32 +1896,33 @@ class _CarnetUploadTileState extends State<_CarnetUploadTile> {
   }
 
   (String, String, IconData, Color) _metaForKind(_CarnetSlotKind k) {
+    final l10n = AppLocalizations.of(context);
     switch (k) {
       case _CarnetSlotKind.idFront:
         return (
-          'Anverso',
-          'Foto y datos principales.',
+          l10n.driverRegDocFrontTitle,
+          l10n.driverRegDocFrontHint,
           Icons.person_rounded,
           AppColors.primary.withValues(alpha: 0.85),
         );
       case _CarnetSlotKind.idBack:
         return (
-          'Reverso',
-          'Código, firma o datos adicionales.',
+          l10n.driverRegDocBackTitle,
+          l10n.driverRegDocBackHint,
           Icons.qr_code_2_rounded,
           AppColors.textSecondary.withValues(alpha: 0.9),
         );
       case _CarnetSlotKind.licenseFront:
         return (
-          'Frontal',
-          'Foto y categorías.',
+          l10n.driverRegLicenseFrontTitle,
+          l10n.driverRegLicenseFrontHint,
           Icons.person_rounded,
           AppColors.primary.withValues(alpha: 0.85),
         );
       case _CarnetSlotKind.licenseBack:
         return (
-          'Reverso',
-          'Restricciones u observaciones.',
+          l10n.driverRegLicenseBackTitle,
+          l10n.driverRegLicenseBackHint,
           Icons.qr_code_2_rounded,
           AppColors.textSecondary.withValues(alpha: 0.9),
         );
@@ -1977,6 +2007,7 @@ class _ProfilePhotoCircleSlotState extends State<_ProfilePhotoCircleSlot> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final hasImage = widget.base64Image != null && widget.base64Image!.isNotEmpty;
     Uint8List? bytes;
     if (hasImage) {
@@ -2051,7 +2082,7 @@ class _ProfilePhotoCircleSlotState extends State<_ProfilePhotoCircleSlot> {
                                   Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 12),
                                     child: Text(
-                                      'Toca para subir',
+                                      l10n.driverRegTapToUpload,
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         fontSize: 12,
@@ -2073,8 +2104,8 @@ class _ProfilePhotoCircleSlotState extends State<_ProfilePhotoCircleSlot> {
         const SizedBox(height: 12),
         Text(
           hasImage && bytes != null
-              ? 'Foto lista. Toca el círculo para cambiarla.'
-              : 'Asegúrate de que tu rostro esté centrado y con buena iluminación.',
+              ? l10n.driverRegProfilePhotoReadyHint
+              : l10n.driverRegProfilePhotoGuideHint,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 12.5,
@@ -2110,6 +2141,7 @@ class _PhotoSlotState extends State<_PhotoSlot> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AnimatedScale(
       scale: _pressed ? 0.985 : 1.0,
       duration: const Duration(milliseconds: 110),
@@ -2156,7 +2188,9 @@ class _PhotoSlotState extends State<_PhotoSlot> {
                       children: [
                         Text(widget.title, style: const TextStyle(fontWeight: FontWeight.w700)),
                         Text(
-                          widget.isSet ? 'Imagen lista' : 'Toca para subir',
+                          widget.isSet
+                              ? l10n.driverRegImageReady
+                              : l10n.driverRegTapToUpload,
                           style: TextStyle(
                             fontSize: 12,
                             color: widget.isSet ? AppColors.success : AppColors.textSecondary,
@@ -2215,6 +2249,7 @@ class _CarAngleCardState extends State<_CarAngleCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final preview = _decodePreview(widget.previewBase64);
     return AnimatedScale(
       scale: _pressed ? 0.98 : 1.0,
@@ -2281,7 +2316,7 @@ class _CarAngleCardState extends State<_CarAngleCard> {
                   Expanded(
                     child: Text(
                       preview != null
-                          ? 'Toca la tarjeta para reemplazar esta foto.'
+                          ? l10n.driverRegTapCardToReplacePhoto
                           : widget.hint,
                       style: const TextStyle(
                         fontSize: 11,
@@ -2293,7 +2328,9 @@ class _CarAngleCardState extends State<_CarAngleCard> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    preview != null ? 'Cambiar foto' : 'Tomar o elegir foto',
+                    preview != null
+                        ? l10n.driverRegChangePhoto
+                        : l10n.driverRegTakeOrChoosePhoto,
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,

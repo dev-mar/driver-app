@@ -8,6 +8,7 @@ import '../../core/router/app_router.dart';
 import '../../core/config/driver_backend_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_motion.dart';
+import '../../core/ui/texi_circular_avatar.dart';
 import '../../gen_l10n/app_localizations.dart';
 
 enum _ProfileLoadError { noSession, emptyResponse, badFormat }
@@ -408,29 +409,9 @@ class _PremiumProfileAvatar extends StatelessWidget {
       );
     }
 
-    return Container(
-      width: size + 6,
-      height: size + 6,
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: AppColors.surfaceCard,
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.8)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.32),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ClipOval(
-        child: Container(
-          color: AppColors.surface,
-          padding: const EdgeInsets.all(2),
-          child: ClipOval(child: inner()),
-        ),
-      ),
+    return TexiCircularAvatar.profileRing(
+      innerDiameter: size,
+      image: inner(),
     );
   }
 }

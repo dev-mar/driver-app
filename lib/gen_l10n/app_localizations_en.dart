@@ -198,6 +198,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter your number and password';
 
   @override
+  String get driverLoginCountryCodeHint => '+591';
+
+  @override
+  String get driverLoginPhoneHint => '7 123 4567';
+
+  @override
   String get driverLoginErrorGeneric => 'Could not sign in';
 
   @override
@@ -479,6 +485,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverTripNavigateDestination => 'Navigate to destination';
 
   @override
+  String get driverTripNavAssistedTitle => 'Assisted navigation';
+
+  @override
+  String get driverTripNavAssistedSubtitle =>
+      'Opens your maps or GPS app (Maps, Waze…)';
+
+  @override
   String get driverTripReactivate => 'Resume receiving rides';
 
   @override
@@ -652,4 +665,392 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverRegDoneGoLogin => 'Go to sign in';
+
+  @override
+  String get driverRegRetryLoadCountries => 'Retry loading countries';
+
+  @override
+  String get driverRegSectionOperationRegion => 'Operation region';
+
+  @override
+  String get driverRegFieldCountry => 'Country';
+
+  @override
+  String get driverRegValidationSelectCountry => 'Select country';
+
+  @override
+  String get driverRegFieldDepartment => 'Department';
+
+  @override
+  String get driverRegNoCoverageInCountry => 'No coverage in this country';
+
+  @override
+  String get driverRegValidationSelectDepartment => 'Select department';
+
+  @override
+  String get driverRegFieldLocality => 'Locality (province)';
+
+  @override
+  String get driverRegChooseDepartmentFirst => 'Choose a department';
+
+  @override
+  String get driverRegValidationSelectLocality => 'Select locality';
+
+  @override
+  String get driverRegSectionPersonalData => 'Personal data';
+
+  @override
+  String get driverRegFieldFirstName => 'First names';
+
+  @override
+  String get driverRegFieldLastName => 'Last names';
+
+  @override
+  String get driverRegFieldEmail => 'Email';
+
+  @override
+  String get driverRegHintOptional => 'Optional';
+
+  @override
+  String get driverRegValidationRequired => 'Required';
+
+  @override
+  String get driverRegValidationSelectOption => 'Select an option';
+
+  @override
+  String get driverRegSectionContact => 'Contact';
+
+  @override
+  String get driverRegFieldPhoneNumber => 'Phone number';
+
+  @override
+  String get driverRegHintLocalDigitsOnly => 'Local digits only';
+
+  @override
+  String get driverRegChooseCountryFirst => 'Choose country first';
+
+  @override
+  String get driverRegValidationIncompleteNumber => 'Incomplete number';
+
+  @override
+  String get driverRegSectionAddress => 'Address';
+
+  @override
+  String get driverRegFieldAddress => 'Home address';
+
+  @override
+  String get driverRegHintAddressReference => 'Street, area or reference';
+
+  @override
+  String get driverRegSectionPassword => 'Access password';
+
+  @override
+  String get driverRegHintMin8Chars => 'At least 8 characters';
+
+  @override
+  String get driverRegValidationMin8Chars => 'At least 8 characters';
+
+  @override
+  String get driverRegFieldConfirmPassword => 'Confirm password';
+
+  @override
+  String get driverRegIntroPersonal =>
+      'Provide real data aligned with your documents.';
+
+  @override
+  String get driverRegIntroIdentity =>
+      'Readable document and profile photo where you can be clearly identified: full face, no cap or dark glasses, no mask, no heavy shadows.';
+
+  @override
+  String get driverRegSectionIdentityDocument => 'Identity document';
+
+  @override
+  String get driverRegSubtitleIdentityDocument =>
+      'Number and expiration according to the document.';
+
+  @override
+  String get driverRegFieldDocumentNumber => 'Document number';
+
+  @override
+  String get driverRegFieldDocumentExpiry => 'Document expiration';
+
+  @override
+  String get driverRegSectionFrontBack => 'Front and back';
+
+  @override
+  String get driverRegSubtitleOneImagePerSide => 'One image for each side.';
+
+  @override
+  String get driverRegSectionProfilePhoto => 'Profile photo';
+
+  @override
+  String get driverRegSubtitleProfilePhoto =>
+      'To validate your identity: uncovered face, no cap, no glasses covering your eyes, good lighting.';
+
+  @override
+  String get driverRegIntroLicense =>
+      'Category, expiration, and clear photos of both sides of the license.';
+
+  @override
+  String get driverRegSectionCategoryValidity => 'Category and validity';
+
+  @override
+  String get driverRegSubtitleCategoryValidity =>
+      'License category and expiration date (YYYY-MM-DD format).';
+
+  @override
+  String get driverRegFieldCategory => 'Category';
+
+  @override
+  String get driverRegHintCategoryExample => 'Ex. B';
+
+  @override
+  String get driverRegValidationChooseCategory => 'Choose a category';
+
+  @override
+  String get driverRegFieldExpiry => 'Expiration';
+
+  @override
+  String get driverRegHintLicenseExpiryDate => 'Date when your license expires';
+
+  @override
+  String get driverRegValidationIndicateExpiryDate => 'Provide expiration date';
+
+  @override
+  String get driverRegSectionLicenseFrontBack => 'License — front and back';
+
+  @override
+  String get driverRegSectionActivateAccount => 'Activate your account';
+
+  @override
+  String get driverRegSubtitleReviewBeforeContinue =>
+      'Review your data before continuing.';
+
+  @override
+  String get driverRegSectionYourSummary => 'Your summary';
+
+  @override
+  String get driverRegSubtitleProfileWorkZone => 'Profile and work area.';
+
+  @override
+  String get driverRegFieldFullName => 'Full name';
+
+  @override
+  String get driverRegFieldServiceArea => 'Service area';
+
+  @override
+  String get driverRegIdentityLicenseRegistered =>
+      'Identity and license documents registered.';
+
+  @override
+  String get driverRegIntroVehicle =>
+      'Complete the data exactly as shown on your policy and plate; then upload photos of all four sides.';
+
+  @override
+  String get driverRegSectionVehicleData => 'Vehicle data';
+
+  @override
+  String get driverRegSubtitleVehicleData =>
+      'Brand, model, year and color (as in document or policy).';
+
+  @override
+  String get driverRegFieldBrand => 'Brand';
+
+  @override
+  String get driverRegHintBrandExample => 'Ex. Toyota';
+
+  @override
+  String get driverRegFieldModel => 'Model';
+
+  @override
+  String get driverRegHintModelExample => 'Ex. Corolla';
+
+  @override
+  String get driverRegFieldYear => 'Year';
+
+  @override
+  String get driverRegFieldColor => 'Color';
+
+  @override
+  String get driverRegHintTypeOrPickColor => 'Type or pick below';
+
+  @override
+  String get driverRegSectionPlateVin => 'Plate and chassis number (VIN)';
+
+  @override
+  String get driverRegSubtitlePlateUppercase => 'Plate is saved in uppercase.';
+
+  @override
+  String get driverRegFieldPlate => 'Plate';
+
+  @override
+  String get driverRegHintPlateExample => 'Ex. ABC1231';
+
+  @override
+  String get driverRegHelperUppercaseSaved => 'Saved in UPPERCASE';
+
+  @override
+  String get driverRegFieldVinChassis => 'VIN / chassis';
+
+  @override
+  String get driverRegHintVin17Chars => '17 alphanumeric characters';
+
+  @override
+  String get driverRegHelperVehicleDocumentReference =>
+      'As shown in vehicle card or document';
+
+  @override
+  String get driverRegSectionInsuranceOwnership => 'Insurance and ownership';
+
+  @override
+  String get driverRegSubtitleInsuranceOwnership =>
+      'Policy number and ownership title details or equivalent document.';
+
+  @override
+  String get driverRegFieldInsurancePolicyNumber => 'Insurance policy number';
+
+  @override
+  String get driverRegHintAsPolicy => 'As shown on active policy';
+
+  @override
+  String get driverRegFieldTitleDocData => 'Ownership title / document details';
+
+  @override
+  String get driverRegHintReferenceFromDocument =>
+      'Reference from your document';
+
+  @override
+  String get driverRegIntroVehiclePhotos =>
+      'One photo for each side of the car: front, rear, left side and right side. Good lighting and full vehicle in frame.';
+
+  @override
+  String get driverRegSectionVehicleViews => 'Vehicle views';
+
+  @override
+  String get driverRegSubtitleVehicleViews =>
+      'Tap each card to take or change photo; you\'ll see a preview once uploaded.';
+
+  @override
+  String get driverRegPhotoFrontTitle => 'Front';
+
+  @override
+  String get driverRegPhotoFrontHint =>
+      'Frame the front; show the plate when possible.';
+
+  @override
+  String get driverRegPhotoRearTitle => 'Rear';
+
+  @override
+  String get driverRegPhotoRearHint => 'Entire rear side of the vehicle.';
+
+  @override
+  String get driverRegPhotoLeftTitle => 'Left side';
+
+  @override
+  String get driverRegPhotoLeftHint => 'Side view, full left side.';
+
+  @override
+  String get driverRegPhotoRightTitle => 'Right side';
+
+  @override
+  String get driverRegPhotoRightHint => 'Side view, full right side.';
+
+  @override
+  String get driverRegActionActivate => 'Activate';
+
+  @override
+  String get driverRegActionFinish => 'Finish';
+
+  @override
+  String get driverRegActionContinue => 'Continue';
+
+  @override
+  String get driverRegActionBack => 'Back';
+
+  @override
+  String get driverRegImageReady => 'Image ready';
+
+  @override
+  String get driverRegTapToUpload => 'Tap to upload';
+
+  @override
+  String get driverRegDocFrontTitle => 'Front';
+
+  @override
+  String get driverRegDocFrontHint => 'Photo and main data.';
+
+  @override
+  String get driverRegDocBackTitle => 'Back';
+
+  @override
+  String get driverRegDocBackHint => 'Code, signature, or additional data.';
+
+  @override
+  String get driverRegLicenseFrontTitle => 'Front';
+
+  @override
+  String get driverRegLicenseFrontHint => 'Photo and categories.';
+
+  @override
+  String get driverRegLicenseBackTitle => 'Back';
+
+  @override
+  String get driverRegLicenseBackHint => 'Restrictions or notes.';
+
+  @override
+  String get driverRegProfilePhotoReadyHint =>
+      'Photo ready. Tap the circle to change it.';
+
+  @override
+  String get driverRegProfilePhotoGuideHint =>
+      'Make sure your face is centered and well lit.';
+
+  @override
+  String get driverRegTapCardToReplacePhoto =>
+      'Tap the card to replace this photo.';
+
+  @override
+  String get driverRegChangePhoto => 'Change photo';
+
+  @override
+  String get driverRegTakeOrChoosePhoto => 'Take or choose photo';
+
+  @override
+  String get driverRegColorBlack => 'Black';
+
+  @override
+  String get driverRegColorWhite => 'White';
+
+  @override
+  String get driverRegColorGray => 'Gray';
+
+  @override
+  String get driverRegColorSilver => 'Silver';
+
+  @override
+  String get driverRegColorRed => 'Red';
+
+  @override
+  String get driverRegColorBlue => 'Blue';
+
+  @override
+  String get driverRegColorGreen => 'Green';
+
+  @override
+  String get driverRegColorYellow => 'Yellow';
+
+  @override
+  String get driverRegColorOrange => 'Orange';
+
+  @override
+  String get driverRegColorViolet => 'Violet';
+
+  @override
+  String get driverRegColorBrown => 'Brown';
+
+  @override
+  String get driverRegColorBeige => 'Beige';
+
+  @override
+  String get driverRegColorGold => 'Gold';
 }

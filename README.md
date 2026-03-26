@@ -1,6 +1,10 @@
 # texi_driver_app
 
-A new Flutter project.
+App Flutter para conductores Texi.
+
+## Documentación para el equipo
+
+- **[Reglas de trabajo (i18n, UX, PRs)](docs/TEAM-WORKING-RULES.md)** — strings en `l10n`, tema, checklist y buenas prácticas al implementar nuevas pantallas.
 
 ## Getting Started
 
