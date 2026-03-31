@@ -214,6 +214,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverLoginRegisterCta => 'Register';
 
   @override
+  String get driverLoginRegisterBannerTitle => 'New driver?';
+
+  @override
+  String get driverLoginRegisterBannerSubtitle =>
+      'Create your account in minutes and start receiving trips with Texi.';
+
+  @override
   String get driverHomeTitle => 'Driver';
 
   @override
@@ -247,6 +254,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverHomeMiniConnecting => 'Connecting…';
 
   @override
+  String get driverHomeVehicleRegistrationBanner =>
+      'You still need to register your vehicle. Without a vehicle you cannot receive trips.';
+
+  @override
+  String get driverHomeVehicleRegistrationCta =>
+      'Complete vehicle registration';
+
+  @override
+  String get driverHomeCannotGoOnlineWithoutVehicle =>
+      'Register your vehicle before going online to receive trips.';
+
+  @override
   String get driverHomeMiniVehicleEmpty => 'Vehicle not registered yet';
 
   @override
@@ -256,6 +275,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverLogout => 'Sign out';
+
+  @override
+  String get driverHomeMenuAddVehicle => 'Add another vehicle';
 
   @override
   String get driverOnlineAuthTitle => 'Confirm your identity';
@@ -386,6 +408,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get driverOnlineErrorSocket =>
       'Could not connect to the server. Please try again.';
+
+  @override
+  String get driverOnlineErrorVehicleRequired =>
+      'You need a registered vehicle to connect. Complete vehicle registration or use “Add another vehicle” in the menu.';
 
   @override
   String get driverOnlineErrorUnknown =>
@@ -667,6 +693,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverRegDoneGoLogin => 'Go to sign in';
 
   @override
+  String get driverRegAddVehicleTitle => 'Add vehicle';
+
+  @override
+  String get driverRegAddVehicleDoneTitle => 'Vehicle registered';
+
+  @override
+  String get driverRegAddVehicleDoneBody =>
+      'Your vehicle details were saved. You can keep using the app as usual.';
+
+  @override
+  String get driverRegAddVehicleDoneCta => 'Back to home';
+
+  @override
+  String get driverRegResumeDoneTitle => 'Registration complete';
+
+  @override
+  String get driverRegResumeDoneBody =>
+      'You’re all set. You can now use the driver service.';
+
+  @override
+  String get driverRegResumeDoneCta => 'Go to home';
+
+  @override
   String get driverRegRetryLoadCountries => 'Retry loading countries';
 
   @override
@@ -852,6 +901,112 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get driverRegSubtitleVehicleData =>
       'Brand, model, year and color (as in document or policy).';
+
+  @override
+  String get driverRegSectionVehicleClassification => 'Vehicle classification';
+
+  @override
+  String get driverRegSubtitleVehicleClassification =>
+      'Type, category and allowed services from the catalog (required by the server).';
+
+  @override
+  String get driverRegFieldVehicleType => 'Vehicle type';
+
+  @override
+  String get driverRegFieldVehicleCategory => 'Category';
+
+  @override
+  String get driverRegFieldServiceTypes => 'Enabled services';
+
+  @override
+  String get driverRegFieldServiceType => 'Service type';
+
+  @override
+  String get driverRegCatalogRetry => 'Retry catalog';
+
+  @override
+  String get driverRegCatalogBrandModelTitle => 'Brand & model (catalog)';
+
+  @override
+  String get driverRegCatalogTransportStepTitle => '1. What will you drive?';
+
+  @override
+  String get driverRegCatalogModelLockedTitle =>
+      'Brand and model (from catalog)';
+
+  @override
+  String get driverRegCatalogModelLockedHint =>
+      'Taken from your selection above. Change brand or model in the catalog section if needed.';
+
+  @override
+  String get serviceTypeNameStandard => 'Standard';
+
+  @override
+  String get driverRegCatalogTransportCar => 'Car / utility';
+
+  @override
+  String get driverRegCatalogTransportMoto => 'Motorcycle';
+
+  @override
+  String get driverRegCatalogPickBrand => 'Brand';
+
+  @override
+  String get driverRegCatalogPickModel => 'Model';
+
+  @override
+  String get driverRegCatalogPickBrandFirst => 'Choose a brand first';
+
+  @override
+  String get driverRegCatalogTechnicalTitle => 'Technical catalogs (reference)';
+
+  @override
+  String get driverRegCatalogEmissionNorms => 'Emission standards';
+
+  @override
+  String get driverRegCatalogAxles => 'Axle configurations';
+
+  @override
+  String get driverRegCatalogBodyTypes => 'Body types';
+
+  @override
+  String get driverRegCatalogUnits => 'Measurement units';
+
+  @override
+  String get driverRegCatalogSourceFallback =>
+      'Offline fallback data (run DB migrations for the full server catalog).';
+
+  @override
+  String get driverRegCatalogSourceDatabase => 'Catalog from database';
+
+  @override
+  String get driverRegCatalogLoad => 'Load catalog';
+
+  @override
+  String get driverRegVehicleTypeNoCategories =>
+      'This type has no categories in the catalog. Try another type or contact support.';
+
+  @override
+  String get driverRegCategoryNoServices =>
+      'This category has no linked services in the catalog.';
+
+  @override
+  String get driverRegServiceTypeFallbackPrefix => 'Service ';
+
+  @override
+  String get driverRegSnackVehicleCatalogNotReady =>
+      'Wait for the vehicle catalog to load or tap retry.';
+
+  @override
+  String get driverRegCatalogNoServiceTypes =>
+      'No service types available. Try again later or contact support.';
+
+  @override
+  String get driverRegCatalogCompatEmptyUsesDefault =>
+      'The server returned an empty service list. You can continue: the default service type will be used. To fix the list, check public.service_types in the database or tap retry.';
+
+  @override
+  String get driverRegCatalogFallbackBanner =>
+      'Fallback catalog: technical lists may not match production. This notice disappears when the database is fully seeded.';
 
   @override
   String get driverRegFieldBrand => 'Brand';

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../core/config/driver_backend_config.dart';
 
 final driverLoginControllerProvider =
     StateNotifierProvider<DriverLoginController, DriverLoginState>((ref) {
@@ -19,10 +20,10 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
 
   static const _storage = FlutterSecureStorage();
 
-  // Base URL fija para el backend de autenticación de conductor.
+  // Base URL del backend unificado para autenticación de conductor.
   final Dio _dio = Dio(
     BaseOptions(
-      baseUrl: 'http://ec2-3-150-198-57.us-east-2.compute.amazonaws.com:8001',
+      baseUrl: DriverBackendConfig.baseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
       headers: {
@@ -43,7 +44,7 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
 
     try {
       final response = await _dio.post(
-        '/api/v1/auth/login',
+        '/api/v2/auth/login',
         data: {
           'brand': 'Texi Driver App',
           'ip': '0.0.0.0',

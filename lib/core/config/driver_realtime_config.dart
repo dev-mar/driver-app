@@ -1,15 +1,14 @@
+import 'driver_backend_config.dart';
+
 class DriverRealtimeConfig {
   DriverRealtimeConfig._();
 
-  /// URL base del backend de Socket.IO para conductor.
-  /// Debe ser la MISMA que usa el pasajero para websockets.
-  static const String socketUrl =
-      'https://bk-websockets-pre-prod.taxitexi.com';
+  /// Mismo origen que REST (`TEXI_BACKEND_BASE_URL`).
+  static String get socketUrl => DriverBackendConfig.baseUrl;
 
-  /// Path de Socket.IO (según contrato: solo '/socket.io/', sin /api/v1).
+  /// Path de Socket.IO (contrato: `/socket.io/`).
   static const String socketPath = '/socket.io/';
 
   /// Intervalo en segundos para enviar ubicación (respaldo; el stream usa distanceFilter).
   static const int locationUpdateSeconds = 5;
 }
-

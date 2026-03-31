@@ -23,7 +23,7 @@ class DriverRegistrationRepository {
   })  : _geoDio = geoDio ??
             Dio(
               BaseOptions(
-                baseUrl: DriverGeoBackendConfig.baseUrl,
+                baseUrl: DriverBackendConfig.baseUrl,
                 connectTimeout: const Duration(seconds: 20),
                 receiveTimeout: const Duration(seconds: 20),
                 headers: const {
@@ -34,7 +34,7 @@ class DriverRegistrationRepository {
         _usersDio = usersDio ??
             Dio(
               BaseOptions(
-                baseUrl: DriverUsersBackendConfig.baseUrl,
+                baseUrl: DriverBackendConfig.baseUrl,
                 connectTimeout: const Duration(seconds: 20),
                 receiveTimeout: const Duration(seconds: 60),
                 headers: const {
@@ -53,7 +53,7 @@ class DriverRegistrationRepository {
 
   Future<List<GeoCountry>> fetchCountries() async {
     final response = await _geoDio.get<Map<String, dynamic>>(
-      '/api/v1/geo/full-tree',
+      '/api/v2/geo/full-tree',
     );
     final data = response.data;
     if (data == null) throw DriverRegistrationException('Respuesta vacía (países)');
@@ -77,11 +77,40 @@ class DriverRegistrationRepository {
     return out;
   }
 
+  /// Categorías de licencia por país (`public.countries.id`).
+  Future<List<DriverLicenseCategory>> fetchLicenseCategories({required int countryId}) async {
+    final response = await _geoDio.get<Map<String, dynamic>>(
+      '/api/v2/geo/license-categories',
+      queryParameters: <String, dynamic>{'countryId': countryId},
+    );
+    final data = response.data;
+    if (data == null) {
+      throw DriverRegistrationException('Respuesta vacía (categorías de licencia)');
+    }
+    if (data['code']?.toString() != 'OK') {
+      throw DriverRegistrationException(
+        data['message']?.toString() ?? 'Error al cargar categorías de licencia',
+      );
+    }
+    final list = data['data'];
+    if (list is! List) {
+      throw DriverRegistrationException('Formato inválido de categorías de licencia');
+    }
+    final out = <DriverLicenseCategory>[];
+    for (final e in list) {
+      if (e is Map<String, dynamic>) {
+        final c = DriverLicenseCategory.fromApiJson(e);
+        if (c != null) out.add(c);
+      }
+    }
+    return out;
+  }
+
   /// [countryName] debe coincidir con el `name` del país (ej. "Bolivia").
   Future<List<GeoDepartment>> fetchDepartmentsForCountry(String countryName) async {
     final path = Uri.encodeComponent(countryName);
     final response = await _geoDio.get<Map<String, dynamic>>(
-      '/api/v1/geo/full-tree/$path',
+      '/api/v2/geo/full-tree/$path',
     );
     final data = response.data;
     if (data == null) {
@@ -132,13 +161,36 @@ class DriverRegistrationRepository {
     return t != null && t.isNotEmpty;
   }
 
+  Future<String> _requireBearerToken() async {
+    final token = await _storage.read(key: _tokenKey);
+    if (token == null || token.isEmpty) {
+      throw DriverRegistrationException(
+        'Sesión no disponible. Completá el paso anterior o reabrí el registro.',
+      );
+    }
+    return token;
+  }
+
   String _extractErrorMessage(dynamic data) {
     if (data is! Map) return 'Error del servidor';
     final msg = data['message']?.toString();
     final err = data['error'];
+    if (err is String && err.isNotEmpty) {
+      return msg != null && msg.isNotEmpty ? msg : err;
+    }
     if (err is Map) {
       final d = err['details']?.toString();
       if (d != null && d.isNotEmpty) return '$msg\n$d';
+      final em = err['message']?.toString();
+      if (em != null && em.isNotEmpty) return em;
+      final ec = err['code']?.toString();
+      if (ec != null && ec.isNotEmpty && msg != null && msg.isNotEmpty) {
+        return '$msg ($ec)';
+      }
+    }
+    final code = data['code']?.toString();
+    if (code != null && code.isNotEmpty && msg != null && msg.isNotEmpty) {
+      return '$msg ($code)';
     }
     return msg ?? 'Error del servidor';
   }
@@ -170,7 +222,7 @@ class DriverRegistrationRepository {
   Future<({String uuid, bool tokenSaved})> submitPersonalInfo(Map<String, dynamic> body) async {
     try {
       final response = await _usersDio.post<Map<String, dynamic>>(
-        '/api/v1/users/driver/personal-info',
+        '/api/v2/driver/registration/personal-info',
         data: body,
       );
       final data = response.data;
@@ -197,9 +249,24 @@ class DriverRegistrationRepository {
   /// Devuelve si en la respuesta vino un token guardado (sesión para vehículo).
   Future<bool> submitDocumentInfo(Map<String, dynamic> body) async {
     try {
+      final bearer = await _requireBearerToken();
+      final uuid = body['uuid']?.toString();
+      final docType = body['document_type'];
+      final idempotencyKey = ( uuid != null &&
+              uuid.isNotEmpty &&
+              docType != null)
+          ? 'app-doc-$uuid-$docType'
+          : null;
+      final headers = <String, dynamic>{
+        'Authorization': 'Bearer $bearer',
+        ...? (idempotencyKey != null
+            ? <String, dynamic>{'Idempotency-Key': idempotencyKey}
+            : null),
+      };
       final response = await _usersDio.post<Map<String, dynamic>>(
-        '/api/v1/users/driver/document-info',
+        '/api/v2/driver/documents',
         data: body,
+        options: Options(headers: headers),
       );
       final data = response.data;
       if (data == null) throw DriverRegistrationException('Respuesta vacía');
@@ -214,12 +281,16 @@ class DriverRegistrationRepository {
   }
 
   /// Activa / actualiza estado del usuario para permitir login tras documentación (licencia).
-  /// Debe llamarse **antes** de `POST /api/v1/auth/login` en el flujo de registro.
+  /// Debe llamarse **antes** de `POST /api/v2/auth/login` en el flujo de registro.
   Future<void> driverUpdateUserStatus({required String uuid}) async {
     try {
+      final bearer = await _requireBearerToken();
       final response = await _usersDio.put<Map<String, dynamic>>(
-        '/api/v1/users/driver/update-user',
+        '/api/v2/driver/registration/activate',
         data: <String, dynamic>{'uuid': uuid},
+        options: Options(
+          headers: <String, dynamic>{'Authorization': 'Bearer $bearer'},
+        ),
       );
       final data = response.data;
       if (data == null) throw DriverRegistrationException('Respuesta vacía');
@@ -232,6 +303,73 @@ class DriverRegistrationRepository {
     }
   }
 
+  /// Estado para reanudar registro (misma fuente que la app usa al cerrarse a mitad de flujo).
+  Future<DriverRegistrationStatusDto> fetchRegistrationStatus({String? uuid}) async {
+    final token = await _storage.read(key: _tokenKey);
+    if (token == null || token.isEmpty) {
+      throw DriverRegistrationException('Sesión no disponible.');
+    }
+    try {
+      final response = await _usersDio.get<Map<String, dynamic>>(
+        '/api/v2/driver/registration',
+        queryParameters: (uuid != null && uuid.isNotEmpty) ? <String, dynamic>{'uuid': uuid} : null,
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+        ),
+      );
+      final data = response.data;
+      if (data == null) throw DriverRegistrationException('Respuesta vacía (estado registro)');
+      if (data['success'] != true) {
+        throw DriverRegistrationException(_extractErrorMessage(data));
+      }
+      final raw = data['data'];
+      if (raw is! Map) {
+        throw DriverRegistrationException('Respuesta sin data (estado registro)');
+      }
+      return DriverRegistrationStatusDto.fromJson(Map<String, dynamic>.from(raw));
+    } on DioException catch (e) {
+      _logDioIfDebug('fetchRegistrationStatus', e);
+      throw DriverRegistrationException(_messageFromDioException(e));
+    }
+  }
+
+  /// Catálogo canónico (`vehicle_type` / `category` / servicios / marca-modelo). Requiere Bearer.
+  /// Origen: `GET /api/v2/vehicles/catalog`.
+  Future<VehicleCatalog> fetchVehicleCatalog() async {
+    final token = await _storage.read(key: _tokenKey);
+    if (token == null || token.isEmpty) {
+      throw DriverRegistrationException('Sesión no disponible. Inicia sesión de nuevo.');
+    }
+    try {
+      final response = await _usersDio.get<Map<String, dynamic>>(
+        '/api/v2/vehicles/catalog',
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+        ),
+      );
+      final data = response.data;
+      if (data == null) throw DriverRegistrationException('Respuesta vacía (catálogo vehículo)');
+      if (data['success'] != true) {
+        throw DriverRegistrationException(_extractErrorMessage(data));
+      }
+      final raw = data['data'];
+      if (raw is! Map) {
+        throw DriverRegistrationException('Respuesta sin data (catálogo vehículo)');
+      }
+      final inner = Map<String, dynamic>.from(raw);
+      final catalog = VehicleCatalog.fromJson(inner);
+      if (catalog == null) {
+        throw DriverRegistrationException('Formato inválido del catálogo de vehículos');
+      }
+      return catalog;
+    } on DioException catch (e) {
+      _logDioIfDebug('fetchVehicleCatalog', e);
+      throw DriverRegistrationException(_messageFromDioException(e));
+    }
+  }
+
+  /// Registro de vehículo canónico. Origen: `POST /api/v2/vehicles`.
+  /// Devuelve el UUID del activo (mismo valor en `public.vehicles.uuid` para fotos).
   Future<String> submitVehicle(Map<String, dynamic> body) async {
     final token = await _storage.read(key: _tokenKey);
     if (token == null || token.isEmpty) {
@@ -239,7 +377,7 @@ class DriverRegistrationRepository {
     }
     try {
       final response = await _usersDio.post<Map<String, dynamic>>(
-        '/api/v1/users/vehicle',
+        '/api/v2/vehicles',
         data: body,
         options: Options(
           headers: {'Authorization': 'Bearer $token'},
@@ -254,17 +392,20 @@ class DriverRegistrationRepository {
       if (inner is! Map) {
         throw DriverRegistrationException('Respuesta sin data (vehículo)');
       }
-      final carUuid = inner['car_uuid']?.toString();
-      if (carUuid == null || carUuid.isEmpty) {
-        throw DriverRegistrationException('No se recibió car_uuid');
+      final raw = Map<String, dynamic>.from(inner);
+      final id =
+          raw['vehicle_asset_id']?.toString() ?? raw['car_uuid']?.toString();
+      if (id == null || id.isEmpty) {
+        throw DriverRegistrationException('No se recibió vehicle_asset_id');
       }
-      return carUuid;
+      return id;
     } on DioException catch (e) {
       _logDioIfDebug('submitVehicle', e);
       throw DriverRegistrationException(_messageFromDioException(e));
     }
   }
 
+  /// Fotos del vehículo: `POST /api/v2/vehicles/images` (presign: `/api/v2/vehicles/media/presign`).
   Future<void> submitVehicleImages(Map<String, dynamic> body) async {
     final token = await _storage.read(key: _tokenKey);
     if (token == null || token.isEmpty) {
@@ -272,7 +413,7 @@ class DriverRegistrationRepository {
     }
     try {
       final response = await _usersDio.post<Map<String, dynamic>>(
-        '/api/v1/users/vehicle/images-car',
+        '/api/v2/vehicles/images',
         data: body,
         options: Options(
           headers: {'Authorization': 'Bearer $token'},

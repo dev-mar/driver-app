@@ -482,6 +482,18 @@ abstract class AppLocalizations {
   /// **'Register'**
   String get driverLoginRegisterCta;
 
+  /// No description provided for @driverLoginRegisterBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New driver?'**
+  String get driverLoginRegisterBannerTitle;
+
+  /// No description provided for @driverLoginRegisterBannerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your account in minutes and start receiving trips with Texi.'**
+  String get driverLoginRegisterBannerSubtitle;
+
   /// No description provided for @driverHomeTitle.
   ///
   /// In en, this message translates to:
@@ -542,6 +554,24 @@ abstract class AppLocalizations {
   /// **'Connecting…'**
   String get driverHomeMiniConnecting;
 
+  /// No description provided for @driverHomeVehicleRegistrationBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'You still need to register your vehicle. Without a vehicle you cannot receive trips.'**
+  String get driverHomeVehicleRegistrationBanner;
+
+  /// No description provided for @driverHomeVehicleRegistrationCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete vehicle registration'**
+  String get driverHomeVehicleRegistrationCta;
+
+  /// No description provided for @driverHomeCannotGoOnlineWithoutVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Register your vehicle before going online to receive trips.'**
+  String get driverHomeCannotGoOnlineWithoutVehicle;
+
   /// No description provided for @driverHomeMiniVehicleEmpty.
   ///
   /// In en, this message translates to:
@@ -559,6 +589,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign out'**
   String get driverLogout;
+
+  /// No description provided for @driverHomeMenuAddVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add another vehicle'**
+  String get driverHomeMenuAddVehicle;
 
   /// No description provided for @driverOnlineAuthTitle.
   ///
@@ -799,6 +835,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not connect to the server. Please try again.'**
   String get driverOnlineErrorSocket;
+
+  /// No description provided for @driverOnlineErrorVehicleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'You need a registered vehicle to connect. Complete vehicle registration or use “Add another vehicle” in the menu.'**
+  String get driverOnlineErrorVehicleRequired;
 
   /// No description provided for @driverOnlineErrorUnknown.
   ///
@@ -1286,6 +1328,48 @@ abstract class AppLocalizations {
   /// **'Go to sign in'**
   String get driverRegDoneGoLogin;
 
+  /// No description provided for @driverRegAddVehicleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add vehicle'**
+  String get driverRegAddVehicleTitle;
+
+  /// No description provided for @driverRegAddVehicleDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle registered'**
+  String get driverRegAddVehicleDoneTitle;
+
+  /// No description provided for @driverRegAddVehicleDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your vehicle details were saved. You can keep using the app as usual.'**
+  String get driverRegAddVehicleDoneBody;
+
+  /// No description provided for @driverRegAddVehicleDoneCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to home'**
+  String get driverRegAddVehicleDoneCta;
+
+  /// No description provided for @driverRegResumeDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration complete'**
+  String get driverRegResumeDoneTitle;
+
+  /// No description provided for @driverRegResumeDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You’re all set. You can now use the driver service.'**
+  String get driverRegResumeDoneBody;
+
+  /// No description provided for @driverRegResumeDoneCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to home'**
+  String get driverRegResumeDoneCta;
+
   /// No description provided for @driverRegRetryLoadCountries.
   ///
   /// In en, this message translates to:
@@ -1639,6 +1723,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Brand, model, year and color (as in document or policy).'**
   String get driverRegSubtitleVehicleData;
+
+  /// Section title: classification from GET /api/v2/vehicles/catalog.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle classification'**
+  String get driverRegSectionVehicleClassification;
+
+  /// Subtitle clarifying server catalog dependency.
+  ///
+  /// In en, this message translates to:
+  /// **'Type, category and allowed services from the catalog (required by the server).'**
+  String get driverRegSubtitleVehicleClassification;
+
+  /// Vehicle type dropdown label (fleet.vehicle_types).
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle type'**
+  String get driverRegFieldVehicleType;
+
+  /// Category dropdown label (fleet.vehicle_categories).
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get driverRegFieldVehicleCategory;
+
+  /// Heading for multi-select service type chips.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled services'**
+  String get driverRegFieldServiceTypes;
+
+  /// Single service dropdown label in compatibility_mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Service type'**
+  String get driverRegFieldServiceType;
+
+  /// Button after catalog load error.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry catalog'**
+  String get driverRegCatalogRetry;
+
+  /// No description provided for @driverRegCatalogBrandModelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand & model (catalog)'**
+  String get driverRegCatalogBrandModelTitle;
+
+  /// No description provided for @driverRegCatalogTransportStepTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'1. What will you drive?'**
+  String get driverRegCatalogTransportStepTitle;
+
+  /// No description provided for @driverRegCatalogModelLockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand and model (from catalog)'**
+  String get driverRegCatalogModelLockedTitle;
+
+  /// No description provided for @driverRegCatalogModelLockedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Taken from your selection above. Change brand or model in the catalog section if needed.'**
+  String get driverRegCatalogModelLockedHint;
+
+  /// No description provided for @serviceTypeNameStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard'**
+  String get serviceTypeNameStandard;
+
+  /// No description provided for @driverRegCatalogTransportCar.
+  ///
+  /// In en, this message translates to:
+  /// **'Car / utility'**
+  String get driverRegCatalogTransportCar;
+
+  /// No description provided for @driverRegCatalogTransportMoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Motorcycle'**
+  String get driverRegCatalogTransportMoto;
+
+  /// No description provided for @driverRegCatalogPickBrand.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand'**
+  String get driverRegCatalogPickBrand;
+
+  /// No description provided for @driverRegCatalogPickModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get driverRegCatalogPickModel;
+
+  /// No description provided for @driverRegCatalogPickBrandFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a brand first'**
+  String get driverRegCatalogPickBrandFirst;
+
+  /// No description provided for @driverRegCatalogTechnicalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical catalogs (reference)'**
+  String get driverRegCatalogTechnicalTitle;
+
+  /// No description provided for @driverRegCatalogEmissionNorms.
+  ///
+  /// In en, this message translates to:
+  /// **'Emission standards'**
+  String get driverRegCatalogEmissionNorms;
+
+  /// No description provided for @driverRegCatalogAxles.
+  ///
+  /// In en, this message translates to:
+  /// **'Axle configurations'**
+  String get driverRegCatalogAxles;
+
+  /// No description provided for @driverRegCatalogBodyTypes.
+  ///
+  /// In en, this message translates to:
+  /// **'Body types'**
+  String get driverRegCatalogBodyTypes;
+
+  /// No description provided for @driverRegCatalogUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurement units'**
+  String get driverRegCatalogUnits;
+
+  /// No description provided for @driverRegCatalogSourceFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline fallback data (run DB migrations for the full server catalog).'**
+  String get driverRegCatalogSourceFallback;
+
+  /// No description provided for @driverRegCatalogSourceDatabase.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog from database'**
+  String get driverRegCatalogSourceDatabase;
+
+  /// Button when catalog not loaded yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Load catalog'**
+  String get driverRegCatalogLoad;
+
+  /// Info if type has no categories from API.
+  ///
+  /// In en, this message translates to:
+  /// **'This type has no categories in the catalog. Try another type or contact support.'**
+  String get driverRegVehicleTypeNoCategories;
+
+  /// Info if category has no service_type_ids.
+  ///
+  /// In en, this message translates to:
+  /// **'This category has no linked services in the catalog.'**
+  String get driverRegCategoryNoServices;
+
+  /// Prefix if name missing from service_types list.
+  ///
+  /// In en, this message translates to:
+  /// **'Service '**
+  String get driverRegServiceTypeFallbackPrefix;
+
+  /// SnackBar when continuing before catalog ready.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for the vehicle catalog to load or tap retry.'**
+  String get driverRegSnackVehicleCatalogNotReady;
+
+  /// Empty state when compatibility_mode has no rows.
+  ///
+  /// In en, this message translates to:
+  /// **'No service types available. Try again later or contact support.'**
+  String get driverRegCatalogNoServiceTypes;
+
+  /// No description provided for @driverRegCatalogCompatEmptyUsesDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'The server returned an empty service list. You can continue: the default service type will be used. To fix the list, check public.service_types in the database or tap retry.'**
+  String get driverRegCatalogCompatEmptyUsesDefault;
+
+  /// Notice when catalog_source=fallback on GET /api/v2/vehicles/catalog.
+  ///
+  /// In en, this message translates to:
+  /// **'Fallback catalog: technical lists may not match production. This notice disappears when the database is fully seeded.'**
+  String get driverRegCatalogFallbackBanner;
 
   /// No description provided for @driverRegFieldBrand.
   ///

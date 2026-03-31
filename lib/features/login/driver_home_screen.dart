@@ -18,6 +18,7 @@ import '../../core/ui/texi_circular_avatar.dart';
 import '../../core/router/app_router.dart';
 import '../../core/config/locale_provider.dart';
 import '../../gen_l10n/app_localizations.dart';
+import '../session/driver_operational_profile.dart';
 import 'driver_realtime_controller.dart';
 import 'driver_active_trip_map.dart';
 import 'driver_login_controller.dart';
@@ -54,6 +55,9 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(driverOperationalProfileProvider);
+    });
     _homeListEntrance = AnimationController(
       vsync: this,
       duration: AppMotion.screenEntrance,
@@ -110,8 +114,29 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
 
   Future<void> _logout(BuildContext context) async {
     await ref.read(driverRealtimeProvider.notifier).setOnline(false);
+    ref.invalidate(driverOperationalProfileProvider);
     await ref.read(driverLoginControllerProvider.notifier).logout();
     if (context.mounted) context.go('/login');
+  }
+
+  /// Impide pasar a online si el perfil indica registro de vehículo pendiente.
+  Future<bool> _vehicleGateAllowsOnline() async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      final p = await ref.read(driverOperationalProfileProvider.future);
+      if (!p.needsVehicleRegistration) return true;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.driverHomeCannotGoOnlineWithoutVehicle),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return false;
+    } catch (_) {
+      return true;
+    }
   }
 
   Future<bool> _authenticateBeforeGoingOnline(BuildContext context) async {
@@ -373,13 +398,21 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     final bool shouldAttemptAutoReconnect =
         tripPendingRating != null || shouldIgnoreActiveTripRestore;
 
-    if (shouldAttemptAutoReconnect && !online && !connecting) {
+    final blockOnlineForTrips = ref
+        .watch(driverOperationalProfileProvider)
+        .maybeWhen(data: (p) => p.needsVehicleRegistration, orElse: () => false);
+
+    if (shouldAttemptAutoReconnect &&
+        !online &&
+        !connecting &&
+        !blockOnlineForTrips) {
       final reconnectTripId =
           tripPendingRating?.tripId ?? ignoreActiveTripRestoreTripId;
       if (reconnectTripId != null && _lastAutoReconnectTripId != reconnectTripId) {
         _lastAutoReconnectTripId = reconnectTripId;
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           if (!mounted) return;
+          if (!await _vehicleGateAllowsOnline()) return;
           await ref.read(driverRealtimeProvider.notifier).setOnline(true);
         });
       }
@@ -414,6 +447,9 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
       case 'SOCKET':
         errorMessage = l10n.driverOnlineErrorSocket;
         break;
+      case 'DRIVER_VEHICLE_REQUIRED':
+        errorMessage = l10n.driverOnlineErrorVehicleRequired;
+        break;
       case 'UNKNOWN':
         errorMessage = l10n.driverOnlineErrorUnknown;
         break;
@@ -433,12 +469,22 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
             icon: const Icon(Icons.more_vert_rounded),
             onSelected: (value) {
               if (value == 'profile') context.goNamed(AppRouter.profile);
+              if (value == 'add_vehicle') {
+                context.pushNamed(
+                  AppRouter.register,
+                  extra: {'addVehicleOnly': true},
+                );
+              }
               if (value == 'logout') _logout(context);
             },
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'profile',
                 child: Text(l10n.driverProfileMenu),
+              ),
+              PopupMenuItem(
+                value: 'add_vehicle',
+                child: Text(l10n.driverHomeMenuAddVehicle),
               ),
               PopupMenuItem(value: 'logout', child: Text(l10n.driverLogout)),
             ],
@@ -487,10 +533,13 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                   );
                 },
                 onReactivate: () {
-                  final notifier =
-                      ref.read(driverRealtimeProvider.notifier);
-                  notifier.clearActiveTrip();
-                  notifier.setOnline(true);
+                  unawaited(() async {
+                    final notifier =
+                        ref.read(driverRealtimeProvider.notifier);
+                    notifier.clearActiveTrip();
+                    if (!await _vehicleGateAllowsOnline()) return;
+                    await notifier.setOnline(true);
+                  }());
                 },
               ),
             )
@@ -503,6 +552,47 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+            if (blockOnlineForTrips) ...[
+              Material(
+                color: AppColors.primary.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(AppFoundation.radiusLg),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.directions_car_outlined,
+                              color: AppColors.primary, size: 22),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              l10n.driverHomeVehicleRegistrationBanner,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                height: 1.25,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      FilledButton(
+                        onPressed: () {
+                          ref.invalidate(driverOperationalProfileProvider);
+                          context.goNamed(AppRouter.register, extra: true);
+                        },
+                        child: Text(l10n.driverHomeVehicleRegistrationCta),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+            ],
             // Mini perfil: nombre, vehículo y valoración desde connection:ack + estado
             Container(
               padding: const EdgeInsets.all(16),
@@ -631,6 +721,8 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                             ? null
                             : (value) async {
                                 if (value && !online) {
+                                  if (!await _vehicleGateAllowsOnline()) return;
+                                  if (!context.mounted) return;
                                   final ok =
                                       await _authenticateBeforeGoingOnline(
                                     context,

@@ -68,7 +68,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
 
     final dio = Dio(
       BaseOptions(
-        baseUrl: DriverUsersBackendConfig.baseUrl,
+        baseUrl: DriverBackendConfig.baseUrl,
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 20),
         headers: <String, String>{
@@ -79,7 +79,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     );
 
     try {
-      final response = await dio.get<Map<String, dynamic>>('/api/v1/users/profile');
+      final response = await dio.get<Map<String, dynamic>>('/api/v2/driver/me-profile');
       final root = response.data;
       if (root == null) {
         throw _ProfileLoadError.emptyResponse;

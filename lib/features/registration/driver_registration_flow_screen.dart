@@ -10,9 +10,13 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_motion.dart';
 import '../../gen_l10n/app_localizations.dart';
 import '../login/driver_login_controller.dart';
+import '../session/driver_operational_profile.dart';
 import 'driver_registration_controller.dart';
 import 'driver_registration_models.dart';
 import 'registration_image_helper.dart';
+import 'widgets/driver_vehicle_catalog_section.dart';
+import 'widgets/registration_section_card.dart';
+import 'widgets/registration_soft_info_row.dart';
 
 /// Fuerza MAYÚSCULAS en el campo de placa (convención y coincidencia con documentación).
 class _UpperCasePlateFormatter extends TextInputFormatter {
@@ -30,7 +34,17 @@ class _UpperCasePlateFormatter extends TextInputFormatter {
 
 /// Flujo completo de registro de conductor (geo + usuario + documentos + vehículo).
 class DriverRegistrationFlowScreen extends ConsumerStatefulWidget {
-  const DriverRegistrationFlowScreen({super.key});
+  const DriverRegistrationFlowScreen({
+    super.key,
+    this.resumeAfterLogin = false,
+    this.addVehicleOnly = false,
+  });
+
+  /// Si es true: sesión ya iniciada; se consulta `registration-status` y se salta a la etapa faltante.
+  final bool resumeAfterLogin;
+
+  /// Desde home: alta de un vehículo adicional (pasos vehículo + fotos) con sesión activa.
+  final bool addVehicleOnly;
 
   @override
   ConsumerState<DriverRegistrationFlowScreen> createState() =>
@@ -90,6 +104,33 @@ class _DriverRegistrationFlowScreenState
         l10n.driverRegStepVehicle,
         l10n.driverRegStepPhotos,
       ];
+
+  List<String> _visibleStepLabels(AppLocalizations l10n) {
+    if (widget.addVehicleOnly) {
+      return [l10n.driverRegStepVehicle, l10n.driverRegStepPhotos];
+    }
+    return _stepLabels(l10n);
+  }
+
+  int _visibleStepIndex(DriverRegistrationFlowState flow) {
+    if (widget.addVehicleOnly) return (flow.step - 4).clamp(0, 1);
+    return flow.step;
+  }
+
+  void _clearVehicleOnlyFields() {
+    _vehicleBrandCtrl.clear();
+    _vehicleModelCtrl.clear();
+    _vehicleYearCtrl.text = '2020';
+    _vehicleColorCtrl.clear();
+    _vehicleVinCtrl.clear();
+    _vehiclePlateCtrl.clear();
+    _vehicleInsuranceCtrl.clear();
+    _vehicleTitleCtrl.clear();
+    _carFrontB64 = null;
+    _carBackB64 = null;
+    _carLeftB64 = null;
+    _carRightB64 = null;
+  }
 
   List<MapEntry<String, String>> _genderChoices(AppLocalizations l10n) => [
         MapEntry('Male', l10n.driverProfileGenderMale),
@@ -153,8 +194,23 @@ class _DriverRegistrationFlowScreenState
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(driverRegistrationFlowControllerProvider.notifier).loadCountries();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final notifier = ref.read(driverRegistrationFlowControllerProvider.notifier);
+      if (widget.addVehicleOnly) {
+        _clearVehicleOnlyFields();
+        notifier.resetFlow();
+        await notifier.applyAddVehicleOnlyFromSession();
+        if (!mounted) return;
+      } else if (widget.resumeAfterLogin) {
+        notifier.resetFlow();
+        final done = await notifier.applyResumeFromApi();
+        if (!mounted) return;
+        if (done) {
+          context.goNamed(AppRouter.home);
+        }
+      } else {
+        notifier.loadCountries();
+      }
     });
   }
 
@@ -362,6 +418,17 @@ class _DriverRegistrationFlowScreenState
         return;
       case 4:
         if (!_formVehicle.currentState!.validate()) return;
+        if (flow.vehicleCatalogLoading ||
+            flow.vehicleCatalogError != null ||
+            flow.vehicleCatalog == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.driverRegSnackVehicleCatalogNotReady),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
         final y = int.tryParse(_vehicleYearCtrl.text.trim());
         if (y == null) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -411,25 +478,59 @@ class _DriverRegistrationFlowScreenState
         final st = ref.read(driverRegistrationFlowControllerProvider);
         if (st.globalError != null) return;
         HapticFeedback.mediumImpact();
-        await showDialog<void>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            backgroundColor: AppColors.surfaceCard,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Text(l10n.driverRegDoneTitle),
-            content: Text(l10n.driverRegDoneBody),
-            actions: [
-              FilledButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  ref.read(driverLoginControllerProvider.notifier).logout();
-                  if (context.mounted) context.goNamed(AppRouter.login);
-                },
-                child: Text(l10n.driverRegDoneGoLogin),
+        if (widget.resumeAfterLogin || widget.addVehicleOnly) {
+          await showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: AppColors.surfaceCard,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text(
+                widget.addVehicleOnly
+                    ? l10n.driverRegAddVehicleDoneTitle
+                    : l10n.driverRegResumeDoneTitle,
               ),
-            ],
-          ),
-        );
+              content: Text(
+                widget.addVehicleOnly
+                    ? l10n.driverRegAddVehicleDoneBody
+                    : l10n.driverRegResumeDoneBody,
+              ),
+              actions: [
+                FilledButton(
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    ref.invalidate(driverOperationalProfileProvider);
+                    if (context.mounted) context.goNamed(AppRouter.home);
+                  },
+                  child: Text(
+                    widget.addVehicleOnly
+                        ? l10n.driverRegAddVehicleDoneCta
+                        : l10n.driverRegResumeDoneCta,
+                  ),
+                ),
+              ],
+            ),
+          );
+        } else {
+          await showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: AppColors.surfaceCard,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text(l10n.driverRegDoneTitle),
+              content: Text(l10n.driverRegDoneBody),
+              actions: [
+                FilledButton(
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    ref.read(driverLoginControllerProvider.notifier).logout();
+                    if (context.mounted) context.goNamed(AppRouter.login);
+                  },
+                  child: Text(l10n.driverRegDoneGoLogin),
+                ),
+              ],
+            ),
+          );
+        }
         return;
     }
   }
@@ -437,6 +538,10 @@ class _DriverRegistrationFlowScreenState
   void _goBack() {
     final flow = ref.read(driverRegistrationFlowControllerProvider);
     final notifier = ref.read(driverRegistrationFlowControllerProvider.notifier);
+    if (widget.addVehicleOnly && flow.step <= 4) {
+      context.goNamed(AppRouter.home);
+      return;
+    }
     if (flow.step <= 0) {
       context.goNamed(AppRouter.login);
       return;
@@ -449,12 +554,19 @@ class _DriverRegistrationFlowScreenState
     final l10n = AppLocalizations.of(context);
     final flow = ref.watch(driverRegistrationFlowControllerProvider);
     final notifier = ref.read(driverRegistrationFlowControllerProvider.notifier);
-    final steps = _stepLabels(l10n);
+    final steps = _visibleStepLabels(l10n);
+    final visIdx = _visibleStepIndex(flow);
+    final progressValue =
+        steps.isEmpty ? 0.0 : (visIdx + 1).clamp(1, steps.length) / steps.length;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(l10n.driverRegTitle),
+        title: Text(
+          widget.addVehicleOnly
+              ? l10n.driverRegAddVehicleTitle
+              : l10n.driverRegTitle,
+        ),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -469,7 +581,7 @@ class _DriverRegistrationFlowScreenState
                     children: [
                       Text(
                         l10n.driverRegStepCounter(
-                          (flow.step + 1).toString(),
+                          (visIdx + 1).toString(),
                           steps.length.toString(),
                         ),
                         style: const TextStyle(
@@ -479,7 +591,7 @@ class _DriverRegistrationFlowScreenState
                       ),
                       const Spacer(),
                       Text(
-                        steps[flow.step],
+                        steps[visIdx.clamp(0, steps.length - 1)],
                         style: const TextStyle(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w700,
@@ -492,7 +604,7 @@ class _DriverRegistrationFlowScreenState
                     borderRadius: BorderRadius.circular(999),
                     child: LinearProgressIndicator(
                       minHeight: 8,
-                      value: (flow.step + 1) / steps.length,
+                      value: progressValue,
                       backgroundColor: AppColors.border.withValues(alpha: 0.45),
                       valueColor:
                           const AlwaysStoppedAnimation<Color>(AppColors.primary),
@@ -549,7 +661,8 @@ class _DriverRegistrationFlowScreenState
             _RegistrationBottomBar(
               loading: flow.loading,
               step: flow.step,
-              lastStepIndex: steps.length - 1,
+              lastStepIndex: widget.addVehicleOnly ? 5 : _stepLabels(l10n).length - 1,
+              exitStepIndex: widget.addVehicleOnly ? 4 : 0,
               onBack: _goBack,
               onContinue: _onPrimaryAction,
             ),
@@ -570,7 +683,7 @@ class _DriverRegistrationFlowScreenState
       case 3:
         return _buildAccessBridgeStep(flow);
       case 4:
-        return _buildVehicleStep();
+        return _buildVehicleStep(flow, notifier);
       case 5:
         return _buildVehiclePhotosStep();
       default:
@@ -609,10 +722,10 @@ class _DriverRegistrationFlowScreenState
               ),
             if (flow.boliviaOnlyMessage != null) ...[
               const SizedBox(height: 8),
-              _SoftInfoRow(text: flow.boliviaOnlyMessage!),
+              RegistrationSoftInfoRow(text: flow.boliviaOnlyMessage!),
             ],
             const SizedBox(height: 12),
-            _RegistrationSectionCard(
+            RegistrationSectionCard(
               title: l10n.driverRegSectionOperationRegion,
               icon: Icons.public_rounded,
               children: [
@@ -705,7 +818,7 @@ class _DriverRegistrationFlowScreenState
               ],
             ),
             const SizedBox(height: 14),
-            _RegistrationSectionCard(
+            RegistrationSectionCard(
               title: l10n.driverRegSectionPersonalData,
               icon: Icons.person_outline_rounded,
               children: [
@@ -766,7 +879,7 @@ class _DriverRegistrationFlowScreenState
               ],
             ),
             const SizedBox(height: 14),
-            _RegistrationSectionCard(
+            RegistrationSectionCard(
               title: l10n.driverRegSectionContact,
               icon: Icons.phone_android_rounded,
               children: [
@@ -821,7 +934,7 @@ class _DriverRegistrationFlowScreenState
               ],
             ),
             const SizedBox(height: 14),
-            _RegistrationSectionCard(
+            RegistrationSectionCard(
               title: l10n.driverRegSectionAddress,
               icon: Icons.home_work_outlined,
               children: [
@@ -839,7 +952,7 @@ class _DriverRegistrationFlowScreenState
               ],
             ),
             const SizedBox(height: 14),
-            _RegistrationSectionCard(
+            RegistrationSectionCard(
               title: l10n.driverRegSectionPassword,
               icon: Icons.lock_outline_rounded,
               children: [
@@ -880,7 +993,7 @@ class _DriverRegistrationFlowScreenState
           children: [
             _StepIntroBanner(message: l10n.driverRegIntroIdentity),
             const SizedBox(height: 14),
-            _RegistrationSectionCard(
+            RegistrationSectionCard(
               title: l10n.driverRegSectionIdentityDocument,
               icon: Icons.perm_identity_rounded,
               subtitle: l10n.driverRegSubtitleIdentityDocument,
@@ -910,7 +1023,7 @@ class _DriverRegistrationFlowScreenState
               ],
             ),
             const SizedBox(height: 14),
-            _RegistrationSectionCard(
+            RegistrationSectionCard(
               title: l10n.driverRegSectionFrontBack,
               icon: Icons.chrome_reader_mode_outlined,
               subtitle: l10n.driverRegSubtitleOneImagePerSide,
@@ -935,7 +1048,7 @@ class _DriverRegistrationFlowScreenState
               ],
             ),
             const SizedBox(height: 14),
-            _RegistrationSectionCard(
+            RegistrationSectionCard(
               title: l10n.driverRegSectionProfilePhoto,
               icon: Icons.face_retouching_natural,
               subtitle: l10n.driverRegSubtitleProfilePhoto,
@@ -957,6 +1070,10 @@ class _DriverRegistrationFlowScreenState
 
   Widget _buildLicenseStep() {
     final l10n = AppLocalizations.of(context);
+    final flow = ref.watch(driverRegistrationFlowControllerProvider);
+    final licenseItems = flow.licenseCategories.isEmpty
+        ? DriverLicenseCategory.legacyBoliviaFallback
+        : flow.licenseCategories;
     return Theme(
       data: _registrationInputTheme(context),
       child: Form(
@@ -966,19 +1083,21 @@ class _DriverRegistrationFlowScreenState
           children: [
             _StepIntroBanner(message: l10n.driverRegIntroLicense),
             const SizedBox(height: 14),
-            _RegistrationSectionCard(
+            RegistrationSectionCard(
               title: l10n.driverRegSectionCategoryValidity,
               icon: Icons.category_outlined,
               subtitle: l10n.driverRegSubtitleCategoryValidity,
               children: [
                 DropdownButtonFormField<DriverLicenseCategory>(
-                  key: ValueKey<int?>(_licenseCategory?.id),
+                  key: ValueKey<String>(
+                    'lic-cat-${licenseItems.map((e) => e.id).join('-')}-${_licenseCategory?.id ?? 0}',
+                  ),
                   initialValue: _licenseCategory,
                   decoration: InputDecoration(
                     labelText: l10n.driverRegFieldCategory,
                     hintText: l10n.driverRegHintCategoryExample,
                   ),
-                  items: DriverLicenseCategory.all
+                  items: licenseItems
                       .map(
                         (c) => DropdownMenuItem(
                           value: c,
@@ -1009,7 +1128,7 @@ class _DriverRegistrationFlowScreenState
               ],
             ),
             const SizedBox(height: 14),
-            _RegistrationSectionCard(
+            RegistrationSectionCard(
               title: l10n.driverRegSectionLicenseFrontBack,
               icon: Icons.chrome_reader_mode_outlined,
               subtitle: l10n.driverRegSubtitleOneImagePerSide,
@@ -1058,7 +1177,7 @@ class _DriverRegistrationFlowScreenState
           subtitle: l10n.driverRegSubtitleReviewBeforeContinue,
         ),
         const SizedBox(height: 14),
-        _RegistrationSectionCard(
+        RegistrationSectionCard(
           title: l10n.driverRegSectionYourSummary,
           icon: Icons.fact_check_outlined,
           subtitle: l10n.driverRegSubtitleProfileWorkZone,
@@ -1099,8 +1218,12 @@ class _DriverRegistrationFlowScreenState
     );
   }
 
-  Widget _buildVehicleStep() {
+  Widget _buildVehicleStep(
+    DriverRegistrationFlowState flow,
+    DriverRegistrationFlowController notifier,
+  ) {
     final l10n = AppLocalizations.of(context);
+
     return Theme(
       data: _registrationInputTheme(context),
       child: Form(
@@ -1110,31 +1233,62 @@ class _DriverRegistrationFlowScreenState
           children: [
             _StepIntroBanner(message: l10n.driverRegIntroVehicle),
             const SizedBox(height: 14),
-            _RegistrationSectionCard(
+            DriverVehicleCatalogSection(
+              l10n: l10n,
+              loading: flow.vehicleCatalogLoading,
+              errorMessage: flow.vehicleCatalogError,
+              catalog: flow.vehicleCatalog,
+              selectedVehicleTypeId: flow.selectedVehicleTypeId,
+              selectedVehicleCategoryId: flow.selectedVehicleCategoryId,
+              selectedEnabledServiceTypeIds: flow.selectedEnabledServiceTypeIds,
+              compatSelectedServiceTypeId: flow.compatSelectedServiceTypeId,
+              catalogTransportMode: flow.catalogTransportMode,
+              catalogManufacturerId: flow.catalogManufacturerId,
+              catalogVehicleModelId: flow.catalogVehicleModelId,
+              onReloadCatalog: notifier.loadVehicleCatalog,
+              onSelectVehicleType: notifier.selectVehicleCatalogType,
+              onSelectVehicleCategory: notifier.selectVehicleCatalogCategory,
+              onToggleEnabledServiceType: notifier.toggleVehicleCatalogServiceType,
+              onSelectCompatServiceType: notifier.selectCompatVehicleServiceType,
+              onSetCatalogTransportMode: notifier.setCatalogTransportMode,
+              onSetCatalogManufacturer: notifier.setCatalogManufacturerId,
+              onSetCatalogVehicleModel: notifier.setCatalogVehicleModelId,
+              onPickCatalogModel: (entry, manufacturerName) {
+                setState(() {
+                  _vehicleBrandCtrl.text = manufacturerName;
+                  _vehicleModelCtrl.text = entry.name;
+                  final y = entry.modelYearEnd ?? entry.modelYearStart;
+                  if (y != null) _vehicleYearCtrl.text = '$y';
+                });
+              },
+            ),
+            const SizedBox(height: 14),
+            RegistrationSectionCard(
               title: l10n.driverRegSectionVehicleData,
               icon: Icons.label_outline_rounded,
-              subtitle: l10n.driverRegSubtitleVehicleData,
               children: [
-                TextFormField(
-                  controller: _vehicleBrandCtrl,
-                  decoration: InputDecoration(
-                    labelText: l10n.driverRegFieldBrand,
-                    hintText: l10n.driverRegHintBrandExample,
+                if (flow.catalogVehicleModelId == null) ...[
+                  TextFormField(
+                    controller: _vehicleBrandCtrl,
+                    decoration: InputDecoration(
+                      labelText: l10n.driverRegFieldBrand,
+                      hintText: l10n.driverRegHintBrandExample,
+                    ),
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                   ),
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: _vehicleModelCtrl,
-                  decoration: InputDecoration(
-                    labelText: l10n.driverRegFieldModel,
-                    hintText: l10n.driverRegHintModelExample,
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _vehicleModelCtrl,
+                    decoration: InputDecoration(
+                      labelText: l10n.driverRegFieldModel,
+                      hintText: l10n.driverRegHintModelExample,
+                    ),
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                   ),
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
-                ),
-                const SizedBox(height: 10),
+                  const SizedBox(height: 10),
+                ],
                 TextFormField(
                   controller: _vehicleYearCtrl,
                   decoration: InputDecoration(labelText: l10n.driverRegFieldYear),
@@ -1176,7 +1330,7 @@ class _DriverRegistrationFlowScreenState
               ],
             ),
             const SizedBox(height: 14),
-            _RegistrationSectionCard(
+            RegistrationSectionCard(
               title: l10n.driverRegSectionPlateVin,
               icon: Icons.pin_outlined,
               subtitle: l10n.driverRegSubtitlePlateUppercase,
@@ -1209,7 +1363,7 @@ class _DriverRegistrationFlowScreenState
               ],
             ),
             const SizedBox(height: 14),
-            _RegistrationSectionCard(
+            RegistrationSectionCard(
               title: l10n.driverRegSectionInsuranceOwnership,
               icon: Icons.description_outlined,
               subtitle: l10n.driverRegSubtitleInsuranceOwnership,
@@ -1248,7 +1402,7 @@ class _DriverRegistrationFlowScreenState
       children: [
         _StepIntroBanner(message: l10n.driverRegIntroVehiclePhotos),
         const SizedBox(height: 14),
-        _RegistrationSectionCard(
+        RegistrationSectionCard(
           title: l10n.driverRegSectionVehicleViews,
           icon: Icons.grid_view_rounded,
           subtitle: l10n.driverRegSubtitleVehicleViews,
@@ -1342,6 +1496,7 @@ class _RegistrationBottomBar extends StatelessWidget {
     required this.loading,
     required this.step,
     required this.lastStepIndex,
+    this.exitStepIndex = 0,
     required this.onBack,
     required this.onContinue,
   });
@@ -1349,13 +1504,15 @@ class _RegistrationBottomBar extends StatelessWidget {
   final bool loading;
   final int step;
   final int lastStepIndex;
+  /// Paso en el que "Atrás" se comporta como salida (cancelar) del flujo.
+  final int exitStepIndex;
   final VoidCallback onBack;
   final VoidCallback onContinue;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final isFirst = step == 0;
+    final isFirst = step == exitStepIndex;
     final isLast = step == lastStepIndex;
     final isActivateStep = step == 3;
     final primaryLabel = isActivateStep
@@ -1498,33 +1655,6 @@ class _StepIntroBanner extends StatelessWidget {
   }
 }
 
-class _SoftInfoRow extends StatelessWidget {
-  const _SoftInfoRow({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(Icons.info_outline_rounded, size: 18, color: AppColors.textSecondary.withValues(alpha: 0.9)),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-              height: 1.35,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 /// Estado positivo breve (sin tecnicismos).
 class _SoftStatusChip extends StatelessWidget {
   const _SoftStatusChip({
@@ -1561,82 +1691,6 @@ class _SoftStatusChip extends StatelessWidget {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RegistrationSectionCard extends StatelessWidget {
-  const _RegistrationSectionCard({
-    required this.title,
-    required this.icon,
-    required this.children,
-    this.subtitle,
-  });
-
-  final String title;
-  final IconData icon;
-  final String? subtitle;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: AppColors.primary, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              subtitle!,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12.5,
-                height: 1.38,
-              ),
-            ),
-          ],
-          const SizedBox(height: 14),
-          ...children,
         ],
       ),
     );

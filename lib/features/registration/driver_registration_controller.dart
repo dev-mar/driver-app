@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../login/driver_login_controller.dart';
@@ -26,6 +28,18 @@ class DriverRegistrationFlowState {
     this.identityFaceImageB64,
     this.boliviaOnlyMessage,
     this.registrationTokenSaved = false,
+    this.selectedCountryId,
+    this.licenseCategories = const [],
+    this.vehicleCatalog,
+    this.vehicleCatalogLoading = false,
+    this.vehicleCatalogError,
+    this.selectedVehicleTypeId,
+    this.selectedVehicleCategoryId,
+    this.selectedEnabledServiceTypeIds = const [],
+    this.compatSelectedServiceTypeId,
+    this.catalogTransportMode,
+    this.catalogManufacturerId,
+    this.catalogVehicleModelId,
   });
 
   /// 0 personal+geo, 1 documento identidad, 2 licencia, 3 login bridge, 4 vehículo, 5 fotos
@@ -45,7 +59,7 @@ class DriverRegistrationFlowState {
   final String? userUuid;
   final String? carUuid;
 
-  /// Foto de perfil (misma Base64 que `face_image` en documento de identidad), reutilizada en licencia.
+  /// Foto de perfil / `face_image` solo para documento de identidad (`document_type` 1). No se envía en licencia.
   final String? identityFaceImageB64;
 
   /// Si el país no es Bolivia, mensaje informativo (cobertura geo).
@@ -53,6 +67,27 @@ class DriverRegistrationFlowState {
 
   /// True si algún `POST` de registro guardó `driver_token` (sesión antes del vehículo).
   final bool registrationTokenSaved;
+
+  /// `public.countries.id` del país seleccionado (geo).
+  final int? selectedCountryId;
+
+  /// Categorías de licencia desde `GET .../license-categories` (vacío si aún no aplica).
+  final List<DriverLicenseCategory> licenseCategories;
+
+  /// Tras login; guía tipo/categoría/servicios (`GET /api/v2/vehicles/catalog`).
+  final VehicleCatalog? vehicleCatalog;
+  final bool vehicleCatalogLoading;
+  final String? vehicleCatalogError;
+  final int? selectedVehicleTypeId;
+  final int? selectedVehicleCategoryId;
+  final List<int> selectedEnabledServiceTypeIds;
+  /// En `compatibility_mode`: un solo `service_type_id` del listado `service_types`.
+  final int? compatSelectedServiceTypeId;
+
+  /// `road_vehicle` | `motorcycle` — filtra marca/modelo del catálogo extendido.
+  final String? catalogTransportMode;
+  final int? catalogManufacturerId;
+  final int? catalogVehicleModelId;
 
   DriverRegistrationFlowState copyWith({
     int? step,
@@ -70,13 +105,29 @@ class DriverRegistrationFlowState {
     String? identityFaceImageB64,
     String? boliviaOnlyMessage,
     bool? registrationTokenSaved,
+    int? selectedCountryId,
+    List<DriverLicenseCategory>? licenseCategories,
+    VehicleCatalog? vehicleCatalog,
+    bool? vehicleCatalogLoading,
+    String? vehicleCatalogError,
+    int? selectedVehicleTypeId,
+    int? selectedVehicleCategoryId,
+    List<int>? selectedEnabledServiceTypeIds,
+    int? compatSelectedServiceTypeId,
+    String? catalogTransportMode,
+    int? catalogManufacturerId,
+    int? catalogVehicleModelId,
+    bool clearCatalogModelPicks = false,
+    bool clearCatalogVehicleModelId = false,
     bool clearGlobalError = false,
+    bool clearVehicleCatalogError = false,
     bool clearBoliviaMessage = false,
     bool clearDepartments = false,
     bool clearLocality = false,
     bool clearDepartmentName = false,
     bool clearPhoneCode = false,
     bool clearCountryName = false,
+    bool clearLicenseCategories = false,
   }) {
     return DriverRegistrationFlowState(
       step: step ?? this.step,
@@ -101,6 +152,28 @@ class DriverRegistrationFlowState {
       boliviaOnlyMessage:
           clearBoliviaMessage ? null : (boliviaOnlyMessage ?? this.boliviaOnlyMessage),
       registrationTokenSaved: registrationTokenSaved ?? this.registrationTokenSaved,
+      selectedCountryId: clearCountryName ? null : (selectedCountryId ?? this.selectedCountryId),
+      licenseCategories: clearCountryName || clearLicenseCategories
+          ? const []
+          : (licenseCategories ?? this.licenseCategories),
+      vehicleCatalog: vehicleCatalog ?? this.vehicleCatalog,
+      vehicleCatalogLoading: vehicleCatalogLoading ?? this.vehicleCatalogLoading,
+      vehicleCatalogError:
+          clearVehicleCatalogError ? null : (vehicleCatalogError ?? this.vehicleCatalogError),
+      selectedVehicleTypeId: selectedVehicleTypeId ?? this.selectedVehicleTypeId,
+      selectedVehicleCategoryId:
+          selectedVehicleCategoryId ?? this.selectedVehicleCategoryId,
+      selectedEnabledServiceTypeIds:
+          selectedEnabledServiceTypeIds ?? this.selectedEnabledServiceTypeIds,
+      compatSelectedServiceTypeId:
+          compatSelectedServiceTypeId ?? this.compatSelectedServiceTypeId,
+      catalogTransportMode: catalogTransportMode ?? this.catalogTransportMode,
+      catalogManufacturerId: clearCatalogModelPicks
+          ? null
+          : (catalogManufacturerId ?? this.catalogManufacturerId),
+      catalogVehicleModelId: clearCatalogModelPicks || clearCatalogVehicleModelId
+          ? null
+          : (catalogVehicleModelId ?? this.catalogVehicleModelId),
     );
   }
 
@@ -122,9 +195,283 @@ class DriverRegistrationFlowController
     state = state.copyWith(clearGlobalError: true);
   }
 
+  /// Reinicia el flujo (p. ej. antes de reanudar con datos del servidor).
+  void resetFlow() {
+    state = const DriverRegistrationFlowState();
+  }
+
+  /// Flujo solo vehículo (sesión ya activa, ej. conductor con vehículos que agrega otro).
+  Future<void> applyAddVehicleOnlyFromSession() async {
+    state = state.copyWith(loading: true, clearGlobalError: true);
+    try {
+      final has = await _repo.hasDriverToken();
+      if (!has) {
+        state = state.copyWith(
+          loading: false,
+          globalError:
+              'Iniciá sesión para registrar un vehículo.',
+        );
+        return;
+      }
+      state = state.copyWith(
+        loading: false,
+        step: 4,
+        registrationTokenSaved: true,
+        carUuid: null,
+        clearGlobalError: true,
+      );
+      await loadVehicleCatalog();
+    } catch (e) {
+      state = state.copyWith(
+        loading: false,
+        globalError: e.toString().replaceFirst('DriverRegistrationException: ', ''),
+      );
+    }
+  }
+
+  /// `true` = registro ya completo según servidor (ir al home).
+  Future<bool> applyResumeFromApi() async {
+    state = state.copyWith(loading: true, clearGlobalError: true);
+    try {
+      final st = await _repo.fetchRegistrationStatus();
+      if (st.phase == 'complete') {
+        state = state.copyWith(loading: false);
+        return true;
+      }
+      final step = st.suggestedClientStep;
+      state = state.copyWith(
+        loading: false,
+        userUuid: st.uuid.isNotEmpty ? st.uuid : state.userUuid,
+        step: step,
+        registrationTokenSaved: true,
+      );
+      unawaited(loadCountries());
+      if (step >= 4) {
+        await loadVehicleCatalog();
+      }
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        loading: false,
+        globalError: e.toString().replaceFirst('DriverRegistrationException: ', ''),
+      );
+      return false;
+    }
+  }
+
+  Future<void> loadVehicleCatalog() async {
+    state = state.copyWith(
+      vehicleCatalogLoading: true,
+      clearVehicleCatalogError: true,
+      clearGlobalError: true,
+    );
+    try {
+      final cat = await _repo.fetchVehicleCatalog();
+      if (cat.compatibilityMode) {
+        final sid = cat.serviceTypes.isNotEmpty ? cat.serviceTypes.first.id : 1;
+        state = state.copyWith(
+          vehicleCatalogLoading: false,
+          vehicleCatalog: cat,
+          selectedVehicleTypeId: null,
+          selectedVehicleCategoryId: null,
+          selectedEnabledServiceTypeIds: const [],
+          compatSelectedServiceTypeId: sid,
+        );
+      } else if (cat.vehicleTypes.isEmpty) {
+        state = state.copyWith(
+          vehicleCatalogLoading: false,
+          vehicleCatalog: cat,
+          selectedVehicleTypeId: null,
+          selectedVehicleCategoryId: null,
+          selectedEnabledServiceTypeIds: const [],
+          compatSelectedServiceTypeId: null,
+        );
+      } else {
+        final tid = cat.vehicleTypes.first.id;
+        final cats = cat.categoriesForType(tid);
+        if (cats.isEmpty) {
+          state = state.copyWith(
+            vehicleCatalogLoading: false,
+            vehicleCatalog: cat,
+            selectedVehicleTypeId: tid,
+            selectedVehicleCategoryId: null,
+            selectedEnabledServiceTypeIds: const [],
+            compatSelectedServiceTypeId: null,
+          );
+        } else {
+          final c0 = cats.first;
+          state = state.copyWith(
+            vehicleCatalogLoading: false,
+            vehicleCatalog: cat,
+            selectedVehicleTypeId: tid,
+            selectedVehicleCategoryId: c0.id,
+            selectedEnabledServiceTypeIds: List<int>.from(c0.serviceTypeIds),
+            compatSelectedServiceTypeId: null,
+          );
+        }
+      }
+      if (cat.catalogExtensionsAvailable) {
+        setCatalogTransportMode('road_vehicle');
+      }
+    } catch (e) {
+      state = state.copyWith(
+        vehicleCatalogLoading: false,
+        vehicleCatalogError:
+            e.toString().replaceFirst('DriverRegistrationException: ', ''),
+      );
+    }
+  }
+
+  VehicleCatalogVehicleType? _vehicleTypeForTransportMode(
+    VehicleCatalog cat,
+    String mode,
+  ) {
+    final m = mode.toLowerCase();
+    if (m == 'motorcycle') {
+      for (final t in cat.vehicleTypes) {
+        final c = t.code.toLowerCase();
+        if (c == 'two_wheeler' || c == 'motorcycle') return t;
+      }
+      for (final t in cat.vehicleTypes) {
+        final l = t.label.toLowerCase();
+        if (l.contains('dos ruedas') || l.contains('motocicleta')) return t;
+      }
+    } else {
+      for (final t in cat.vehicleTypes) {
+        final c = t.code.toLowerCase();
+        if (c == 'light_motor_vehicle' || c == 'car' || c == 'passenger_car') {
+          return t;
+        }
+      }
+      for (final t in cat.vehicleTypes) {
+        if (t.code.toLowerCase() != 'two_wheeler') return t;
+      }
+    }
+    return cat.vehicleTypes.isNotEmpty ? cat.vehicleTypes.first : null;
+  }
+
+  VehicleCatalogCategory? _defaultCategoryForTypeAndMode(
+    VehicleCatalog cat,
+    int vehicleTypeId,
+    String mode,
+  ) {
+    final cats = cat.categoriesForType(vehicleTypeId);
+    if (cats.isEmpty) return null;
+    final m = mode.toLowerCase();
+    if (m == 'motorcycle') {
+      for (final c in cats) {
+        final code = c.code.toLowerCase();
+        if (code == 'motorbike_taxi' ||
+            code.contains('motorbike') ||
+            code.contains('moto')) {
+          return c;
+        }
+      }
+      return cats.first;
+    }
+    for (final c in cats) {
+      final code = c.code.toLowerCase();
+      if (code == 'sedan_taxi' || code == 'economy_comfort') return c;
+    }
+    for (final c in cats) {
+      if (!c.code.toLowerCase().contains('motorbike') &&
+          !c.code.toLowerCase().contains('moto')) {
+        return c;
+      }
+    }
+    return cats.first;
+  }
+
+  /// Filtra marca/modelo (catálogo DB) y alinea tipo/categoría según `fleet.*` (p. ej. two_wheeler).
+  void setCatalogTransportMode(String mode) {
+    final cat = state.vehicleCatalog;
+    if (cat == null || !cat.catalogExtensionsAvailable) return;
+    var vtId = state.selectedVehicleTypeId;
+    var catId = state.selectedVehicleCategoryId;
+    var stIds = List<int>.from(state.selectedEnabledServiceTypeIds);
+    if (!cat.compatibilityMode) {
+      final vt = _vehicleTypeForTransportMode(cat, mode);
+      if (vt != null) {
+        vtId = vt.id;
+        final pick = _defaultCategoryForTypeAndMode(cat, vt.id, mode);
+        catId = pick?.id;
+        stIds = pick != null ? List<int>.from(pick.serviceTypeIds) : const [];
+      }
+    }
+    state = state.copyWith(
+      catalogTransportMode: mode,
+      clearCatalogModelPicks: true,
+      selectedVehicleTypeId: vtId,
+      selectedVehicleCategoryId: catId,
+      selectedEnabledServiceTypeIds: stIds,
+    );
+  }
+
+  void setCatalogManufacturerId(int? id) {
+    state = state.copyWith(
+      catalogManufacturerId: id,
+      clearCatalogVehicleModelId: true,
+    );
+  }
+
+  void setCatalogVehicleModelId(int? id) {
+    state = state.copyWith(catalogVehicleModelId: id);
+  }
+
+  void selectVehicleCatalogType(int typeId) {
+    final cat = state.vehicleCatalog;
+    if (cat == null || cat.compatibilityMode) return;
+    final cats = cat.categoriesForType(typeId);
+    final c0 = cats.isNotEmpty ? cats.first : null;
+    state = state.copyWith(
+      clearCatalogModelPicks: true,
+      selectedVehicleTypeId: typeId,
+      selectedVehicleCategoryId: c0?.id,
+      selectedEnabledServiceTypeIds:
+          c0 != null ? List<int>.from(c0.serviceTypeIds) : const [],
+    );
+  }
+
+  void selectVehicleCatalogCategory(int categoryId) {
+    final cat = state.vehicleCatalog;
+    if (cat == null || cat.compatibilityMode) return;
+    final c = cat.categoryById(categoryId);
+    if (c == null) return;
+    state = state.copyWith(
+      selectedVehicleCategoryId: categoryId,
+      selectedEnabledServiceTypeIds: List<int>.from(c.serviceTypeIds),
+    );
+  }
+
+  void toggleVehicleCatalogServiceType(int serviceTypeId) {
+    final cat = state.vehicleCatalog;
+    if (cat == null || cat.compatibilityMode) return;
+    final allowed = cat.categoryById(state.selectedVehicleCategoryId)?.serviceTypeIds ?? const [];
+    if (!allowed.contains(serviceTypeId)) return;
+    final cur = List<int>.from(state.selectedEnabledServiceTypeIds);
+    final had = cur.contains(serviceTypeId);
+    if (had) {
+      cur.remove(serviceTypeId);
+    } else {
+      cur.add(serviceTypeId);
+    }
+    state = state.copyWith(selectedEnabledServiceTypeIds: cur);
+  }
+
+  void selectCompatVehicleServiceType(int serviceTypeId) {
+    state = state.copyWith(compatSelectedServiceTypeId: serviceTypeId);
+  }
+
   String? _phoneCodeForCountryName(String countryName) {
     for (final c in state.countries) {
       if (c.name == countryName) return c.phoneCode;
+    }
+    return null;
+  }
+
+  int? _countryIdForName(String countryName) {
+    for (final c in state.countries) {
+      if (c.name == countryName) return c.id;
     }
     return null;
   }
@@ -157,10 +504,14 @@ class DriverRegistrationFlowController
 
     final phoneCode = _phoneCodeForCountryName(name);
     final isBo = name.toLowerCase().trim() == 'bolivia';
+    final countryId = _countryIdForName(name);
+
     if (!isBo) {
       state = state.copyWith(
         selectedCountryName: name,
         selectedCountryPhoneCode: phoneCode,
+        selectedCountryId: countryId,
+        licenseCategories: const [],
         clearDepartments: true,
         clearLocality: true,
         clearDepartmentName: true,
@@ -173,17 +524,35 @@ class DriverRegistrationFlowController
     state = state.copyWith(
       selectedCountryName: name,
       selectedCountryPhoneCode: phoneCode,
+      selectedCountryId: countryId,
       clearBoliviaMessage: true,
       clearLocality: true,
       clearDepartmentName: true,
+      clearLicenseCategories: true,
       loading: true,
       clearGlobalError: true,
     );
     try {
       final depts = await _repo.fetchDepartmentsForCountry(name);
+      var licenseCats = <DriverLicenseCategory>[];
+      if (countryId != null) {
+        try {
+          licenseCats = await _repo.fetchLicenseCategories(countryId: countryId);
+        } catch (_) {
+          licenseCats = List<DriverLicenseCategory>.from(
+            DriverLicenseCategory.legacyBoliviaFallback,
+          );
+        }
+      }
+      if (licenseCats.isEmpty) {
+        licenseCats = List<DriverLicenseCategory>.from(
+          DriverLicenseCategory.legacyBoliviaFallback,
+        );
+      }
       state = state.copyWith(
         loading: false,
         departments: depts,
+        licenseCategories: licenseCats,
         clearDepartments: false,
       );
     } catch (e) {
@@ -191,6 +560,9 @@ class DriverRegistrationFlowController
         loading: false,
         clearDepartments: true,
         clearDepartmentName: true,
+        licenseCategories: List<DriverLicenseCategory>.from(
+          DriverLicenseCategory.legacyBoliviaFallback,
+        ),
         globalError: e.toString().replaceFirst('DriverRegistrationException: ', ''),
       );
     }
@@ -279,7 +651,7 @@ class DriverRegistrationFlowController
   }) async {
     state = state.copyWith(loading: true, clearGlobalError: true);
     try {
-      final tok = await _repo.submitDocumentInfo({
+      final payload = <String, dynamic>{
         'uuid': uuid,
         'document_type': 1,
         'document_number': documentNumber,
@@ -287,7 +659,12 @@ class DriverRegistrationFlowController
         'back_document': backB64,
         'face_image': faceB64,
         'expire_date': expireDateIso,
-      });
+      };
+      final cid = state.selectedCountryId;
+      if (cid != null) {
+        payload['country_id'] = cid;
+      }
+      final tok = await _repo.submitDocumentInfo(payload);
       state = state.copyWith(
         loading: false,
         step: 2,
@@ -311,26 +688,20 @@ class DriverRegistrationFlowController
     required String expireDateIso,
   }) async {
     state = state.copyWith(loading: true, clearGlobalError: true);
-    final faceB64 = state.identityFaceImageB64;
-    if (faceB64 == null || faceB64.isEmpty) {
-      state = state.copyWith(
-        loading: false,
-        globalError:
-            'No se encontró la foto de perfil del paso de documento de identidad. '
-            'Volvé a ese paso o reiniciá el registro.',
-      );
-      return;
-    }
     try {
-      final tok = await _repo.submitDocumentInfo({
+      final payload = <String, dynamic>{
         'uuid': uuid,
         'document_type': licenseCategoryTypeId,
         'document_number': documentNumber,
         'front_document': frontB64,
         'back_document': backB64,
-        'face_image': faceB64,
         'expire_date': expireDateIso,
-      });
+      };
+      final cid = state.selectedCountryId;
+      if (cid != null) {
+        payload['country_id'] = cid;
+      }
+      final tok = await _repo.submitDocumentInfo(payload);
       state = state.copyWith(
         loading: false,
         step: 3,
@@ -392,6 +763,7 @@ class DriverRegistrationFlowController
     }
 
     state = state.copyWith(loading: false, step: 4);
+    await loadVehicleCatalog();
   }
 
   /// El backend suele devolver este texto cuando bloquea login hasta terminar el alta.
@@ -423,18 +795,98 @@ class DriverRegistrationFlowController
     required String titleDeed,
     required String vin,
   }) async {
-    state = state.copyWith(loading: true, clearGlobalError: true);
+      state = state.copyWith(loading: true, clearGlobalError: true);
     try {
-      final carUuid = await _repo.submitVehicle({
+      final vcat = state.vehicleCatalog;
+      if (vcat == null || state.vehicleCatalogLoading) {
+        state = state.copyWith(
+          loading: false,
+          globalError: 'Esperá a que cargue el catálogo del vehículo o reintentá.',
+        );
+        return;
+      }
+      if (vcat.compatibilityMode) {
+        state = state.copyWith(
+          loading: false,
+          globalError: 'El catálogo del servidor no incluye tipo/categoría de vehículo. '
+              'Verificá migraciones fleet en backend o contactá soporte.',
+        );
+        return;
+      }
+      final countryId = state.selectedCountryId;
+      if (countryId == null) {
+        state = state.copyWith(
+          loading: false,
+          globalError: 'Falta el país del registro (paso personal). Volvé atrás y completá el país.',
+        );
+        return;
+      }
+      final tid = state.selectedVehicleTypeId;
+      final cid = state.selectedVehicleCategoryId;
+      final enabled = state.selectedEnabledServiceTypeIds;
+      if (tid == null || cid == null || enabled.isEmpty) {
+        state = state.copyWith(
+          loading: false,
+          globalError: 'Completá tipo de vehículo, categoría y al menos un servicio.',
+        );
+        return;
+      }
+      final category = vcat.categoryById(cid);
+      if (category == null || category.serviceTypeIds.isEmpty) {
+        state = state.copyWith(
+          loading: false,
+          globalError: 'La categoría elegida no tiene servicios habilitados. Elegí otra.',
+        );
+        return;
+      }
+      for (final e in enabled) {
+        if (!category.serviceTypeIds.contains(e)) {
+          state = state.copyWith(
+            loading: false,
+            globalError: 'Hay un servicio seleccionado que no aplica a la categoría.',
+          );
+          return;
+        }
+      }
+      final codes = <String>[];
+      for (final e in enabled) {
+        final c = vcat.serviceTypeCodeFor(e);
+        if (c == null) {
+          state = state.copyWith(
+            loading: false,
+            globalError: 'El catálogo no trae código de servicio para el ID $e. Reintentá o actualizá la app.',
+          );
+          return;
+        }
+        if (!codes.contains(c)) codes.add(c);
+      }
+      final validFrom = DateTime.now().toIso8601String().split('T').first;
+      final body = <String, dynamic>{
+        'vehicle_type_id': tid,
+        'vehicle_category_id': cid,
+        'enabled_service_codes': codes,
+        'registration': <String, dynamic>{
+          'country_id': countryId,
+          'plate_number': licensePlate,
+          'valid_from': validFrom,
+        },
+        'model_year': year,
         'brand': brand,
-        'color': color,
-        'insurance_policy': insurancePolicy,
-        'license_plate': licensePlate,
         'model': model,
-        'tittle_deed': titleDeed,
-        'vin': vin,
-        'year': year,
-      });
+        'metadata': <String, dynamic>{
+          'color': color,
+          'insurance_policy': insurancePolicy,
+          'tittle_deed': titleDeed,
+        },
+      };
+      if (vin.trim().isNotEmpty) {
+        body['vin'] = vin.trim();
+      }
+      final mfr = state.catalogManufacturerId;
+      final mdl = state.catalogVehicleModelId;
+      if (mfr != null) body['manufacturer_id'] = mfr;
+      if (mdl != null) body['model_id'] = mdl;
+      final carUuid = await _repo.submitVehicle(body);
       state = state.copyWith(loading: false, carUuid: carUuid, step: 5);
     } catch (e) {
       state = state.copyWith(
@@ -454,12 +906,28 @@ class DriverRegistrationFlowController
     state = state.copyWith(loading: true, clearGlobalError: true);
     try {
       await _repo.submitVehicleImages({
-        'car_id': carId,
+        'vehicle_asset_id': carId,
         'cars': [
-          {'image': frontB64, 'image_name': 'front_view.jpg'},
-          {'image': backB64, 'image_name': 'back_view.jpg'},
-          {'image': leftB64, 'image_name': 'left_side_view.jpg'},
-          {'image': rightB64, 'image_name': 'rigth_side_view.jpg'},
+          {
+            'image': frontB64,
+            'image_name': 'front_view.jpg',
+            'purpose': 'vehicle_front',
+          },
+          {
+            'image': backB64,
+            'image_name': 'back_view.jpg',
+            'purpose': 'vehicle_back',
+          },
+          {
+            'image': leftB64,
+            'image_name': 'left_side_view.jpg',
+            'purpose': 'vehicle_left',
+          },
+          {
+            'image': rightB64,
+            'image_name': 'rigth_side_view.jpg',
+            'purpose': 'vehicle_right',
+          },
         ],
       });
       state = state.copyWith(loading: false);

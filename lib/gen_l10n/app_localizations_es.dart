@@ -216,6 +216,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverLoginRegisterCta => 'Registrarme';
 
   @override
+  String get driverLoginRegisterBannerTitle => '¿Nuevo conductor?';
+
+  @override
+  String get driverLoginRegisterBannerSubtitle =>
+      'Crear cuenta solo toma unos minutos. Empezá a recibir viajes con Texi.';
+
+  @override
   String get driverHomeTitle => 'Conductor';
 
   @override
@@ -249,6 +256,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverHomeMiniConnecting => 'Conectando…';
 
   @override
+  String get driverHomeVehicleRegistrationBanner =>
+      'Falta registrar tu vehículo. Sin vehículo no podés recibir viajes.';
+
+  @override
+  String get driverHomeVehicleRegistrationCta => 'Completar datos del vehículo';
+
+  @override
+  String get driverHomeCannotGoOnlineWithoutVehicle =>
+      'Registrá tu vehículo para poder conectarte y recibir viajes.';
+
+  @override
   String get driverHomeMiniVehicleEmpty => 'Sin vehículo registrado';
 
   @override
@@ -258,6 +276,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverLogout => 'Cerrar sesión';
+
+  @override
+  String get driverHomeMenuAddVehicle => 'Agregar otro vehículo';
 
   @override
   String get driverOnlineAuthTitle => 'Confirma tu identidad';
@@ -390,6 +411,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get driverOnlineErrorSocket =>
       'No se pudo conectar al servidor. Intenta de nuevo.';
+
+  @override
+  String get driverOnlineErrorVehicleRequired =>
+      'Necesitás tener un vehículo registrado para conectarte. Completá el registro del vehículo o usá “Agregar otro vehículo” en el menú.';
 
   @override
   String get driverOnlineErrorUnknown =>
@@ -672,6 +697,29 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverRegDoneGoLogin => 'Ir a iniciar sesión';
 
   @override
+  String get driverRegAddVehicleTitle => 'Agregar vehículo';
+
+  @override
+  String get driverRegAddVehicleDoneTitle => 'Vehículo registrado';
+
+  @override
+  String get driverRegAddVehicleDoneBody =>
+      'Los datos del vehículo quedaron guardados. Podés seguir usando la app con normalidad.';
+
+  @override
+  String get driverRegAddVehicleDoneCta => 'Volver al inicio';
+
+  @override
+  String get driverRegResumeDoneTitle => 'Registro completado';
+
+  @override
+  String get driverRegResumeDoneBody =>
+      '¡Listo! Ya podés usar el servicio como conductor.';
+
+  @override
+  String get driverRegResumeDoneCta => 'Ir al inicio';
+
+  @override
   String get driverRegRetryLoadCountries => 'Reintentar cargar países';
 
   @override
@@ -859,6 +907,115 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get driverRegSubtitleVehicleData =>
       'Marca, modelo, año y color (como en el documento o póliza).';
+
+  @override
+  String get driverRegSectionVehicleClassification =>
+      'Clasificación del vehículo';
+
+  @override
+  String get driverRegSubtitleVehicleClassification =>
+      'Tipo, categoría y servicios permitidos según el catálogo (requerido por el servidor).';
+
+  @override
+  String get driverRegFieldVehicleType => 'Tipo de vehículo';
+
+  @override
+  String get driverRegFieldVehicleCategory => 'Categoría';
+
+  @override
+  String get driverRegFieldServiceTypes => 'Servicios habilitados';
+
+  @override
+  String get driverRegFieldServiceType => 'Tipo de servicio';
+
+  @override
+  String get driverRegCatalogRetry => 'Reintentar catálogo';
+
+  @override
+  String get driverRegCatalogBrandModelTitle => 'Marca y modelo (catálogo)';
+
+  @override
+  String get driverRegCatalogTransportStepTitle =>
+      '1. ¿Qué tipo de unidad usás?';
+
+  @override
+  String get driverRegCatalogModelLockedTitle =>
+      'Marca y modelo (desde catálogo)';
+
+  @override
+  String get driverRegCatalogModelLockedHint =>
+      'Tomado de tu selección arriba. Cambiá marca o modelo en la sección del catálogo si hace falta.';
+
+  @override
+  String get serviceTypeNameStandard => 'Estándar';
+
+  @override
+  String get driverRegCatalogTransportCar => 'Auto / utilitario';
+
+  @override
+  String get driverRegCatalogTransportMoto => 'Motocicleta';
+
+  @override
+  String get driverRegCatalogPickBrand => 'Marca';
+
+  @override
+  String get driverRegCatalogPickModel => 'Modelo';
+
+  @override
+  String get driverRegCatalogPickBrandFirst => 'Elegí primero la marca';
+
+  @override
+  String get driverRegCatalogTechnicalTitle =>
+      'Catálogos técnicos (referencia)';
+
+  @override
+  String get driverRegCatalogEmissionNorms => 'Normas de emisiones';
+
+  @override
+  String get driverRegCatalogAxles => 'Configuración de ejes';
+
+  @override
+  String get driverRegCatalogBodyTypes => 'Tipos de carrocería';
+
+  @override
+  String get driverRegCatalogUnits => 'Unidades de medida';
+
+  @override
+  String get driverRegCatalogSourceFallback =>
+      'Datos locales de respaldo (ejecutá migraciones para el catálogo completo en servidor).';
+
+  @override
+  String get driverRegCatalogSourceDatabase => 'Catálogo desde base de datos';
+
+  @override
+  String get driverRegCatalogLoad => 'Cargar catálogo';
+
+  @override
+  String get driverRegVehicleTypeNoCategories =>
+      'Este tipo no tiene categorías en el catálogo. Probá con otro tipo o contactá soporte.';
+
+  @override
+  String get driverRegCategoryNoServices =>
+      'Esta categoría no tiene servicios asociados en el catálogo.';
+
+  @override
+  String get driverRegServiceTypeFallbackPrefix => 'Servicio ';
+
+  @override
+  String get driverRegSnackVehicleCatalogNotReady =>
+      'Esperá a que cargue el catálogo del vehículo o tocá reintentar.';
+
+  @override
+  String get driverRegCatalogNoServiceTypes =>
+      'No hay tipos de servicio disponibles. Reintentá más tarde o contactá soporte.';
+
+  @override
+  String get driverRegCatalogCompatEmptyUsesDefault =>
+      'El servidor devolvió el catálogo vacío (sin tipos de servicio). Podés continuar: se usará el servicio predeterminado. Si querés ver la lista, revisá public.service_types en la base o tocá reintentar.';
+
+  @override
+  String get driverRegCatalogFallbackBanner =>
+      'Catálogo de respaldo: las listas técnicas pueden no coincidir con producción. Cuando la base esté completa, desaparecerá este aviso.';
 
   @override
   String get driverRegFieldBrand => 'Marca';

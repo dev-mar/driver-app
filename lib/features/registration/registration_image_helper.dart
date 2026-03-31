@@ -1,15 +1,16 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../gen_l10n/app_localizations.dart';
 
-/// Selecciona imagen (cámara o galería) y devuelve Base64 sin prefijo `data:`.
+/// Alineado con backend `IMAGE_NORMALIZE_MAX_EDGE_PX` (~2048): compresión JPEG sin EXIF.
 Future<String?> pickImageAsBase64(
   BuildContext context, {
   int maxBytes = 900 * 1024,
-  int imageQuality = 65,
-  double maxWidth = 1600,
+  int imageQuality = 72,
+  double maxWidth = 2048,
 }) async {
   final l10n = AppLocalizations.of(context);
   final source = await showModalBottomSheet<ImageSource>(
@@ -42,11 +43,22 @@ Future<String?> pickImageAsBase64(
   try {
     final xfile = await picker.pickImage(
       source: source,
-      imageQuality: imageQuality,
-      maxWidth: maxWidth,
+      imageQuality: 92,
+      maxWidth: maxWidth * 1.5,
     );
     if (xfile == null) return null;
-    final bytes = await xfile.readAsBytes();
+    final path = xfile.path;
+    final edge = maxWidth.round().clamp(640, 4096);
+    final compressed = await FlutterImageCompress.compressWithFile(
+      path,
+      quality: imageQuality.clamp(50, 95),
+      minWidth: edge,
+      minHeight: edge,
+      format: CompressFormat.jpeg,
+      keepExif: false,
+    );
+
+    final bytes = compressed ?? await xfile.readAsBytes();
     if (!context.mounted) return null;
     if (bytes.lengthInBytes > maxBytes) {
       ScaffoldMessenger.of(context).showSnackBar(

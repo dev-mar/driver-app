@@ -20,7 +20,8 @@ final driverRealtimeProvider =
 class DriverRealtimeState {
   final bool online;
   final bool connecting;
-  /// Código de error simple para i18n (NO_INTERNET, NO_GPS, NO_TOKEN, SOCKET, UNKNOWN).
+  /// Código de error simple para i18n (NO_INTERNET, NO_GPS, NO_TOKEN, SOCKET,
+  /// DRIVER_VEHICLE_REQUIRED, UNKNOWN).
   final String? errorCode;
   /// Ofertas de viaje pendientes (trip:offer) que el conductor puede aceptar/rechazar.
   final List<DriverTripOffer> pendingOffers;
@@ -181,6 +182,14 @@ class DriverRealtimeState {
   final lng = map[lngKey];
   if (lat is num && lng is num) return (lat.toDouble(), lng.toDouble());
   return (null, null);
+}
+
+String _socketConnectErrorToCode(dynamic data) {
+  final s = data?.toString() ?? '';
+  if (s.contains('DRIVER_VEHICLE_REQUIRED')) {
+    return 'DRIVER_VEHICLE_REQUIRED';
+  }
+  return 'SOCKET';
 }
 
 (double?, double?) _parseLatLngFromMap(dynamic o) {
@@ -349,13 +358,17 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       socket.onConnectError((data) {
         debugPrint('[DRIVER_RT] onConnectError recibido. data=$data');
         if (!completer.isCompleted) {
-          completer.completeError(const _RealtimeException('SOCKET'));
+          completer.completeError(
+            _RealtimeException(_socketConnectErrorToCode(data)),
+          );
         }
       });
       socket.onError((data) {
         debugPrint('[DRIVER_RT] onError recibido en socket. data=$data');
         if (!completer.isCompleted) {
-          completer.completeError(const _RealtimeException('SOCKET'));
+          completer.completeError(
+            _RealtimeException(_socketConnectErrorToCode(data)),
+          );
         }
       });
       socket.on('driver:availability_ack', (data) {

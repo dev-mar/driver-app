@@ -46,7 +46,7 @@ class AppRouter {
       final hasToken = await _hasStoredToken();
       final location = state.matchedLocation;
       if (location == '/login' && hasToken) return '/home';
-      if (location == '/register' && hasToken) return '/home';
+      // Con token se permite /register para reanudar (p. ej. solo vehículo) sin cerrar sesión.
       if (location == '/home' && !hasToken) return '/login';
       if (location == '/profile' && !hasToken) return '/login';
       return null;
@@ -60,7 +60,22 @@ class AppRouter {
       GoRoute(
         path: '/register',
         name: register,
-        builder: (context, state) => const DriverRegistrationFlowScreen(),
+        builder: (context, state) {
+          final extra = state.extra;
+          var resumeAfterLogin = false;
+          var addVehicleOnly = false;
+          if (extra is bool && extra) {
+            resumeAfterLogin = true;
+          } else if (extra is Map) {
+            final m = Map<String, dynamic>.from(extra);
+            if (m['resumeAfterLogin'] == true) resumeAfterLogin = true;
+            if (m['addVehicleOnly'] == true) addVehicleOnly = true;
+          }
+          return DriverRegistrationFlowScreen(
+            resumeAfterLogin: resumeAfterLogin,
+            addVehicleOnly: addVehicleOnly,
+          );
+        },
       ),
       GoRoute(
         path: '/home',
