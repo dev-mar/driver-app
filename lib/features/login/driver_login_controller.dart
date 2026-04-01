@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core/notifications/driver_push_token_service.dart';
 import '../../core/config/driver_backend_config.dart';
 import '../../core/session/driver_internal_tools_gate.dart';
+import '../../core/session/driver_registration_resume_gate.dart';
 
 final driverLoginControllerProvider =
     StateNotifierProvider<DriverLoginController, DriverLoginState>((ref) {
@@ -83,6 +84,7 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
         key: DriverInternalToolsGate.storageKeyLoginPhone,
         value: fullPhone,
       );
+      DriverRegistrationResumeGate.invalidate();
       DriverPushTokenService.instance.syncTokenIfPossible();
       return true;
     } on DioException catch (e) {
@@ -116,6 +118,7 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
             key: DriverInternalToolsGate.storageKeyLoginPhone,
             value: fullPhone,
           );
+          DriverRegistrationResumeGate.invalidate();
           DriverPushTokenService.instance.syncTokenIfPossible();
           return true;
         }
@@ -126,6 +129,7 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
 
   /// Cierra sesión: borra el token. Navegar a /login después con GoRouter.
   Future<void> logout() async {
+    DriverRegistrationResumeGate.invalidate();
     await _storage.delete(key: 'driver_token');
     await _storage.delete(key: DriverInternalToolsGate.storageKeyLoginPhone);
     state = DriverLoginState();

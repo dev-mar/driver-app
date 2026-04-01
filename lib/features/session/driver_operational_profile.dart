@@ -11,6 +11,9 @@ class DriverOperationalProfile {
     required this.needsVehicleRegistration,
     required this.canOperateAsDriver,
     required this.registrationPhase,
+    required this.needsResumeRegistration,
+    this.registrationFlowPhase = '',
+    this.suggestedClientStep,
     this.registrationCountryId,
   });
 
@@ -18,6 +21,15 @@ class DriverOperationalProfile {
   final bool needsVehicleRegistration;
   final bool canOperateAsDriver;
   final String registrationPhase;
+
+  /// `true` si falta al menos un paso del alta (KYC, activación o vehículo) según backend.
+  final bool needsResumeRegistration;
+
+  /// Fase canónica del flujo: `identity` | `license` | `activation` | `vehicle_registration` | `complete`.
+  final String registrationFlowPhase;
+
+  /// Paso sugerido en la app (0–5, alineado a `DriverRegistrationFlowScreen`).
+  final int? suggestedClientStep;
 
   /// `reference.countries.id` / `public.departments.country_id` vía localidad del staff; para `registration.country_id` en alta vehículo v2.
   final int? registrationCountryId;
@@ -33,11 +45,32 @@ class DriverOperationalProfile {
     } else if (rawCountry != null) {
       countryId = int.tryParse(rawCountry.toString());
     }
+    final flowPhase = json['registration_flow_phase']?.toString() ?? '';
+    final regPhase = json['registration_phase']?.toString() ?? '';
+    final explicitResume = json['needs_resume_registration'] == true;
+    final pendingLegacy = regPhase == 'pending_account';
+    final needsResume = explicitResume ||
+        pendingLegacy ||
+        (flowPhase.isNotEmpty && flowPhase != 'complete');
+
+    int? step;
+    final rawStep = json['suggested_client_step'];
+    if (rawStep is int) {
+      step = rawStep;
+    } else if (rawStep is num) {
+      step = rawStep.toInt();
+    } else if (rawStep != null) {
+      step = int.tryParse(rawStep.toString());
+    }
+
     return DriverOperationalProfile(
       uuid: u != null && u.isNotEmpty ? u : null,
       needsVehicleRegistration: json['needs_vehicle_registration'] == true,
       canOperateAsDriver: json['can_operate_as_driver'] == true,
-      registrationPhase: json['registration_phase']?.toString() ?? '',
+      registrationPhase: regPhase,
+      needsResumeRegistration: needsResume,
+      registrationFlowPhase: flowPhase,
+      suggestedClientStep: step,
       registrationCountryId: countryId,
     );
   }

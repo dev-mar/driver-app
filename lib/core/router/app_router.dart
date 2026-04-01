@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/login/driver_login_screen.dart';
 import '../../features/login/driver_home_screen.dart';
+import '../session/driver_registration_resume_gate.dart';
 import '../../features/profile/driver_profile_screen.dart';
 import '../../features/profile/driver_registered_images_screen.dart';
 import '../../features/registration/driver_registration_flow_screen.dart';
@@ -48,8 +49,18 @@ class AppRouter {
     redirect: (BuildContext context, GoRouterState state) async {
       final hasToken = await _hasStoredToken();
       final location = state.matchedLocation;
-      if (location == '/login' && hasToken) return '/home';
+      if (location == '/login' && hasToken) {
+        if (await DriverRegistrationResumeGate.needsResume()) {
+          return '/register?resumeAfterLogin=1';
+        }
+        return '/home';
+      }
       // Con token se permite /register para reanudar (p. ej. solo vehículo) sin cerrar sesión.
+      if (location == '/home' && hasToken) {
+        if (await DriverRegistrationResumeGate.needsResume()) {
+          return '/register?resumeAfterLogin=1';
+        }
+      }
       if (location == '/home' && !hasToken) return '/login';
       if (location == '/profile' && !hasToken) return '/login';
       if (location == '/registered-images') {
@@ -79,7 +90,8 @@ class AppRouter {
         name: register,
         builder: (context, state) {
           final extra = state.extra;
-          var resumeAfterLogin = false;
+          final qpResume = state.uri.queryParameters['resumeAfterLogin'] == '1';
+          var resumeAfterLogin = qpResume;
           var addVehicleOnly = false;
           if (extra is bool && extra) {
             resumeAfterLogin = true;

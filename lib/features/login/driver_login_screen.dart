@@ -100,6 +100,11 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
       ref.invalidate(driverInternalToolsVisibleProvider);
       try {
         final profile = await ref.read(driverOperationalProfileProvider.future);
+        if (profile.needsResumeRegistration) {
+          if (!mounted) return;
+          context.go('/register?resumeAfterLogin=1');
+          return;
+        }
         if (profile.needsVehicleRegistration) {
           if (!mounted) return;
           context.goNamed(AppRouter.register, extra: true);
@@ -243,6 +248,49 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                                 )
                               : Text(l10n.driverLoginButton),
                         ),
+                      ),
+                      AnimatedSwitcher(
+                        duration: AppMotion.stepSwitcher,
+                        switchInCurve: AppMotion.emphasized,
+                        switchOutCurve: AppMotion.standard,
+                        child: _isLoading
+                            ? Padding(
+                                key: const ValueKey('login-loading-status'),
+                                padding: const EdgeInsets.only(top: 12),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surface.withValues(alpha: 0.72),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: AppColors.primary.withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          l10n.commonLoading,
+                                          style: const TextStyle(
+                                            color: AppColors.textPrimary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : const SizedBox.shrink(key: ValueKey('login-loading-empty')),
                       ),
                       const SizedBox(height: 20),
                       DecoratedBox(

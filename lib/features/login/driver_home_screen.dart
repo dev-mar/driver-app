@@ -347,6 +347,10 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     if (state == AppLifecycleState.resumed) {
       _syncKeepScreenOnForDriverMode();
       unawaited(_maybePromptKeepActiveAfterBackground());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(driverRealtimeProvider.notifier).touchReconnectIfWantedOnline();
+      });
       return;
     }
     _syncKeepScreenOnForDriverMode();
@@ -500,6 +504,20 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
       });
     }
 
+    final wantsAvailReconnect =
+        ref.read(driverRealtimeProvider.notifier).wantsAvailabilitySessionReconnect;
+    if (wantsAvailReconnect &&
+        !online &&
+        !connecting &&
+        !blockOnlineForTrips &&
+        activeTrip == null &&
+        tripPendingRating == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(driverRealtimeProvider.notifier).touchReconnectIfWantedOnline();
+      });
+    }
+
     // Cuando el viaje llega a `completed`, el controlador guarda el trip en
     // `tripPendingRating` y limpia el mapa. Aquí abrimos la hoja encima
     // de la pantalla de solicitudes.
@@ -554,6 +572,28 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
         errorMessage = l10n.driverOnlineErrorRbacTechnical;
         break;
     }
+    final bool isRestoring = !online && switchVisualOn;
+    final String connectionLabel = connecting
+        ? l10n.driverHomeMiniConnecting
+        : online
+            ? l10n.driverHomeMiniStatusOnline
+            : isRestoring
+                ? l10n.driverHomeMiniStatusRestoringConnection
+                : l10n.driverHomeMiniStatusOffline;
+    final IconData connectionIcon = connecting
+        ? Icons.sync_rounded
+        : online
+            ? Icons.verified_rounded
+            : isRestoring
+                ? Icons.autorenew_rounded
+                : Icons.pause_circle_outline_rounded;
+    final Color connectionColor = connecting
+        ? AppColors.primary
+        : online
+            ? AppColors.success
+            : isRestoring
+                ? AppColors.primary
+                : AppColors.textSecondary;
 
     final showInternalTools =
         ref.watch(driverInternalToolsVisibleProvider).valueOrNull == true;
@@ -783,38 +823,75 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                           ),
                         ],
                         const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.circle,
-                              size: 10,
-                              color: connecting
-                                  ? AppColors.primary
-                                  : online
-                                      ? AppColors.success
-                                      : switchVisualOn
-                                          ? AppColors.primary
-                                          : AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                connecting
-                                    ? l10n.driverHomeMiniConnecting
-                                    : online
-                                        ? l10n.driverHomeMiniStatusOnline
-                                        : switchVisualOn
-                                            ? l10n.driverHomeMiniStatusRestoringConnection
-                                            : l10n.driverHomeMiniStatusOffline,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textSecondary.withValues(alpha: 0.95),
+                        AnimatedSwitcher(
+                          duration: AppMotion.stepSwitcher,
+                          switchInCurve: AppMotion.emphasized,
+                          switchOutCurve: AppMotion.standard,
+                          transitionBuilder: (child, animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.16),
+                                  end: Offset.zero,
+                                ).animate(animation),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: Row(
+                            key: ValueKey<String>('conn-$connectionLabel'),
+                            children: [
+                              TweenAnimationBuilder<double>(
+                                duration: const Duration(milliseconds: 900),
+                                tween: Tween<double>(begin: 0.88, end: 1),
+                                builder: (context, value, child) =>
+                                    Transform.scale(scale: value, child: child),
+                                child: Icon(connectionIcon, size: 14, color: connectionColor),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  connectionLabel,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textSecondary.withValues(alpha: 0.97),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+                        if (connecting || isRestoring) ...[
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(999),
+                            child: const LinearProgressIndicator(minHeight: 3),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              _connectionPhaseChip(
+                                icon: Icons.sync_rounded,
+                                label: l10n.driverHomeMiniConnecting,
+                                active: connecting,
+                              ),
+                              _connectionPhaseChip(
+                                icon: Icons.autorenew_rounded,
+                                label: l10n.driverHomeMiniStatusRestoringConnection,
+                                active: isRestoring,
+                              ),
+                              _connectionPhaseChip(
+                                icon: Icons.verified_rounded,
+                                label: l10n.driverHomeMiniStatusOnline,
+                                active: online,
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -1065,6 +1142,44 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
       ),
     );
   }
+}
+
+Widget _connectionPhaseChip({
+  required IconData icon,
+  required String label,
+  required bool active,
+}) {
+  final bg = active
+      ? AppColors.primary.withValues(alpha: 0.18)
+      : AppColors.surfaceCard.withValues(alpha: 0.72);
+  final fg = active ? AppColors.primary : AppColors.textSecondary;
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: bg,
+      borderRadius: BorderRadius.circular(999),
+      border: Border.all(
+        color: active
+            ? AppColors.primary.withValues(alpha: 0.45)
+            : AppColors.border.withValues(alpha: 0.5),
+      ),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: fg),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
+            color: fg,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 /// Contenido del sheet de calificación (premium): pasajero + estrellas.

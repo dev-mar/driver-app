@@ -192,6 +192,13 @@ class DriverRegistrationFlowController
   final Ref _ref;
   final DriverRegistrationRepository _repo;
 
+  bool _isDocumentAlreadyRegisteredError(Object error) {
+    final raw = error.toString().toLowerCase();
+    return raw.contains('ya existe un documento') ||
+        raw.contains('documento registrado para este tipo') ||
+        (raw.contains('document') && raw.contains('already') && raw.contains('type'));
+  }
+
   void clearError() {
     state = state.copyWith(clearGlobalError: true);
   }
@@ -725,6 +732,15 @@ class DriverRegistrationFlowController
         registrationTokenSaved: tok || state.registrationTokenSaved,
       );
     } catch (e) {
+      if (_isDocumentAlreadyRegisteredError(e)) {
+        state = state.copyWith(
+          loading: false,
+          step: 2,
+          identityFaceImageB64: faceB64,
+          clearGlobalError: true,
+        );
+        return;
+      }
       state = state.copyWith(
         loading: false,
         globalError: e.toString().replaceFirst('DriverRegistrationException: ', ''),
@@ -761,6 +777,14 @@ class DriverRegistrationFlowController
         registrationTokenSaved: tok || state.registrationTokenSaved,
       );
     } catch (e) {
+      if (_isDocumentAlreadyRegisteredError(e)) {
+        state = state.copyWith(
+          loading: false,
+          step: 3,
+          clearGlobalError: true,
+        );
+        return;
+      }
       state = state.copyWith(
         loading: false,
         globalError: e.toString().replaceFirst('DriverRegistrationException: ', ''),

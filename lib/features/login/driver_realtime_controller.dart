@@ -12,6 +12,7 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../../core/config/driver_backend_config.dart';
 import '../../core/config/driver_realtime_config.dart';
 import '../../core/app_lifecycle/app_lifecycle_state.dart';
+import '../../core/notifications/driver_push_token_service.dart';
 
 final driverRealtimeProvider =
     StateNotifierProvider<DriverRealtimeController, DriverRealtimeState>(
@@ -250,10 +251,13 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
   Future<void>? _goOnlineRun;
   StreamSubscription<Position>? _positionSub;
   Timer? _tripReconnectTimer;
+  Timer? _availabilityReconnectTimer;
   DateTime? _lastTouchReconnect;
   bool _disposed = false;
   /// `true` tras apagar el switch o logout: no auto-reconectar por `onDisconnect`.
   bool _userRequestedOffline = false;
+  /// `true` mientras el conductor quiere estar disponible (switch ON en esta sesión).
+  bool _availabilitySessionDesired = false;
   /// Si el conductor intenta finalizar viaje sin socket conectado (por red
   /// caída o background), guardamos el tripId para reintentarlo en
   /// cuanto se restablezca la conexión.
@@ -454,6 +458,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     if (value == state.online && !state.connecting) return;
     if (value) {
       _userRequestedOffline = false;
+      _availabilitySessionDesired = true;
+      _cancelAvailabilityReconnectLoop();
       await _goOnline();
       return;
     }
@@ -463,9 +469,34 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       return;
     }
     _userRequestedOffline = true;
+    _availabilitySessionDesired = false;
     _cancelTripReconnectLoop();
+    _cancelAvailabilityReconnectLoop();
     _lastTouchReconnect = null;
     await _goOffline(userInitiated: true, preserveTripState: false);
+  }
+
+  Future<void> _handleUnexpectedDisconnectWhileAvailable() async {
+    if (_userRequestedOffline || _disposed) return;
+    await _goOffline(
+      internal: true,
+      preserveTripState: false,
+      retainConnectingIndicator: true,
+    );
+    if (_userRequestedOffline || _disposed) return;
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    if (_userRequestedOffline || _disposed) return;
+    try {
+      await _goOnline();
+    } catch (e, st) {
+      debugPrint('[DRIVER_RT] reconexión disponibilidad tras caída: $e\n$st');
+      state = state.copyWith(
+        connecting: false,
+        online: false,
+        errorCode: 'SOCKET',
+      );
+      _ensureAvailabilityReconnectLoop();
+    }
   }
 
   Future<void> _handleUnexpectedDisconnectWithTrip() async {
@@ -490,6 +521,66 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
   void _cancelTripReconnectLoop() {
     _tripReconnectTimer?.cancel();
     _tripReconnectTimer = null;
+  }
+
+  /// Expuesto para el home: reintentar socket si el conductor dejó el switch ON
+  /// y cayó la conexión (segundo plano / red), sin viaje activo.
+  bool get wantsAvailabilitySessionReconnect =>
+      _availabilitySessionDesired && !_userRequestedOffline && !_disposed;
+
+  void touchReconnectIfWantedOnline() {
+    if (_userRequestedOffline || _disposed) return;
+    if (!_availabilitySessionDesired) return;
+    if (state.activeTrip != null || state.tripPendingRating != null) return;
+    if (state.online) {
+      _cancelAvailabilityReconnectLoop();
+      return;
+    }
+    _ensureAvailabilityReconnectLoop();
+    if (!state.connecting) {
+      unawaited(setOnline(true));
+    }
+  }
+
+  void _cancelAvailabilityReconnectLoop() {
+    _availabilityReconnectTimer?.cancel();
+    _availabilityReconnectTimer = null;
+  }
+
+  /// Reintentos periódicos en espera de ofertas (sin viaje) tras fallos de socket.
+  void _ensureAvailabilityReconnectLoop() {
+    if (_userRequestedOffline || _disposed) return;
+    if (!_availabilitySessionDesired) return;
+    if (state.activeTrip != null || state.tripPendingRating != null) return;
+    if (state.online) {
+      _cancelAvailabilityReconnectLoop();
+      return;
+    }
+    _availabilityReconnectTimer?.cancel();
+    if (!state.connecting) {
+      unawaited(setOnline(true));
+    }
+    _availabilityReconnectTimer =
+        Timer.periodic(const Duration(seconds: 8), (_) async {
+      if (_userRequestedOffline || _disposed) {
+        _cancelAvailabilityReconnectLoop();
+        return;
+      }
+      if (!_availabilitySessionDesired) {
+        _cancelAvailabilityReconnectLoop();
+        return;
+      }
+      if (state.activeTrip != null || state.tripPendingRating != null) {
+        _cancelAvailabilityReconnectLoop();
+        return;
+      }
+      if (state.online) {
+        _cancelAvailabilityReconnectLoop();
+        return;
+      }
+      if (state.connecting) return;
+      await setOnline(true);
+    });
   }
 
   /// Reintentos periódicos mientras haya viaje (o calificación) y el usuario
@@ -562,6 +653,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
   Future<void> _performGoOnline() async {
     debugPrint('[DRIVER_RT] setOnline(true) iniciando...');
     _cancelTripReconnectLoop();
+    _cancelAvailabilityReconnectLoop();
     state = state.copyWith(connecting: true, errorCode: null);
 
     try {
@@ -610,7 +702,9 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
           unawaited(_handleUnexpectedDisconnectWithTrip());
           return;
         }
-        unawaited(_goOffline(internal: true, preserveTripState: false));
+        // Sin viaje activo: el SO suele cortar el WebSocket en segundo plano;
+        // reconectar para no apagar el interruptor ni perder ofertas/FCM.
+        unawaited(_handleUnexpectedDisconnectWhileAvailable());
       });
 
       socket.onConnect((_) {
@@ -1166,7 +1260,9 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       );
       _lastTouchReconnect = null;
       _cancelTripReconnectLoop();
+      _cancelAvailabilityReconnectLoop();
       debugPrint('[DRIVER_RT] Estado online=true (GPS en segundo plano).');
+      unawaited(DriverPushTokenService.instance.syncTokenIfPossible());
       unawaited(_startGpsTracking());
     } on _RealtimeException catch (e) {
       debugPrint('[DRIVER_RT] Error controlado: ${e.code}');
@@ -1178,7 +1274,11 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
         connecting: false,
         errorCode: e.code,
       );
-      if (preserveTrip) _ensureTripReconnectLoop();
+      if (preserveTrip) {
+        _ensureTripReconnectLoop();
+      } else if (_availabilitySessionDesired && !_userRequestedOffline) {
+        _ensureAvailabilityReconnectLoop();
+      }
     } catch (e, stackTrace) {
       debugPrint('[DRIVER_RT] Error inesperado al ir online: $e');
       debugPrint('[DRIVER_RT] $stackTrace');
@@ -1190,7 +1290,11 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
         connecting: false,
         errorCode: 'UNKNOWN',
       );
-      if (preserveTrip) _ensureTripReconnectLoop();
+      if (preserveTrip) {
+        _ensureTripReconnectLoop();
+      } else if (_availabilitySessionDesired && !_userRequestedOffline) {
+        _ensureAvailabilityReconnectLoop();
+      }
     }
   }
 
@@ -1198,6 +1302,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     bool internal = false,
     bool userInitiated = false,
     bool preserveTripState = false,
+    bool retainConnectingIndicator = false,
   }) async {
     await _positionSub?.cancel();
     _positionSub = null;
@@ -1214,7 +1319,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
 
     state = state.copyWith(
       online: false,
-      connecting: false,
+      connecting: retainConnectingIndicator,
       errorCode: userInitiated ? null : (internal ? state.errorCode : null),
       pendingOffers: [],
       processingOfferTripId: null,
@@ -1478,6 +1583,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
   void dispose() {
     _disposed = true;
     _cancelTripReconnectLoop();
+    _cancelAvailabilityReconnectLoop();
     unawaited(_goOffline(internal: true, preserveTripState: false));
     super.dispose();
   }

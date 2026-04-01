@@ -52,6 +52,7 @@
 		<key>UIBackgroundModes</key>
 		<array>
 			<string>location</string>
+			<string>remote-notification</string>
 		</array>
 		<key>NSCameraUsageDescription</key>
 		<string>Texi necesita acceso a la cámara para fotografiar documentos, licencia y tu vehículo durante el registro.</string>

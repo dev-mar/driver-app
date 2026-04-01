@@ -174,8 +174,22 @@ class DriverRegistrationRepository {
   }
 
   String _extractErrorMessage(dynamic data) {
+    if (data is String && data.trim().isNotEmpty) {
+      return data.trim();
+    }
     if (data is! Map) return 'Error del servidor';
     final msg = data['message']?.toString();
+    final nestedData = data['data'];
+    if (nestedData is Map) {
+      final innerMessage = nestedData['message']?.toString();
+      if (innerMessage != null && innerMessage.isNotEmpty) return innerMessage;
+      final innerError = nestedData['error'];
+      if (innerError is String && innerError.isNotEmpty) return innerError;
+      if (innerError is Map) {
+        final em = innerError['message']?.toString();
+        if (em != null && em.isNotEmpty) return em;
+      }
+    }
     final err = data['error'];
     if (err is String && err.isNotEmpty) {
       return msg != null && msg.isNotEmpty ? msg : err;
@@ -199,10 +213,23 @@ class DriverRegistrationRepository {
 
   /// Mensaje útil cuando el cuerpo no es JSON o viene vacío (p. ej. 500 HTML).
   String _messageFromDioException(DioException e) {
+    final code = e.response?.statusCode;
     final body = e.response?.data;
+    if (code == 413) {
+      final s = body is String ? body : '';
+      final looksNginx = s.toLowerCase().contains('request entity too large') ||
+          s.toLowerCase().contains('entity too large');
+      if (looksNginx) {
+        return 'Las fotos o el envío superan el límite del proxy (HTTP 413). '
+            'Probá imágenes más livianas o pedí aumentar el límite del cuerpo en el proxy '
+            '(p. ej. nginx client_max_body_size) frente al backend.';
+      }
+      return 'Las fotos o el envío superan el límite del servidor (HTTP 413). '
+          'Probá imágenes más livianas, subida por S3 (presign) si está habilitada, '
+          'u operaciones puede subir API_V1_JSON_LIMIT en el backend.';
+    }
     final fromJson = _extractErrorMessage(body);
     if (fromJson != 'Error del servidor') return fromJson;
-    final code = e.response?.statusCode;
     final type = e.type.name;
     final buf = StringBuffer('Error del servidor');
     if (code != null) buf.write(' (HTTP $code)');
@@ -277,8 +304,8 @@ class DriverRegistrationRepository {
       }
       return _tryPersistTokenFromResponse(data);
     } on DioException catch (e) {
-      final d = e.response?.data;
-      throw DriverRegistrationException(_extractErrorMessage(d));
+      _logDioIfDebug('submitDocumentInfo', e);
+      throw DriverRegistrationException(_messageFromDioException(e));
     }
   }
 

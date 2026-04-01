@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
+import '../../core/session/driver_registration_resume_gate.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_motion.dart';
 import '../../gen_l10n/app_localizations.dart';
@@ -206,6 +207,7 @@ class _DriverRegistrationFlowScreenState
         final done = await notifier.applyResumeFromApi();
         if (!mounted) return;
         if (done) {
+          DriverRegistrationResumeGate.invalidate();
           context.goNamed(AppRouter.home);
         }
       } else {
@@ -314,6 +316,7 @@ class _DriverRegistrationFlowScreenState
     final l10n = AppLocalizations.of(context);
     final flow = ref.read(driverRegistrationFlowControllerProvider);
     final notifier = ref.read(driverRegistrationFlowControllerProvider.notifier);
+    if (flow.loading) return;
     notifier.clearError();
 
     switch (flow.step) {
@@ -499,6 +502,7 @@ class _DriverRegistrationFlowScreenState
                   onPressed: () {
                     Navigator.of(ctx).pop();
                     ref.invalidate(driverOperationalProfileProvider);
+                    DriverRegistrationResumeGate.invalidate();
                     if (context.mounted) context.goNamed(AppRouter.home);
                   },
                   child: Text(
