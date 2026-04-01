@@ -1,4 +1,4 @@
-package com.example.texi_driver_app
+package com.taxitexi.texi_driver_app
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

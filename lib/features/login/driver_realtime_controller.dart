@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -8,9 +9,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
+import '../../core/config/driver_backend_config.dart';
 import '../../core/config/driver_realtime_config.dart';
 import '../../core/app_lifecycle/app_lifecycle_state.dart';
-import '../../core/notifications/driver_notification_service.dart';
 
 final driverRealtimeProvider =
     StateNotifierProvider<DriverRealtimeController, DriverRealtimeState>(
@@ -58,6 +59,10 @@ class DriverRealtimeState {
   final String? driverVehicleLabel;
   /// Valoración media del conductor si el backend la envía en el perfil.
   final double? driverRating;
+  /// Foto de perfil del conductor (URL firmada o data URL) desde `connection:ack.profile`.
+  final String? driverPictureProfile;
+  /// Expiración de la URL firmada para refresco condicional.
+  final DateTime? driverPictureExpiresAt;
 
   /// Valor interno para [copyWith] y poder asignar `null` en campos opcionales.
   static const Object _unset = Object();
@@ -83,6 +88,8 @@ class DriverRealtimeState {
     this.driverDisplayName,
     this.driverVehicleLabel,
     this.driverRating,
+    this.driverPictureProfile,
+    this.driverPictureExpiresAt,
   });
 
   DriverRealtimeState copyWith({
@@ -106,6 +113,8 @@ class DriverRealtimeState {
     Object? driverDisplayName = _unset,
     Object? driverVehicleLabel = _unset,
     Object? driverRating = _unset,
+    Object? driverPictureProfile = _unset,
+    Object? driverPictureExpiresAt = _unset,
   }) {
     return DriverRealtimeState(
       online: online ?? this.online,
@@ -147,6 +156,12 @@ class DriverRealtimeState {
       driverRating: identical(driverRating, _unset)
           ? this.driverRating
           : driverRating as double?,
+      driverPictureProfile: identical(driverPictureProfile, _unset)
+          ? this.driverPictureProfile
+          : driverPictureProfile as String?,
+      driverPictureExpiresAt: identical(driverPictureExpiresAt, _unset)
+          ? this.driverPictureExpiresAt
+          : driverPictureExpiresAt as DateTime?,
     );
   }
 
@@ -172,7 +187,19 @@ class DriverRealtimeState {
         driverDisplayName: null,
         driverVehicleLabel: null,
         driverRating: null,
+        driverPictureProfile: null,
+        driverPictureExpiresAt: null,
       );
+}
+
+/// Valor visual del switch "En línea": ON con socket, reconectando o con viaje /
+/// calificación pendiente aunque `online` sea false (caída de red durante carrera).
+extension DriverRealtimeStateAvailabilityUi on DriverRealtimeState {
+  bool get availabilitySwitchVisualOn {
+    if (online) return true;
+    if (connecting) return true;
+    return activeTrip != null || tripPendingRating != null;
+  }
 }
 
 (double?, double?) _parseLatLng(dynamic m, String latKey, String lngKey) {
@@ -205,12 +232,42 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
   DriverRealtimeController() : super(DriverRealtimeState.initial);
 
   static const _storage = FlutterSecureStorage();
+  static Dio? _profileHttp;
+
+  static Dio _profileDio () {
+    _profileHttp ??= Dio(
+      BaseOptions(
+        baseUrl: DriverBackendConfig.baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 15),
+        headers: <String, String>{'Accept': 'application/json'},
+      ),
+    );
+    return _profileHttp!;
+  }
+
   io.Socket? _socket;
+  Future<void>? _goOnlineRun;
   StreamSubscription<Position>? _positionSub;
+  Timer? _tripReconnectTimer;
+  DateTime? _lastTouchReconnect;
+  bool _disposed = false;
+  /// `true` tras apagar el switch o logout: no auto-reconectar por `onDisconnect`.
+  bool _userRequestedOffline = false;
   /// Si el conductor intenta finalizar viaje sin socket conectado (por red
   /// caída o background), guardamos el tripId para reintentarlo en
   /// cuanto se restablezca la conexión.
   String? _pendingTripCompletedTripId;
+  bool _isRefreshingDriverPhoto = false;
+  DateTime? _lastDriverPhotoRefreshAt;
+
+  /// Última vez que el servidor recibió `location:update` (anti saturación).
+  DateTime? _lastLocationEmittedAt;
+  static const _locationEmitMinInterval = Duration(milliseconds: 2800);
+
+  /// Evita `checkPermission` repetido en reconexiones seguidas.
+  DateTime? _locationPermissionCachedAt;
+  LocationPermission? _locationPermissionCached;
 
   bool _toBool(dynamic v) {
     if (v is bool) return v;
@@ -247,6 +304,18 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     double? rating;
     final r = map['averageRating'] ?? map['rating'] ?? map['driverRating'];
     if (r is num) rating = r.toDouble();
+    String? picture;
+    final picRaw = map['pictureProfile'] ?? map['picture_profile'];
+    if (picRaw != null) {
+      final p = picRaw.toString().trim();
+      if (p.isNotEmpty) picture = p;
+    }
+    DateTime? pictureExpiresAt;
+    final expRaw = map['profilePictureExpiresAt'] ?? map['profile_picture_expires_at'];
+    if (expRaw != null) {
+      final t = expRaw.toString().trim();
+      if (t.isNotEmpty) pictureExpiresAt = DateTime.tryParse(t);
+    }
 
     final newName =
         (fn != null && fn.isNotEmpty) ? fn : state.driverDisplayName;
@@ -257,6 +326,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       driverDisplayName: newName,
       driverVehicleLabel: newVehicle,
       driverRating: newRating,
+      driverPictureProfile: picture ?? state.driverPictureProfile,
+      driverPictureExpiresAt: pictureExpiresAt ?? state.driverPictureExpiresAt,
     );
   }
 
@@ -275,17 +346,222 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     });
   }
 
-  Future<void> setOnline(bool value) async {
+  /// Emite al socket respetando [_locationEmitMinInterval] salvo [force].
+  void _emitLocationToServer (
+    double lat,
+    double lng,
+    double speed, {
+    bool force = false,
+  }) {
+    if (_socket?.connected != true) return;
+    final now = DateTime.now();
+    if (!force && _lastLocationEmittedAt != null) {
+      if (now.difference(_lastLocationEmittedAt!) < _locationEmitMinInterval) {
+        return;
+      }
+    }
+    _lastLocationEmittedAt = now;
+    _socket!.emit('location:update', {
+      'lat': lat,
+      'lng': lng,
+      'bearing': 0,
+      'speed': speed,
+    });
+  }
+
+  Future<void> _ensureLocationPermissionForSocket () async {
+    final now = DateTime.now();
+    final cached = _locationPermissionCached;
+    final cachedAt = _locationPermissionCachedAt;
+    if (cached != null &&
+        cachedAt != null &&
+        (cached == LocationPermission.whileInUse ||
+            cached == LocationPermission.always) &&
+        now.difference(cachedAt) < const Duration(minutes: 3)) {
+      return;
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      _locationPermissionCached = null;
+      _locationPermissionCachedAt = null;
+      debugPrint('[DRIVER_RT] Permisos de GPS denegados.');
+      throw const _RealtimeException('NO_GPS');
+    }
+    _locationPermissionCached = permission;
+    _locationPermissionCachedAt = DateTime.now();
+  }
+
+  bool _shouldRefreshDriverPhoto() {
+    final pic = state.driverPictureProfile?.trim() ?? '';
+    final exp = state.driverPictureExpiresAt;
+    if (pic.isEmpty) return true;
+    if (exp == null) return false;
+    final now = DateTime.now();
+    // Refrescar antes de expirar para evitar imagen rota en UI.
+    return now.isAfter(exp.subtract(const Duration(minutes: 2)));
+  }
+
+  Future<void> _refreshDriverPhotoFromProfile({bool force = false}) async {
+    if (_isRefreshingDriverPhoto) return;
+    if (!force && !_shouldRefreshDriverPhoto()) return;
+    final last = _lastDriverPhotoRefreshAt;
+    final now = DateTime.now();
+    if (!force && last != null && now.difference(last) < const Duration(seconds: 30)) {
+      return;
+    }
+    _isRefreshingDriverPhoto = true;
+    try {
+      final token = await _storage.read(key: 'driver_token');
+      if (token == null || token.isEmpty) return;
+      final res = await _profileDio().get<Map<String, dynamic>>(
+        '/api/v2/driver/me-profile',
+        options: Options(
+          headers: <String, String>{'Authorization': 'Bearer $token'},
+        ),
+      );
+      final root = res.data;
+      if (root == null || root['success'] != true) return;
+      final data = root['data'];
+      if (data is! Map) return;
+      final map = Map<String, dynamic>.from(data);
+      final rawPic = map['picture_profile']?.toString().trim();
+      DateTime? exp;
+      final rawExp = map['profile_picture_expires_at']?.toString().trim();
+      if (rawExp != null && rawExp.isNotEmpty) {
+        exp = DateTime.tryParse(rawExp);
+      }
+      if (rawPic != null && rawPic.isNotEmpty) {
+        state = state.copyWith(
+          driverPictureProfile: rawPic,
+          driverPictureExpiresAt: exp,
+        );
+      }
+      _lastDriverPhotoRefreshAt = DateTime.now();
+    } catch (_) {
+      // Fallo silencioso: la UI conserva última foto válida/fallback.
+    } finally {
+      _isRefreshingDriverPhoto = false;
+    }
+  }
+
+  /// [forceOffline]: logout u otros casos que deben cortar sesión aunque haya viaje activo.
+  Future<void> setOnline(bool value, {bool forceOffline = false}) async {
     if (value == state.online && !state.connecting) return;
     if (value) {
+      _userRequestedOffline = false;
       await _goOnline();
-    } else {
-      await _goOffline();
+      return;
+    }
+    if (!forceOffline &&
+        (state.activeTrip != null || state.tripPendingRating != null)) {
+      state = state.copyWith(errorCode: 'ACTIVE_TRIP_CANT_GO_OFFLINE');
+      return;
+    }
+    _userRequestedOffline = true;
+    _cancelTripReconnectLoop();
+    _lastTouchReconnect = null;
+    await _goOffline(userInitiated: true, preserveTripState: false);
+  }
+
+  Future<void> _handleUnexpectedDisconnectWithTrip() async {
+    await _goOffline(internal: true, preserveTripState: true);
+    if (_userRequestedOffline || _disposed) return;
+    state = state.copyWith(connecting: true, errorCode: 'SOCKET_RECONNECTING');
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    if (_userRequestedOffline || _disposed) return;
+    try {
+      await _goOnline();
+    } catch (e, st) {
+      debugPrint('[DRIVER_RT] reconexión tras caída: $e\n$st');
+      state = state.copyWith(
+        connecting: false,
+        online: false,
+        errorCode: 'SOCKET',
+      );
+      _ensureTripReconnectLoop();
+    }
+  }
+
+  void _cancelTripReconnectLoop() {
+    _tripReconnectTimer?.cancel();
+    _tripReconnectTimer = null;
+  }
+
+  /// Reintentos periódicos mientras haya viaje (o calificación) y el usuario
+  /// no pidió offline explícitamente.
+  void _ensureTripReconnectLoop() {
+    if (_userRequestedOffline || _disposed) return;
+    final hasWork =
+        state.activeTrip != null || state.tripPendingRating != null;
+    if (!hasWork) return;
+    if (state.online) return;
+    _tripReconnectTimer?.cancel();
+    if (!state.connecting) {
+      unawaited(setOnline(true));
+    }
+    _tripReconnectTimer = Timer.periodic(const Duration(seconds: 8), (_) async {
+      if (_userRequestedOffline || _disposed) {
+        _cancelTripReconnectLoop();
+        return;
+      }
+      if (state.activeTrip == null && state.tripPendingRating == null) {
+        _cancelTripReconnectLoop();
+        return;
+      }
+      if (state.online) {
+        _cancelTripReconnectLoop();
+        return;
+      }
+      if (state.connecting) return;
+      await setOnline(true);
+    });
+  }
+
+  /// Llamado desde el home cuando hay trabajo activo pero el socket no está
+  /// arriba (p. ej. vuelta del segundo plano sin evento disconnect).
+  void touchReconnectIfHasActiveWork() {
+    if (_userRequestedOffline || _disposed) return;
+    if (state.activeTrip == null && state.tripPendingRating == null) return;
+    if (state.online) {
+      _lastTouchReconnect = null;
+      return;
+    }
+    final now = DateTime.now();
+    if (_lastTouchReconnect != null &&
+        now.difference(_lastTouchReconnect!) < const Duration(seconds: 3)) {
+      return;
+    }
+    _lastTouchReconnect = now;
+    _ensureTripReconnectLoop();
+    if (!state.connecting) {
+      unawaited(setOnline(true));
     }
   }
 
   Future<void> _goOnline() async {
+    if (_goOnlineRun != null) {
+      await _goOnlineRun;
+      return;
+    }
+    final run = _performGoOnline();
+    _goOnlineRun = run;
+    try {
+      await run;
+    } finally {
+      if (identical(_goOnlineRun, run)) {
+        _goOnlineRun = null;
+      }
+    }
+  }
+
+  Future<void> _performGoOnline() async {
     debugPrint('[DRIVER_RT] setOnline(true) iniciando...');
+    _cancelTripReconnectLoop();
     state = state.copyWith(connecting: true, errorCode: null);
 
     try {
@@ -305,15 +581,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       }
       debugPrint('[DRIVER_RT] Token leído. length=${token.length}');
 
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        debugPrint('[DRIVER_RT] Permisos de GPS denegados.');
-        throw const _RealtimeException('NO_GPS');
-      }
+      await _ensureLocationPermissionForSocket();
 
       debugPrint(
           '[DRIVER_RT] Conectando socket a ${DriverRealtimeConfig.socketUrl}${DriverRealtimeConfig.socketPath}...');
@@ -323,7 +591,6 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
         io.OptionBuilder()
             .setTransports(['websocket', 'polling'])
             .setPath(DriverRealtimeConfig.socketPath)
-            .enableForceNew()
             .setExtraHeaders({
               'Authorization': 'Bearer $token',
             })
@@ -332,6 +599,19 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       );
 
       final completer = Completer<void>();
+
+      socket.onDisconnect((data) {
+        debugPrint('[DRIVER_RT] disconnect data=$data');
+        if (_disposed) return;
+        if (_userRequestedOffline) return;
+        final hasTrip =
+            state.activeTrip != null || state.tripPendingRating != null;
+        if (hasTrip) {
+          unawaited(_handleUnexpectedDisconnectWithTrip());
+          return;
+        }
+        unawaited(_goOffline(internal: true, preserveTripState: false));
+      });
 
       socket.onConnect((_) {
         debugPrint('[DRIVER_RT] Socket conectado correctamente.');
@@ -351,9 +631,6 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
           }
           _pendingTripCompletedTripId = null;
         }
-      });
-      socket.onDisconnect((data) {
-        debugPrint('[DRIVER_RT] disconnect data=$data');
       });
       socket.onConnectError((data) {
         debugPrint('[DRIVER_RT] onConnectError recibido. data=$data');
@@ -376,6 +653,30 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       });
       socket.on('driver:availability_error', (data) {
         debugPrint('[DRIVER_RT] driver:availability_error data=$data');
+        if (data is Map) {
+          final code = data['code']?.toString();
+          if (code != null && code.startsWith('RBAC_')) {
+            state = state.copyWith(
+              online: false,
+              connecting: false,
+              errorCode: code,
+            );
+          }
+        }
+      });
+
+      socket.on('gps:error', (data) {
+        debugPrint('[DRIVER_RT] gps:error data=$data');
+        if (data is Map) {
+          final code = data['code']?.toString();
+          if (code != null && code.startsWith('RBAC_')) {
+            state = state.copyWith(
+              online: false,
+              connecting: false,
+              errorCode: code,
+            );
+          }
+        }
       });
 
       // Listeners de viajes (servidor → conductor).
@@ -411,34 +712,17 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
           debugPrint(
               '[DRIVER_RT] trip:offer recibido tripId=$tripId, price=$offeredPrice, eta=$etaMinutes, dist=$distanceToPickupKm');
 
-          // Notificación cuando la app está en segundo plano (políticas Google Play).
-          // En primer plano sólo hacemos beep si el conductor está libre.
+          // Segundo plano / app cerrada: FCM desde backend (`sendDriverTripOffer`).
+          // En primer plano: beep si el conductor está libre (lista + socket).
           final inForeground = DriverAppVisibility.isInForeground.value;
           final isBusy = state.activeTrip != null;
 
-          // Evitar beeps y notificaciones duplicadas por el mismo tripId.
           final existingIndex = state.pendingOffers
               .indexWhere((offer) => offer.tripId == tripId);
           final isNewOffer = existingIndex < 0;
 
           if (inForeground && isNewOffer && !isBusy) {
             SystemSound.play(SystemSoundType.alert);
-          }
-          String? priceInfo;
-          if (offeredPrice != null) priceInfo = offeredPrice.toStringAsFixed(0);
-
-          if (isNewOffer && !isBusy) {
-            DriverNotificationService.instance
-                .showTripOfferNotificationIfBackground(
-              isAppInForeground: inForeground,
-              tripId: tripId,
-              priceInfo: priceInfo,
-              originAddress: originAddress,
-              destinationAddress: destinationAddress,
-              // El contrato pide usar ETA hacia destino para la UX.
-              etaMinutes: etaToDestinationMinutes,
-              distanceKm: tripDistanceKm,
-            );
           }
 
           final updatedOffers = List<DriverTripOffer>.from(state.pendingOffers);
@@ -759,6 +1043,9 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
           if (data is! Map || data['ok'] != true) return;
           debugPrint('[DRIVER_RT] connection:ack data=$data');
           _applyProfileFromAck(Map<String, dynamic>.from(data));
+          if (_shouldRefreshDriverPhoto()) {
+            unawaited(_refreshDriverPhotoFromProfile());
+          }
           final hasActiveTrip = data['hasActiveTrip'] == true;
           final activeTripData = data['activeTrip'];
           if (hasActiveTrip && activeTripData is Map) {
@@ -872,74 +1159,49 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
         },
       );
 
-      _positionSub?.cancel();
-      try {
-        final initialPos = await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.medium,
-          ),
-        ).timeout(const Duration(seconds: 8));
-        state = state.copyWith(
-          driverLat: initialPos.latitude,
-          driverLng: initialPos.longitude,
-        );
-      } catch (e) {
-        debugPrint('[DRIVER_RT] getCurrentPosition inicial falló: $e');
-      }
-
-      _positionSub = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
-          distanceFilter: 10,
-        ),
-      ).listen((pos) {
-        debugPrint(
-            '[DRIVER_RT] Enviando location:update lat=${pos.latitude}, lng=${pos.longitude}, speed=${pos.speed}');
-        state = state.copyWith(
-          driverLat: pos.latitude,
-          driverLng: pos.longitude,
-        );
-        if (_socket?.connected == true) {
-          _socket!.emit('location:update', {
-            'lat': pos.latitude,
-            'lng': pos.longitude,
-            'bearing': 0,
-            'speed': pos.speed,
-          });
-        }
-      }, onError: (Object e, StackTrace st) {
-        debugPrint('[DRIVER_RT] positionStream error: $e');
-      });
-
       state = state.copyWith(
         online: true,
         connecting: false,
         errorCode: null,
       );
-      debugPrint('[DRIVER_RT] Estado online=true establecido.');
+      _lastTouchReconnect = null;
+      _cancelTripReconnectLoop();
+      debugPrint('[DRIVER_RT] Estado online=true (GPS en segundo plano).');
+      unawaited(_startGpsTracking());
     } on _RealtimeException catch (e) {
       debugPrint('[DRIVER_RT] Error controlado: ${e.code}');
-      await _goOffline(internal: true);
+      final preserveTrip = state.activeTrip != null ||
+          state.tripPendingRating != null;
+      await _goOffline(internal: true, preserveTripState: preserveTrip);
       state = state.copyWith(
         online: false,
         connecting: false,
         errorCode: e.code,
       );
+      if (preserveTrip) _ensureTripReconnectLoop();
     } catch (e, stackTrace) {
       debugPrint('[DRIVER_RT] Error inesperado al ir online: $e');
       debugPrint('[DRIVER_RT] $stackTrace');
-      await _goOffline(internal: true);
+      final preserveTrip = state.activeTrip != null ||
+          state.tripPendingRating != null;
+      await _goOffline(internal: true, preserveTripState: preserveTrip);
       state = state.copyWith(
         online: false,
         connecting: false,
         errorCode: 'UNKNOWN',
       );
+      if (preserveTrip) _ensureTripReconnectLoop();
     }
   }
 
-  Future<void> _goOffline({bool internal = false}) async {
+  Future<void> _goOffline({
+    bool internal = false,
+    bool userInitiated = false,
+    bool preserveTripState = false,
+  }) async {
     await _positionSub?.cancel();
     _positionSub = null;
+    _lastLocationEmittedAt = null;
 
     try {
       _socket?.disconnect();
@@ -947,20 +1209,73 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     } catch (_) {}
     _socket = null;
 
+    final preserve = preserveTripState &&
+        (state.activeTrip != null || state.tripPendingRating != null);
+
     state = state.copyWith(
       online: false,
       connecting: false,
-      errorCode: internal ? state.errorCode : null,
+      errorCode: userInitiated ? null : (internal ? state.errorCode : null),
       pendingOffers: [],
       processingOfferTripId: null,
       offersErrorMessage: null,
       offersErrorCode: null,
-      activeTrip: null,
-      processingTripAction: null,
-      tripErrorMessage: null,
-      driverLat: null,
-      driverLng: null,
+      activeTrip: preserve ? state.activeTrip : null,
+      tripPendingRating: preserve ? state.tripPendingRating : null,
+      processingTripAction: preserve ? state.processingTripAction : null,
+      tripErrorMessage: preserve ? state.tripErrorMessage : null,
+      driverLat: preserve ? state.driverLat : null,
+      driverLng: preserve ? state.driverLng : null,
     );
+  }
+
+  /// GPS e inyección de `location:update` sin bloquear el paso a `online:true`
+  /// (el fix del GPS ya no atrasa el interruptor ni el connection:ack).
+  Future<void> _startGpsTracking() async {
+    _positionSub?.cancel();
+    try {
+      final initialPos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
+      ).timeout(const Duration(seconds: 8));
+      if (_disposed) return;
+      state = state.copyWith(
+        driverLat: initialPos.latitude,
+        driverLng: initialPos.longitude,
+      );
+      if (_socket?.connected == true) {
+        _emitLocationToServer(
+          initialPos.latitude,
+          initialPos.longitude,
+          initialPos.speed,
+          force: true,
+        );
+      }
+    } catch (e) {
+      debugPrint('[DRIVER_RT] getCurrentPosition inicial falló: $e');
+    }
+
+    if (_disposed) return;
+    _positionSub = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.medium,
+        distanceFilter: 10,
+      ),
+    ).listen((pos) {
+      if (kDebugMode) {
+        debugPrint(
+          '[DRIVER_RT] location:update lat=${pos.latitude}, lng=${pos.longitude}',
+        );
+      }
+      state = state.copyWith(
+        driverLat: pos.latitude,
+        driverLng: pos.longitude,
+      );
+      _emitLocationToServer(pos.latitude, pos.longitude, pos.speed);
+    }, onError: (Object e, StackTrace st) {
+      debugPrint('[DRIVER_RT] positionStream error: $e');
+    });
   }
 
   /// Marcar que el conductor llegó al punto de recogida (trip:arrived).
@@ -1161,7 +1476,9 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
 
   @override
   void dispose() {
-    _goOffline(internal: true);
+    _disposed = true;
+    _cancelTripReconnectLoop();
+    unawaited(_goOffline(internal: true, preserveTripState: false));
     super.dispose();
   }
 }

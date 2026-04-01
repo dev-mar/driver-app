@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../core/config/driver_backend_config.dart';
+import '../../core/notifications/driver_push_token_service.dart';
 import 'driver_registration_models.dart';
 
 class DriverRegistrationException implements Exception {
@@ -149,6 +150,7 @@ class DriverRegistrationRepository {
       final v = m[k];
       if (v != null && v.toString().isNotEmpty) {
         await _storage.write(key: _tokenKey, value: v.toString());
+        DriverPushTokenService.instance.syncTokenIfPossible();
         return true;
       }
     }

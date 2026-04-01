@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../core/notifications/driver_push_token_service.dart';
 import '../../core/config/driver_backend_config.dart';
+import '../../core/session/driver_internal_tools_gate.dart';
 
 final driverLoginControllerProvider =
     StateNotifierProvider<DriverLoginController, DriverLoginState>((ref) {
@@ -62,7 +64,7 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
 
       if (data['success'] != true) {
         // Algunos backends envían token en data aunque success sea false.
-        if (await _tryPersistTokenFromLoginPayload(data)) {
+        if (await _tryPersistTokenFromLoginPayload(data, fullPhone: fullPhone)) {
           return true;
         }
         return _fail(data['message']?.toString() ?? 'Error al iniciar sesión');
@@ -77,10 +79,16 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
       }
 
       await _storage.write(key: 'driver_token', value: token);
+      await _storage.write(
+        key: DriverInternalToolsGate.storageKeyLoginPhone,
+        value: fullPhone,
+      );
+      DriverPushTokenService.instance.syncTokenIfPossible();
       return true;
     } on DioException catch (e) {
       final body = e.response?.data;
-      if (body is Map && await _tryPersistTokenFromLoginPayload(body)) {
+      if (body is Map &&
+          await _tryPersistTokenFromLoginPayload(body, fullPhone: fullPhone)) {
         return true;
       }
       final msg = body is Map ? body['message']?.toString() : null;
@@ -91,7 +99,10 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
   }
 
   /// Extrae token de `data` / `data.data` (nombres habituales en APIs).
-  Future<bool> _tryPersistTokenFromLoginPayload(Map<dynamic, dynamic> root) async {
+  Future<bool> _tryPersistTokenFromLoginPayload(
+    Map<dynamic, dynamic> root, {
+    required String fullPhone,
+  }) async {
     final candidates = <Map<dynamic, dynamic>>[];
     if (root['data'] is Map) candidates.add(root['data'] as Map);
     candidates.add(root);
@@ -101,6 +112,11 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
         final v = map[k];
         if (v != null && v.toString().isNotEmpty) {
           await _storage.write(key: 'driver_token', value: v.toString());
+          await _storage.write(
+            key: DriverInternalToolsGate.storageKeyLoginPhone,
+            value: fullPhone,
+          );
+          DriverPushTokenService.instance.syncTokenIfPossible();
           return true;
         }
       }
@@ -111,6 +127,7 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
   /// Cierra sesión: borra el token. Navegar a /login después con GoRouter.
   Future<void> logout() async {
     await _storage.delete(key: 'driver_token');
+    await _storage.delete(key: DriverInternalToolsGate.storageKeyLoginPhone);
     state = DriverLoginState();
   }
 

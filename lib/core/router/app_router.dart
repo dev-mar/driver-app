@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../../features/login/driver_login_screen.dart';
 import '../../features/login/driver_home_screen.dart';
 import '../../features/profile/driver_profile_screen.dart';
+import '../../features/profile/driver_registered_images_screen.dart';
 import '../../features/registration/driver_registration_flow_screen.dart';
+import '../session/driver_internal_tools_gate.dart';
 
 /// Clave de almacenamiento del token de conductor (misma que login).
 const String _kDriverTokenKey = 'driver_token';
@@ -19,6 +21,7 @@ class AppRouter {
   static const String home = 'driver_home';
   static const String register = 'driver_register';
   static const String profile = 'driver_profile';
+  static const String registeredImages = 'driver_registered_images';
 
   static const _storage = FlutterSecureStorage();
 
@@ -49,6 +52,20 @@ class AppRouter {
       // Con token se permite /register para reanudar (p. ej. solo vehículo) sin cerrar sesión.
       if (location == '/home' && !hasToken) return '/login';
       if (location == '/profile' && !hasToken) return '/login';
+      if (location == '/registered-images') {
+        if (!hasToken) return '/login';
+        try {
+          final phone = await _storage
+              .read(key: DriverInternalToolsGate.storageKeyLoginPhone)
+              .timeout(const Duration(seconds: 3));
+          if (!DriverInternalToolsGate.phoneAllowsInternalTools(phone)) {
+            return '/home';
+          }
+        } catch (e) {
+          debugPrint('[AppRouter] gate imágenes internas: $e');
+          return '/home';
+        }
+      }
       return null;
     },
     routes: [
@@ -86,6 +103,11 @@ class AppRouter {
         path: '/profile',
         name: profile,
         builder: (context, state) => const DriverProfileScreen(),
+      ),
+      GoRoute(
+        path: '/registered-images',
+        name: registeredImages,
+        builder: (context, state) => const DriverRegisteredImagesScreen(),
       ),
     ],
   );

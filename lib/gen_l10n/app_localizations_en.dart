@@ -254,6 +254,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverHomeMiniConnecting => 'Connecting…';
 
   @override
+  String get driverHomeMiniStatusRestoringConnection => 'Restoring connection…';
+
+  @override
   String get driverHomeVehicleRegistrationBanner =>
       'You still need to register your vehicle. Without a vehicle you cannot receive trips.';
 
@@ -264,6 +267,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get driverHomeCannotGoOnlineWithoutVehicle =>
       'Register your vehicle before going online to receive trips.';
+
+  @override
+  String get driverFcmOpenedTripOfferHint =>
+      'You opened a trip request alert. If you don\'t see the offer, go online; offers arrive over the live connection.';
 
   @override
   String get driverHomeMiniVehicleEmpty => 'Vehicle not registered yet';
@@ -416,6 +423,25 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get driverOnlineErrorUnknown =>
       'Could not go online. Please try again.';
+
+  @override
+  String get driverOnlineErrorActiveTripCantGoOffline =>
+      'You can’t go offline while you have an active trip or a rating pending. Finish or cancel the trip first.';
+
+  @override
+  String get driverOnlineErrorReconnecting => 'Connection lost. Reconnecting…';
+
+  @override
+  String get driverOnlineErrorRbacForbidden =>
+      'Your account doesn’t have permission for this action. If it keeps happening, sign out and sign back in or contact support.';
+
+  @override
+  String get driverOnlineErrorRbacSession =>
+      'We couldn’t validate your session to go online. Sign out and sign in again.';
+
+  @override
+  String get driverOnlineErrorRbacTechnical =>
+      'We couldn’t verify permissions. Please try again in a few seconds.';
 
   @override
   String get driverTripInProgressTitle => 'Trip in progress';

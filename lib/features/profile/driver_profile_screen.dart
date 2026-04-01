@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -377,6 +379,32 @@ class _PremiumProfileAvatar extends StatelessWidget {
     Widget inner() {
       if (url == null || url.isEmpty) {
         return _InitialsAvatar(profile: profile, size: size, l10n: l10n);
+      }
+      // Backend suele devolver Base64 como data URL (`resolvePictureForClient`);
+      // `Image.network` no carga esquema `data:`.
+      if (url.startsWith('data:') && url.contains('base64,')) {
+        try {
+          final i = url.indexOf('base64,');
+          final b64 = url.substring(i + 7);
+          final bytes = base64Decode(b64);
+          return ClipOval(
+            child: Image.memory(
+              bytes,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return _InitialsAvatar(
+                  profile: profile,
+                  size: size,
+                  l10n: l10n,
+                );
+              },
+            ),
+          );
+        } catch (_) {
+          return _InitialsAvatar(profile: profile, size: size, l10n: l10n);
+        }
       }
       return ClipOval(
         child: Image.network(

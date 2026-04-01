@@ -1,10 +1,11 @@
 import 'dart:io';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-/// Canal y IDs para notificaciones de la app conductor (Google Play compliant).
-/// Solo se usan para ofertas de viaje cuando la app está en segundo plano.
+/// Notificaciones locales del conductor: FCM en foreground / data-only en background
+/// (ofertas las envía el backend por FCM; ver `sendDriverTripOffer`).
 class DriverNotificationService {
   DriverNotificationService._();
   static final DriverNotificationService instance = DriverNotificationService._();
@@ -51,61 +52,61 @@ class DriverNotificationService {
     debugPrint('[DriverNotification] Inicializado.');
   }
 
-  void _onNotificationTapped(NotificationResponse response) {
-    if (response.payload != null) {
-      debugPrint('[DriverNotification] Tapped payload=${response.payload}');
-      // Opcional: abrir pantalla concreta o refrescar ofertas.
+  static Future<void> showFcmDataOnlyMessage(RemoteMessage message) async {
+    final inst = DriverNotificationService.instance;
+    await inst.initialize();
+    final title = message.data['title']?.toString().trim();
+    final body = message.data['body']?.toString().trim();
+    if ((title == null || title.isEmpty) && (body == null || body.isEmpty)) {
+      return;
     }
+    final tripId =
+        message.data['tripId']?.toString() ?? message.data['trip_id']?.toString();
+    await inst._showFcmRaw(
+      title: title?.isNotEmpty == true ? title! : 'Texi Conductor',
+      body: body ?? '',
+      payload: tripId,
+    );
   }
 
-  /// Muestra notificación de nueva oferta solo si la app está en segundo plano.
-  /// Cumple con políticas de Google: no notificar cuando la app está visible.
-  Future<void> showTripOfferNotificationIfBackground({
-    required bool isAppInForeground,
-    required String tripId,
-    String? priceInfo,
-    String? originAddress,
-    String? destinationAddress,
-    double? etaMinutes,
-    double? distanceKm,
+  Future<void> showFcmForegroundMessage(RemoteMessage message) async {
+    if (!_initialized) await initialize();
+    final n = message.notification;
+    final title = n?.title?.trim().isNotEmpty == true
+        ? n!.title!.trim()
+        : (message.data['title']?.toString().trim().isNotEmpty == true
+            ? message.data['title']!.trim()
+            : 'Texi Conductor');
+    final body = n?.body?.trim().isNotEmpty == true
+        ? n!.body!.trim()
+        : (message.data['body']?.toString() ?? '');
+    final tripId =
+        message.data['tripId']?.toString() ?? message.data['trip_id']?.toString();
+    await _showFcmRaw(title: title, body: body, payload: tripId);
+  }
+
+  Future<void> _showFcmRaw({
+    required String title,
+    required String body,
+    String? payload,
   }) async {
-    if (isAppInForeground || !_initialized) return;
-    final safeOrigin =
-        (originAddress ?? '').isNotEmpty ? originAddress! : 'Punto de origen';
-    final safeDest =
-        (destinationAddress ?? '').isNotEmpty ? destinationAddress! : 'Destino del viaje';
-
-    String title = 'Nueva solicitud de viaje';
-    if (priceInfo != null && priceInfo.isNotEmpty) {
-      title = 'Nueva solicitud - \$$priceInfo';
-    }
-
-    final parts = <String>[];
-    parts.add('Desde: $safeOrigin');
-    parts.add('Hasta: $safeDest');
-      if (etaMinutes != null && distanceKm != null) {
-      final m = etaMinutes.round();
-      final dist =
-          distanceKm < 1 ? '${(distanceKm * 1000).round()} m' : '${distanceKm.toStringAsFixed(1)} km';
-      parts.add('~$m min / $dist');
-    }
-    final body = parts.join(' · ');
+    if (!_initialized) await initialize();
     const android = AndroidNotificationDetails(
       _channelId,
       _channelName,
-      channelDescription: 'Notificaciones de nuevas solicitudes de viaje.',
+      channelDescription: 'Notificaciones FCM y solicitudes de viaje.',
       importance: Importance.high,
       priority: Priority.high,
+      playSound: true,
     );
     const details = NotificationDetails(android: android);
-    final id = tripId.hashCode.abs() % 2147483647;
-    await _plugin.show(
-      id,
-      title,
-      body,
-      details,
-      payload: tripId,
-    );
-    debugPrint('[DriverNotification] Mostrada oferta tripId=$tripId');
+    final id = (payload ?? title + body).hashCode.abs() % 2147483647;
+    await _plugin.show(id, title, body, details, payload: payload);
+  }
+
+  void _onNotificationTapped(NotificationResponse response) {
+    if (response.payload != null && kDebugMode) {
+      debugPrint('[DriverNotification] Tapped payload=${response.payload}');
+    }
   }
 }

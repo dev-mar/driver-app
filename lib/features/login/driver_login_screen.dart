@@ -6,6 +6,7 @@ import '../../core/constants/app_assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_motion.dart';
 import '../../core/router/app_router.dart';
+import '../../core/session/driver_internal_tools_gate.dart';
 import '../../core/ui/driver_ui_states.dart';
 import '../../gen_l10n/app_localizations.dart';
 import '../session/driver_operational_profile.dart';
@@ -96,6 +97,7 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
 
     if (success) {
       ref.invalidate(driverOperationalProfileProvider);
+      ref.invalidate(driverInternalToolsVisibleProvider);
       try {
         final profile = await ref.read(driverOperationalProfileProvider.future);
         if (profile.needsVehicleRegistration) {

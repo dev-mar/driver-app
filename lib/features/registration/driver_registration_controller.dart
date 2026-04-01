@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../login/driver_login_controller.dart';
+import '../session/driver_operational_profile.dart';
 import 'driver_registration_models.dart';
 import 'driver_registration_repository.dart';
 
@@ -220,6 +221,8 @@ class DriverRegistrationFlowController
         carUuid: null,
         clearGlobalError: true,
       );
+      await loadCountries();
+      await _ensureCountryIdForVehicleOnly();
       await loadVehicleCatalog();
     } catch (e) {
       state = state.copyWith(
@@ -245,9 +248,12 @@ class DriverRegistrationFlowController
         step: step,
         registrationTokenSaved: true,
       );
-      unawaited(loadCountries());
       if (step >= 4) {
+        await loadCountries();
+        await _ensureCountryIdForVehicleOnly();
         await loadVehicleCatalog();
+      } else {
+        unawaited(loadCountries());
       }
       return false;
     } catch (e) {
@@ -474,6 +480,53 @@ class DriverRegistrationFlowController
       if (c.name == countryName) return c.id;
     }
     return null;
+  }
+
+  /// `registration.country_id` en alta v2 sin pasar por paso personal (login incompleto, agregar vehículo).
+  Future<void> _ensureCountryIdForVehicleOnly() async {
+    if (state.selectedCountryId != null) return;
+    try {
+      final p = await DriverOperationalProfile.fetch();
+      final cid = p.registrationCountryId;
+      if (cid != null && cid > 0) {
+        if (state.countries.isEmpty) await loadCountries();
+        GeoCountry? match;
+        for (final c in state.countries) {
+          if (c.id == cid) {
+            match = c;
+            break;
+          }
+        }
+        state = state.copyWith(
+          selectedCountryId: cid,
+          selectedCountryName: match?.name ?? state.selectedCountryName,
+          selectedCountryPhoneCode: (match != null && match.phoneCode.isNotEmpty)
+              ? match.phoneCode
+              : state.selectedCountryPhoneCode,
+        );
+        return;
+      }
+    } catch (_) {}
+    if (state.countries.isEmpty) {
+      await loadCountries();
+    }
+    GeoCountry? bolivia;
+    for (final c in state.countries) {
+      if (c.name.toLowerCase().trim() == 'bolivia') {
+        bolivia = c;
+        break;
+      }
+    }
+    final pick = bolivia ?? (state.countries.isNotEmpty ? state.countries.first : null);
+    if (pick != null) {
+      state = state.copyWith(
+        selectedCountryId: pick.id,
+        selectedCountryName: pick.name,
+        selectedCountryPhoneCode: pick.phoneCode.isNotEmpty
+            ? pick.phoneCode
+            : state.selectedCountryPhoneCode,
+      );
+    }
   }
 
   Future<void> loadCountries() async {
@@ -813,11 +866,16 @@ class DriverRegistrationFlowController
         );
         return;
       }
-      final countryId = state.selectedCountryId;
+      var countryId = state.selectedCountryId;
+      if (countryId == null) {
+        await _ensureCountryIdForVehicleOnly();
+        countryId = state.selectedCountryId;
+      }
       if (countryId == null) {
         state = state.copyWith(
           loading: false,
-          globalError: 'Falta el país del registro (paso personal). Volvé atrás y completá el país.',
+          globalError:
+              'No se pudo obtener el país para la placa del vehículo. Completá país y localidad en tu perfil o contactá soporte.',
         );
         return;
       }

@@ -11,6 +11,7 @@ class DriverOperationalProfile {
     required this.needsVehicleRegistration,
     required this.canOperateAsDriver,
     required this.registrationPhase,
+    this.registrationCountryId,
   });
 
   final String? uuid;
@@ -18,13 +19,26 @@ class DriverOperationalProfile {
   final bool canOperateAsDriver;
   final String registrationPhase;
 
+  /// `reference.countries.id` / `public.departments.country_id` vía localidad del staff; para `registration.country_id` en alta vehículo v2.
+  final int? registrationCountryId;
+
   factory DriverOperationalProfile.fromJson(Map<String, dynamic> json) {
     final u = json['uuid']?.toString();
+    final rawCountry = json['registration_country_id'];
+    int? countryId;
+    if (rawCountry is int) {
+      countryId = rawCountry;
+    } else if (rawCountry is num) {
+      countryId = rawCountry.toInt();
+    } else if (rawCountry != null) {
+      countryId = int.tryParse(rawCountry.toString());
+    }
     return DriverOperationalProfile(
       uuid: u != null && u.isNotEmpty ? u : null,
       needsVehicleRegistration: json['needs_vehicle_registration'] == true,
       canOperateAsDriver: json['can_operate_as_driver'] == true,
       registrationPhase: json['registration_phase']?.toString() ?? '',
+      registrationCountryId: countryId,
     );
   }
 

@@ -5,6 +5,10 @@
 class DriverBackendConfig {
   DriverBackendConfig._();
 
+  /// `applicationId` Android (FCM / google-services.json).
+  static const String firebaseAndroidApplicationId =
+      'com.taxitexi.texi_driver_app';
+
   static const String baseUrl = String.fromEnvironment(
     'TEXI_BACKEND_BASE_URL',
     defaultValue: 'https://bk-websockets-pre-prod.taxitexi.com',

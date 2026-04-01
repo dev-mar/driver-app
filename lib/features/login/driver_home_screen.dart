@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
@@ -16,6 +17,8 @@ import '../../core/theme/app_motion.dart';
 import '../../core/ui/driver_ui_states.dart';
 import '../../core/ui/texi_circular_avatar.dart';
 import '../../core/router/app_router.dart';
+import '../../core/session/driver_internal_tools_gate.dart';
+import '../../core/notifications/driver_fcm_navigation.dart';
 import '../../core/config/locale_provider.dart';
 import '../../gen_l10n/app_localizations.dart';
 import '../session/driver_operational_profile.dart';
@@ -23,6 +26,66 @@ import 'driver_realtime_controller.dart';
 import 'driver_active_trip_map.dart';
 import 'driver_login_controller.dart';
 import 'driver_online_auth_sheet.dart';
+
+Widget _buildMiniProfileAvatar(DriverRealtimeState realtime) {
+  const size = 52.0;
+  final raw = realtime.driverPictureProfile?.trim() ?? '';
+  if (raw.isEmpty) {
+    return TexiCircularAvatar(
+      diameter: size,
+      child: Icon(
+        Icons.directions_car_filled_rounded,
+        color: AppColors.primary.withValues(alpha: 0.9),
+        size: 28,
+      ),
+    );
+  }
+
+  // Si la firma ya expiró, evitamos renderizar una URL rota.
+  final exp = realtime.driverPictureExpiresAt;
+  if (exp != null && DateTime.now().isAfter(exp)) {
+    return TexiCircularAvatar(
+      diameter: size,
+      child: Icon(
+        Icons.directions_car_filled_rounded,
+        color: AppColors.primary.withValues(alpha: 0.9),
+        size: 28,
+      ),
+    );
+  }
+
+  Widget image;
+  if (raw.startsWith('data:') && raw.contains('base64,')) {
+    try {
+      final i = raw.indexOf('base64,');
+      final bytes = base64Decode(raw.substring(i + 7));
+      image = Image.memory(bytes, width: size, height: size, fit: BoxFit.cover);
+    } catch (_) {
+      image = Icon(
+        Icons.directions_car_filled_rounded,
+        color: AppColors.primary.withValues(alpha: 0.9),
+        size: 28,
+      );
+    }
+  } else {
+    image = Image.network(
+      raw,
+      width: size,
+      height: size,
+      fit: BoxFit.cover,
+      errorBuilder: (_, error, stackTrace) => Icon(
+        Icons.directions_car_filled_rounded,
+        color: AppColors.primary.withValues(alpha: 0.9),
+        size: 28,
+      ),
+    );
+  }
+
+  return TexiCircularAvatar(
+    diameter: size,
+    child: ClipOval(child: image),
+  );
+}
 
 /// Home del conductor:
 /// - Estado conectado / desconectado (switch grande).
@@ -39,7 +102,6 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
 
   String? _lastRatedTripId;
   bool _isRatingSheetOpen = false;
-  String? _lastAutoReconnectTripId;
   final LocalAuthentication _localAuth = LocalAuthentication();
   DateTime? _lastBackgroundAt;
   bool _keepActivePromptOpen = false;
@@ -50,13 +112,33 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
   late final Animation<double> _homeListFade;
   late final Animation<Offset> _homeListSlide;
   bool _keepScreenOnApplied = false;
+  int _lastHandledFcmTripOfferBump = 0;
+
+  void _onFcmTripOfferOpenBump() {
+    final bump = driverFcmTripOfferOpenBump.value;
+    if (bump <= _lastHandledFcmTripOfferBump) return;
+    _lastHandledFcmTripOfferBump = bump;
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      if (messenger == null) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).driverFcmOpenedTripOfferHint),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    driverFcmTripOfferOpenBump.addListener(_onFcmTripOfferOpenBump);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.invalidate(driverOperationalProfileProvider);
+      _onFcmTripOfferOpenBump();
     });
     _homeListEntrance = AnimationController(
       vsync: this,
@@ -74,6 +156,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
 
   @override
   void dispose() {
+    driverFcmTripOfferOpenBump.removeListener(_onFcmTripOfferOpenBump);
     unawaited(WakelockPlus.disable());
     _homeListEntrance.dispose();
     WidgetsBinding.instance.removeObserver(this);
@@ -113,8 +196,11 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
   }
 
   Future<void> _logout(BuildContext context) async {
-    await ref.read(driverRealtimeProvider.notifier).setOnline(false);
+    await ref
+        .read(driverRealtimeProvider.notifier)
+        .setOnline(false, forceOffline: true);
     ref.invalidate(driverOperationalProfileProvider);
+    ref.invalidate(driverInternalToolsVisibleProvider);
     await ref.read(driverLoginControllerProvider.notifier).logout();
     if (context.mounted) context.go('/login');
   }
@@ -365,6 +451,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     final realtime = ref.watch(driverRealtimeProvider);
     final online = realtime.online;
     final connecting = realtime.connecting;
+    final switchVisualOn = realtime.availabilitySwitchVisualOn;
     final pendingOffers = realtime.pendingOffers;
     final activeTrip = realtime.activeTrip;
     final tripPendingRating = realtime.tripPendingRating;
@@ -395,8 +482,9 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
 
     // Si el socket/ciclo cayó mientras calificas, reintentamos activar "online"
     // automáticamente para que el switch quede activo sin intervención manual.
-    final bool shouldAttemptAutoReconnect =
-        tripPendingRating != null || shouldIgnoreActiveTripRestore;
+    final bool shouldAttemptAutoReconnect = activeTrip != null ||
+        tripPendingRating != null ||
+        shouldIgnoreActiveTripRestore;
 
     final blockOnlineForTrips = ref
         .watch(driverOperationalProfileProvider)
@@ -406,16 +494,10 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
         !online &&
         !connecting &&
         !blockOnlineForTrips) {
-      final reconnectTripId =
-          tripPendingRating?.tripId ?? ignoreActiveTripRestoreTripId;
-      if (reconnectTripId != null && _lastAutoReconnectTripId != reconnectTripId) {
-        _lastAutoReconnectTripId = reconnectTripId;
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          if (!mounted) return;
-          if (!await _vehicleGateAllowsOnline()) return;
-          await ref.read(driverRealtimeProvider.notifier).setOnline(true);
-        });
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(driverRealtimeProvider.notifier).touchReconnectIfHasActiveWork();
+      });
     }
 
     // Cuando el viaje llega a `completed`, el controlador guarda el trip en
@@ -453,7 +535,28 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
       case 'UNKNOWN':
         errorMessage = l10n.driverOnlineErrorUnknown;
         break;
+      case 'ACTIVE_TRIP_CANT_GO_OFFLINE':
+        errorMessage = l10n.driverOnlineErrorActiveTripCantGoOffline;
+        break;
+      case 'SOCKET_RECONNECTING':
+        errorMessage = l10n.driverOnlineErrorReconnecting;
+        break;
+      case 'RBAC_FORBIDDEN':
+        errorMessage = l10n.driverOnlineErrorRbacForbidden;
+        break;
+      case 'RBAC_NO_IDENTITY':
+      case 'RBAC_NO_AUTH':
+        errorMessage = l10n.driverOnlineErrorRbacSession;
+        break;
+      case 'RBAC_RESOLVE':
+      case 'RBAC_ERROR':
+      case 'RBAC_CONFIG':
+        errorMessage = l10n.driverOnlineErrorRbacTechnical;
+        break;
     }
+
+    final showInternalTools =
+        ref.watch(driverInternalToolsVisibleProvider).valueOrNull == true;
 
     return Scaffold(
       appBar: AppBar(
@@ -469,6 +572,9 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
             icon: const Icon(Icons.more_vert_rounded),
             onSelected: (value) {
               if (value == 'profile') context.goNamed(AppRouter.profile);
+              if (value == 'registered_images') {
+                context.pushNamed(AppRouter.registeredImages);
+              }
               if (value == 'add_vehicle') {
                 context.pushNamed(
                   AppRouter.register,
@@ -486,6 +592,11 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                 value: 'add_vehicle',
                 child: Text(l10n.driverHomeMenuAddVehicle),
               ),
+              if (showInternalTools)
+                const PopupMenuItem(
+                  value: 'registered_images',
+                  child: Text('Imágenes registradas'),
+                ),
               PopupMenuItem(value: 'logout', child: Text(l10n.driverLogout)),
             ],
           ),
@@ -613,14 +724,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TexiCircularAvatar(
-                    diameter: 52,
-                    child: Icon(
-                      Icons.directions_car_filled_rounded,
-                      color: AppColors.primary.withValues(alpha: 0.9),
-                      size: 28,
-                    ),
-                  ),
+                  _buildMiniProfileAvatar(realtime),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -688,7 +792,9 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                                   ? AppColors.primary
                                   : online
                                       ? AppColors.success
-                                      : AppColors.textSecondary,
+                                      : switchVisualOn
+                                          ? AppColors.primary
+                                          : AppColors.textSecondary,
                             ),
                             const SizedBox(width: 6),
                             Expanded(
@@ -697,7 +803,9 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                                     ? l10n.driverHomeMiniConnecting
                                     : online
                                         ? l10n.driverHomeMiniStatusOnline
-                                        : l10n.driverHomeMiniStatusOffline,
+                                        : switchVisualOn
+                                            ? l10n.driverHomeMiniStatusRestoringConnection
+                                            : l10n.driverHomeMiniStatusOffline,
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
@@ -714,7 +822,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Switch.adaptive(
-                        value: online,
+                        value: switchVisualOn,
                         activeThumbColor: AppColors.onPrimary,
                         activeTrackColor: AppColors.primary,
                         onChanged: connecting
@@ -723,11 +831,16 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                                 if (value && !online) {
                                   if (!await _vehicleGateAllowsOnline()) return;
                                   if (!context.mounted) return;
-                                  final ok =
-                                      await _authenticateBeforeGoingOnline(
-                                    context,
-                                  );
-                                  if (!ok) return;
+                                  final rtNow = ref.read(driverRealtimeProvider);
+                                  final skipLocalAuth = rtNow.activeTrip != null ||
+                                      rtNow.tripPendingRating != null;
+                                  if (!skipLocalAuth) {
+                                    final ok =
+                                        await _authenticateBeforeGoingOnline(
+                                      context,
+                                    );
+                                    if (!ok) return;
+                                  }
                                 }
                                 if (!context.mounted) return;
                                 await ref
@@ -828,6 +941,18 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                       case 'TRIP_TAKEN':
                       case 'OFFER_ALREADY_TAKEN':
                         offerErrorMessage = l10n.driverOfferErrorTaken;
+                        break;
+                      case 'RBAC_FORBIDDEN':
+                        offerErrorMessage = l10n.driverOnlineErrorRbacForbidden;
+                        break;
+                      case 'RBAC_NO_IDENTITY':
+                      case 'RBAC_NO_AUTH':
+                        offerErrorMessage = l10n.driverOnlineErrorRbacSession;
+                        break;
+                      case 'RBAC_RESOLVE':
+                      case 'RBAC_ERROR':
+                      case 'RBAC_CONFIG':
+                        offerErrorMessage = l10n.driverOnlineErrorRbacTechnical;
                         break;
                     }
                     return _TripOfferCard(

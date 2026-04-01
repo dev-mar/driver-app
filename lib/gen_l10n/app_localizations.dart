@@ -554,6 +554,12 @@ abstract class AppLocalizations {
   /// **'Connecting…'**
   String get driverHomeMiniConnecting;
 
+  /// No description provided for @driverHomeMiniStatusRestoringConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring connection…'**
+  String get driverHomeMiniStatusRestoringConnection;
+
   /// No description provided for @driverHomeVehicleRegistrationBanner.
   ///
   /// In en, this message translates to:
@@ -571,6 +577,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Register your vehicle before going online to receive trips.'**
   String get driverHomeCannotGoOnlineWithoutVehicle;
+
+  /// No description provided for @driverFcmOpenedTripOfferHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You opened a trip request alert. If you don\'t see the offer, go online; offers arrive over the live connection.'**
+  String get driverFcmOpenedTripOfferHint;
 
   /// No description provided for @driverHomeMiniVehicleEmpty.
   ///
@@ -847,6 +859,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not go online. Please try again.'**
   String get driverOnlineErrorUnknown;
+
+  /// No description provided for @driverOnlineErrorActiveTripCantGoOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'You can’t go offline while you have an active trip or a rating pending. Finish or cancel the trip first.'**
+  String get driverOnlineErrorActiveTripCantGoOffline;
+
+  /// No description provided for @driverOnlineErrorReconnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection lost. Reconnecting…'**
+  String get driverOnlineErrorReconnecting;
+
+  /// No description provided for @driverOnlineErrorRbacForbidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account doesn’t have permission for this action. If it keeps happening, sign out and sign back in or contact support.'**
+  String get driverOnlineErrorRbacForbidden;
+
+  /// No description provided for @driverOnlineErrorRbacSession.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn’t validate your session to go online. Sign out and sign in again.'**
+  String get driverOnlineErrorRbacSession;
+
+  /// No description provided for @driverOnlineErrorRbacTechnical.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn’t verify permissions. Please try again in a few seconds.'**
+  String get driverOnlineErrorRbacTechnical;
 
   /// No description provided for @driverTripInProgressTitle.
   ///

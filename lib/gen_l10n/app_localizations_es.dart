@@ -256,6 +256,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverHomeMiniConnecting => 'Conectando…';
 
   @override
+  String get driverHomeMiniStatusRestoringConnection => 'Restaurando conexión…';
+
+  @override
   String get driverHomeVehicleRegistrationBanner =>
       'Falta registrar tu vehículo. Sin vehículo no podés recibir viajes.';
 
@@ -265,6 +268,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get driverHomeCannotGoOnlineWithoutVehicle =>
       'Registrá tu vehículo para poder conectarte y recibir viajes.';
+
+  @override
+  String get driverFcmOpenedTripOfferHint =>
+      'Abriste una alerta de solicitud. Si no ves la oferta, activá el modo en línea; las ofertas llegan por conexión en tiempo real.';
 
   @override
   String get driverHomeMiniVehicleEmpty => 'Sin vehículo registrado';
@@ -419,6 +426,26 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get driverOnlineErrorUnknown =>
       'No se pudo poner en línea. Intenta de nuevo.';
+
+  @override
+  String get driverOnlineErrorActiveTripCantGoOffline =>
+      'No podés desconectarte mientras tenés un viaje activo o pendiente de calificación. Completá o cancelá el viaje primero.';
+
+  @override
+  String get driverOnlineErrorReconnecting =>
+      'Se perdió la conexión. Reconectando…';
+
+  @override
+  String get driverOnlineErrorRbacForbidden =>
+      'Tu cuenta no tiene permiso para esta acción. Si el problema sigue, cerrá sesión y volvé a entrar o contactá soporte.';
+
+  @override
+  String get driverOnlineErrorRbacSession =>
+      'No pudimos validar tu sesión para operar. Cerrá sesión y volvé a iniciar sesión.';
+
+  @override
+  String get driverOnlineErrorRbacTechnical =>
+      'Hubo un problema al verificar permisos. Intentá de nuevo en unos segundos.';
 
   @override
   String get driverTripInProgressTitle => 'Viaje en curso';

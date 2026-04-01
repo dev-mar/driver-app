@@ -88,9 +88,11 @@
   "driverHomeMiniStatusOnline": "En línea",
   "driverHomeMiniStatusOffline": "Desconectado",
   "driverHomeMiniConnecting": "Conectando…",
+  "driverHomeMiniStatusRestoringConnection": "Restaurando conexión…",
   "driverHomeVehicleRegistrationBanner": "Falta registrar tu vehículo. Sin vehículo no podés recibir viajes.",
   "driverHomeVehicleRegistrationCta": "Completar datos del vehículo",
   "driverHomeCannotGoOnlineWithoutVehicle": "Registrá tu vehículo para poder conectarte y recibir viajes.",
+  "driverFcmOpenedTripOfferHint": "Abriste una alerta de solicitud. Si no ves la oferta, activá el modo en línea; las ofertas llegan por conexión en tiempo real.",
   "driverHomeMiniVehicleEmpty": "Sin vehículo registrado",
   "driverHomeMiniRating": "{rating} ★",
   "@driverHomeMiniRating": {
@@ -143,6 +145,11 @@
   "driverOnlineErrorSocket": "No se pudo conectar al servidor. Intenta de nuevo.",
   "driverOnlineErrorVehicleRequired": "Necesitás tener un vehículo registrado para conectarte. Completá el registro del vehículo o usá “Agregar otro vehículo” en el menú.",
   "driverOnlineErrorUnknown": "No se pudo poner en línea. Intenta de nuevo.",
+  "driverOnlineErrorActiveTripCantGoOffline": "No podés desconectarte mientras tenés un viaje activo o pendiente de calificación. Completá o cancelá el viaje primero.",
+  "driverOnlineErrorReconnecting": "Se perdió la conexión. Reconectando…",
+  "driverOnlineErrorRbacForbidden": "Tu cuenta no tiene permiso para esta acción. Si el problema sigue, cerrá sesión y volvé a entrar o contactá soporte.",
+  "driverOnlineErrorRbacSession": "No pudimos validar tu sesión para operar. Cerrá sesión y volvé a iniciar sesión.",
+  "driverOnlineErrorRbacTechnical": "Hubo un problema al verificar permisos. Intentá de nuevo en unos segundos.",
 
   "driverTripInProgressTitle": "Viaje en curso",
   "driverTripStatusAccepted": "Ir a recoger",
