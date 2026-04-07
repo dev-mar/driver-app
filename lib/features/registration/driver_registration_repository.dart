@@ -216,17 +216,17 @@ class DriverRegistrationRepository {
     final code = e.response?.statusCode;
     final body = e.response?.data;
     if (code == 413) {
-      final s = body is String ? body : '';
-      final looksNginx = s.toLowerCase().contains('request entity too large') ||
-          s.toLowerCase().contains('entity too large');
-      if (looksNginx) {
-        return 'Las fotos o el envío superan el límite del proxy (HTTP 413). '
-            'Probá imágenes más livianas o pedí aumentar el límite del cuerpo en el proxy '
-            '(p. ej. nginx client_max_body_size) frente al backend.';
-      }
-      return 'Las fotos o el envío superan el límite del servidor (HTTP 413). '
-          'Probá imágenes más livianas, subida por S3 (presign) si está habilitada, '
-          'u operaciones puede subir API_V1_JSON_LIMIT en el backend.';
+      final s = body is String ? body.toLowerCase() : '';
+      // Infra actual: tope principal en Express body JSON (API_V1_JSON_LIMIT). Solo si el cuerpo
+      // es HTML/texto típico de proxy/CDN mencionamos capa intermedia (no nginx por defecto).
+      final hintProxy = s.contains('cloudflare') ||
+              s.contains('nginx') ||
+              s.contains('request entity too large')
+          ? ' Si el HTML/texto del error menciona un proxy o CDN, el límite puede estar ahí.'
+          : '';
+      return 'Las fotos o el envío superan el límite permitido (HTTP 413). '
+          'Probá imágenes más livianas. En nuestro backend el JSON suele ir limitado por '
+          'API_V1_JSON_LIMIT (Express); con subida por S3 (URL firmada) el tope es otro.$hintProxy';
     }
     final fromJson = _extractErrorMessage(body);
     if (fromJson != 'Error del servidor') return fromJson;

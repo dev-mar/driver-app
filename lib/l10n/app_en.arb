@@ -141,6 +141,8 @@
 
   "driverOnlineErrorNoInternet": "No internet connection. Connect to go online.",
   "driverOnlineErrorNoGps": "Enable location permissions to share your position.",
+  "driverOnlineErrorGpsServiceOff": "Turn on device location services to go online and receive trip offers.",
+  "driverOnlineErrorNoNotifications": "Enable notifications for this app. Without them you may miss trip offers when the app is in the background.",
   "driverOnlineErrorNoToken": "Invalid session. Please sign in again.",
   "driverOnlineErrorSocket": "Could not connect to the server. Please try again.",
   "driverOnlineErrorVehicleRequired": "You need a registered vehicle to connect. Complete vehicle registration or use “Add another vehicle” in the menu.",
@@ -150,6 +152,8 @@
   "driverOnlineErrorRbacForbidden": "Your account doesn’t have permission for this action. If it keeps happening, sign out and sign back in or contact support.",
   "driverOnlineErrorRbacSession": "We couldn’t validate your session to go online. Sign out and sign in again.",
   "driverOnlineErrorRbacTechnical": "We couldn’t verify permissions. Please try again in a few seconds.",
+
+  "driverHomeOnlineRequirementsHint": "Only needed to receive trips: the server must see you online, with location on, and be able to notify you. Other screens (like your profile) don’t need this.",
 
   "driverTripInProgressTitle": "Trip in progress",
   "driverTripStatusAccepted": "Go to pickup",

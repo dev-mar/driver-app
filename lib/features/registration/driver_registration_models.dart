@@ -694,6 +694,75 @@ class VehicleCatalog {
   }
 }
 
+// --- Registro vehículo: ocultar servicio "exclusivo"; solo Estándar / Confort en UI ---
+
+/// Servicios que no se ofrecen en el alta de vehículo (producto solo Estándar + Confort).
+bool registrationExcludedServiceType(VehicleCatalogServiceType s) {
+  final c = (s.code ?? '').trim().toLowerCase();
+  final n = s.name.trim().toLowerCase();
+  if (c.contains('exclusivo') || c.contains('exclusive')) return true;
+  if (n.contains('exclusivo')) return true;
+  return false;
+}
+
+/// Filtra [service_type_ids] de categoría para chips de registro.
+List<int> filterServiceTypeIdsForVehicleRegistration(
+  VehicleCatalog catalog,
+  List<int> categoryServiceTypeIds,
+) {
+  final out = <int>[];
+  for (final id in categoryServiceTypeIds) {
+    VehicleCatalogServiceType? st;
+    for (final s in catalog.serviceTypes) {
+      if (s.id == id) {
+        st = s;
+        break;
+      }
+    }
+    if (st == null) {
+      out.add(id);
+      continue;
+    }
+    if (!registrationExcludedServiceType(st)) out.add(id);
+  }
+  return out;
+}
+
+/// Lista para modo `compatibility_mode` (dropdown único).
+List<VehicleCatalogServiceType> filterServiceTypesForVehicleRegistrationCompat(
+  List<VehicleCatalogServiceType> all,
+) {
+  return all.where((s) => !registrationExcludedServiceType(s)).toList();
+}
+
+/// Valor inicial del dropdown compat: respeta selección si sigue visible; si no, estándar.
+int? registrationDefaultCompatServiceTypeId(
+  VehicleCatalog catalog,
+  List<VehicleCatalogServiceType> visible,
+  int? currentSelection,
+) {
+  if (visible.isEmpty) return null;
+  if (currentSelection != null && visible.any((s) => s.id == currentSelection)) {
+    return currentSelection;
+  }
+  for (final s in visible) {
+    final c = (s.code ?? '').trim().toLowerCase();
+    if (c == 'standard' ||
+        c == 'estandar' ||
+        c == 'economy' ||
+        c == 'basic') {
+      return s.id;
+    }
+  }
+  for (final s in visible) {
+    final n = s.name.toLowerCase();
+    if (n.contains('estándar') || n.contains('estandar') || n.contains('standard')) {
+      return s.id;
+    }
+  }
+  return visible.first.id;
+}
+
 /// Estado de reanudación: `GET /api/v2/driver/registration` (data incluye campos v1 + `schema_version`).
 class DriverRegistrationStatusDto {
   const DriverRegistrationStatusDto({

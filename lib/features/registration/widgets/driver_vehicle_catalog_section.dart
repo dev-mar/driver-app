@@ -80,7 +80,9 @@ class DriverVehicleCatalogSection extends StatelessWidget {
         ? cat.categoriesForType(selectedVehicleTypeId!)
         : <VehicleCatalogCategory>[];
     final category = cat?.categoryById(selectedVehicleCategoryId);
-    final allowedServiceIds = category?.serviceTypeIds ?? const <int>[];
+    final allowedServiceIds = category != null && cat != null
+        ? filterServiceTypeIdsForVehicleRegistration(cat, category.serviceTypeIds)
+        : const <int>[];
 
     final mode = (catalogTransportMode ?? 'road_vehicle').toLowerCase();
     final showExtended =
@@ -140,38 +142,54 @@ class DriverVehicleCatalogSection extends StatelessWidget {
             label: Text(l10n.driverRegCatalogLoad),
           ),
         ] else if (cat.compatibilityMode) ...[
-          if (cat.serviceTypes.isEmpty) ...[
-            RegistrationSoftInfoRow(
-              text: l10n.driverRegCatalogCompatEmptyUsesDefault,
-            ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: () => onReloadCatalog(),
-              icon: const Icon(Icons.refresh_rounded),
-              label: Text(l10n.driverRegCatalogRetry),
-            ),
-          ] else
-            DropdownButtonFormField<int>(
-              key: ValueKey<int>(cat.serviceTypes.length),
-              initialValue: cat.serviceTypes
-                      .any((s) => s.id == compatSelectedServiceTypeId)
-                  ? compatSelectedServiceTypeId
-                  : cat.serviceTypes.first.id,
-              decoration: InputDecoration(
-                labelText: l10n.driverRegFieldServiceType,
-              ),
-              items: cat.serviceTypes
-                  .map(
-                    (s) => DropdownMenuItem(
-                      value: s.id,
-                      child: Text(displayServiceTypeName(s.name, l10n)),
+          Builder(
+            builder: (context) {
+              final compatTypes =
+                  filterServiceTypesForVehicleRegistrationCompat(cat.serviceTypes);
+              if (compatTypes.isEmpty) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    RegistrationSoftInfoRow(
+                      text: cat.serviceTypes.isEmpty
+                          ? l10n.driverRegCatalogCompatEmptyUsesDefault
+                          : l10n.driverRegCatalogNoServiceTypes,
                     ),
-                  )
-                  .toList(),
-              onChanged: (v) {
-                if (v != null) onSelectCompatServiceType(v);
-              },
-            ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: () => onReloadCatalog(),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: Text(l10n.driverRegCatalogRetry),
+                    ),
+                  ],
+                );
+              }
+              final initialCompat = registrationDefaultCompatServiceTypeId(
+                    cat,
+                    compatTypes,
+                    compatSelectedServiceTypeId,
+                  ) ??
+                  compatTypes.first.id;
+              return DropdownButtonFormField<int>(
+                key: ValueKey<int>(compatTypes.length),
+                initialValue: initialCompat,
+                decoration: InputDecoration(
+                  labelText: l10n.driverRegFieldServiceType,
+                ),
+                items: compatTypes
+                    .map(
+                      (s) => DropdownMenuItem(
+                        value: s.id,
+                        child: Text(displayServiceTypeName(s.name, l10n)),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null) onSelectCompatServiceType(v);
+                },
+              );
+            },
+          ),
         ] else ...[
           if (showExtended) ...[
             Text(

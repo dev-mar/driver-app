@@ -11,6 +11,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_motion.dart';
 import '../../gen_l10n/app_localizations.dart';
 import '../login/driver_login_controller.dart';
+import '../login/driver_realtime_controller.dart';
 import '../session/driver_operational_profile.dart';
 import 'driver_registration_controller.dart';
 import 'driver_registration_models.dart';
@@ -526,6 +527,7 @@ class _DriverRegistrationFlowScreenState
                 FilledButton(
                   onPressed: () {
                     Navigator.of(ctx).pop();
+                    ref.invalidate(driverRealtimeProvider);
                     ref.read(driverLoginControllerProvider.notifier).logout();
                     if (context.mounted) context.goNamed(AppRouter.login);
                   },
@@ -1060,7 +1062,10 @@ class _DriverRegistrationFlowScreenState
                 _ProfilePhotoCircleSlot(
                   base64Image: _faceB64,
                   onTap: () async {
-                    final b64 = await pickImageAsBase64(context, maxWidth: 1200);
+                    final b64 = await pickImageAsBase64(
+                      context,
+                      kind: DriverRegistrationImageKind.facePortrait,
+                    );
                     _applyPickedImage(b64, (v) => _faceB64 = v);
                   },
                 ),
@@ -1432,8 +1437,7 @@ class _DriverRegistrationFlowScreenState
                       onTap: () async {
                         final b64 = await pickImageAsBase64(
                           context,
-                          maxWidth: 1400,
-                          maxBytes: 750 * 1024,
+                          kind: DriverRegistrationImageKind.vehicleAngle,
                         );
                         _applyPickedImage(b64, (v) => _carFrontB64 = v);
                       },
@@ -1447,8 +1451,7 @@ class _DriverRegistrationFlowScreenState
                       onTap: () async {
                         final b64 = await pickImageAsBase64(
                           context,
-                          maxWidth: 1400,
-                          maxBytes: 750 * 1024,
+                          kind: DriverRegistrationImageKind.vehicleAngle,
                         );
                         _applyPickedImage(b64, (v) => _carBackB64 = v);
                       },
@@ -1462,8 +1465,7 @@ class _DriverRegistrationFlowScreenState
                       onTap: () async {
                         final b64 = await pickImageAsBase64(
                           context,
-                          maxWidth: 1400,
-                          maxBytes: 750 * 1024,
+                          kind: DriverRegistrationImageKind.vehicleAngle,
                         );
                         _applyPickedImage(b64, (v) => _carLeftB64 = v);
                       },
@@ -1477,8 +1479,7 @@ class _DriverRegistrationFlowScreenState
                       onTap: () async {
                         final b64 = await pickImageAsBase64(
                           context,
-                          maxWidth: 1400,
-                          maxBytes: 750 * 1024,
+                          kind: DriverRegistrationImageKind.vehicleAngle,
                         );
                         _applyPickedImage(b64, (v) => _carRightB64 = v);
                       },

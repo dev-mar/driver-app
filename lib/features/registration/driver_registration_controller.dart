@@ -281,7 +281,15 @@ class DriverRegistrationFlowController
     try {
       final cat = await _repo.fetchVehicleCatalog();
       if (cat.compatibilityMode) {
-        final sid = cat.serviceTypes.isNotEmpty ? cat.serviceTypes.first.id : 1;
+        final visible = filterServiceTypesForVehicleRegistrationCompat(cat.serviceTypes);
+        final sid = registrationDefaultCompatServiceTypeId(
+              cat,
+              visible,
+              state.compatSelectedServiceTypeId,
+            ) ??
+            (visible.isNotEmpty
+                ? visible.first.id
+                : (cat.serviceTypes.isNotEmpty ? cat.serviceTypes.first.id : 1));
         state = state.copyWith(
           vehicleCatalogLoading: false,
           vehicleCatalog: cat,
@@ -318,7 +326,8 @@ class DriverRegistrationFlowController
             vehicleCatalog: cat,
             selectedVehicleTypeId: tid,
             selectedVehicleCategoryId: c0.id,
-            selectedEnabledServiceTypeIds: List<int>.from(c0.serviceTypeIds),
+            selectedEnabledServiceTypeIds:
+                _enabledServiceIdsDefaultStandardOnly(cat, c0.serviceTypeIds),
             compatSelectedServiceTypeId: null,
           );
         }
@@ -408,7 +417,9 @@ class DriverRegistrationFlowController
         vtId = vt.id;
         final pick = _defaultCategoryForTypeAndMode(cat, vt.id, mode);
         catId = pick?.id;
-        stIds = pick != null ? List<int>.from(pick.serviceTypeIds) : const [];
+        stIds = pick != null
+            ? _enabledServiceIdsDefaultStandardOnly(cat, pick.serviceTypeIds)
+            : const [];
       }
     }
     state = state.copyWith(
@@ -441,7 +452,7 @@ class DriverRegistrationFlowController
       selectedVehicleTypeId: typeId,
       selectedVehicleCategoryId: c0?.id,
       selectedEnabledServiceTypeIds:
-          c0 != null ? List<int>.from(c0.serviceTypeIds) : const [],
+          c0 != null ? _enabledServiceIdsDefaultStandardOnly(cat, c0.serviceTypeIds) : const [],
     );
   }
 
@@ -452,14 +463,16 @@ class DriverRegistrationFlowController
     if (c == null) return;
     state = state.copyWith(
       selectedVehicleCategoryId: categoryId,
-      selectedEnabledServiceTypeIds: List<int>.from(c.serviceTypeIds),
+      selectedEnabledServiceTypeIds: _enabledServiceIdsDefaultStandardOnly(cat, c.serviceTypeIds),
     );
   }
 
   void toggleVehicleCatalogServiceType(int serviceTypeId) {
     final cat = state.vehicleCatalog;
     if (cat == null || cat.compatibilityMode) return;
-    final allowed = cat.categoryById(state.selectedVehicleCategoryId)?.serviceTypeIds ?? const [];
+    final rawAllowed =
+        cat.categoryById(state.selectedVehicleCategoryId)?.serviceTypeIds ?? const [];
+    final allowed = filterServiceTypeIdsForVehicleRegistration(cat, rawAllowed);
     if (!allowed.contains(serviceTypeId)) return;
     final cur = List<int>.from(state.selectedEnabledServiceTypeIds);
     final had = cur.contains(serviceTypeId);
@@ -468,11 +481,64 @@ class DriverRegistrationFlowController
     } else {
       cur.add(serviceTypeId);
     }
+    if (cur.isEmpty) {
+      final fb = _defaultServiceTypeIdPreferStandard(cat, allowed);
+      if (fb != null) cur.add(fb);
+    }
     state = state.copyWith(selectedEnabledServiceTypeIds: cur);
   }
 
   void selectCompatVehicleServiceType(int serviceTypeId) {
     state = state.copyWith(compatSelectedServiceTypeId: serviceTypeId);
+  }
+
+  /// Prioriza servicio tipo estándar/económico entre los permitidos; si no hay match, el primero.
+  int? _defaultServiceTypeIdPreferStandard(
+    VehicleCatalog vcat,
+    List<int> allowedIds,
+  ) {
+    if (allowedIds.isEmpty) return null;
+    const preferredCodes = <String>{
+      'standard',
+      'estandar',
+      'economy',
+      'economico',
+      'basic',
+      'regular',
+    };
+    for (final id in allowedIds) {
+      final c = vcat.serviceTypeCodeFor(id)?.toLowerCase();
+      if (c != null && preferredCodes.contains(c)) return id;
+    }
+    for (final id in allowedIds) {
+      String name = '';
+      for (final s in vcat.serviceTypes) {
+        if (s.id == id) {
+          name = s.name.toLowerCase();
+          break;
+        }
+      }
+      if (name.contains('estándar') ||
+          name.contains('estandar') ||
+          name.contains('standard') ||
+          name.contains('económ') ||
+          name.contains('economico')) {
+        return id;
+      }
+    }
+    return allowedIds.first;
+  }
+
+  /// Solo IDs registrables (sin exclusivo) y por defecto únicamente el estándar.
+  List<int> _enabledServiceIdsDefaultStandardOnly(
+    VehicleCatalog cat,
+    List<int> categoryRawIds,
+  ) {
+    final reg = filterServiceTypeIdsForVehicleRegistration(cat, categoryRawIds);
+    if (reg.isEmpty) return [];
+    final d = _defaultServiceTypeIdPreferStandard(cat, reg);
+    if (d != null) return [d];
+    return [reg.first];
   }
 
   String? _phoneCodeForCountryName(String countryName) {
@@ -878,7 +944,7 @@ class DriverRegistrationFlowController
       if (vcat == null || state.vehicleCatalogLoading) {
         state = state.copyWith(
           loading: false,
-          globalError: 'Esperá a que cargue el catálogo del vehículo o reintentá.',
+          globalError: 'Espera a que cargue el catálogo del vehículo o reintenta.',
         );
         return;
       }
@@ -905,11 +971,10 @@ class DriverRegistrationFlowController
       }
       final tid = state.selectedVehicleTypeId;
       final cid = state.selectedVehicleCategoryId;
-      final enabled = state.selectedEnabledServiceTypeIds;
-      if (tid == null || cid == null || enabled.isEmpty) {
+      if (tid == null || cid == null) {
         state = state.copyWith(
           loading: false,
-          globalError: 'Completá tipo de vehículo, categoría y al menos un servicio.',
+          globalError: 'Completa tipo de vehículo y categoría.',
         );
         return;
       }
@@ -917,12 +982,37 @@ class DriverRegistrationFlowController
       if (category == null || category.serviceTypeIds.isEmpty) {
         state = state.copyWith(
           loading: false,
-          globalError: 'La categoría elegida no tiene servicios habilitados. Elegí otra.',
+          globalError: 'La categoría elegida no tiene servicios habilitados. Elige otra.',
+        );
+        return;
+      }
+      final regIds = filterServiceTypeIdsForVehicleRegistration(vcat, category.serviceTypeIds);
+      if (regIds.isEmpty) {
+        state = state.copyWith(
+          loading: false,
+          globalError:
+              'No hay servicios disponibles para registro en esta categoría. Elige otra o contacta soporte.',
+        );
+        return;
+      }
+      var enabled = List<int>.from(state.selectedEnabledServiceTypeIds);
+      final hadNoneSelected = enabled.isEmpty;
+      if (hadNoneSelected) {
+        final fb = _defaultServiceTypeIdPreferStandard(vcat, regIds);
+        if (fb != null) enabled = [fb];
+      }
+      if (hadNoneSelected && enabled.isNotEmpty) {
+        state = state.copyWith(selectedEnabledServiceTypeIds: enabled);
+      }
+      if (enabled.isEmpty) {
+        state = state.copyWith(
+          loading: false,
+          globalError: 'No hay servicios configurados para esta categoría. Elige otra o contacta soporte.',
         );
         return;
       }
       for (final e in enabled) {
-        if (!category.serviceTypeIds.contains(e)) {
+        if (!regIds.contains(e)) {
           state = state.copyWith(
             loading: false,
             globalError: 'Hay un servicio seleccionado que no aplica a la categoría.',
