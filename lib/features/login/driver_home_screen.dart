@@ -27,6 +27,14 @@ import 'driver_active_trip_map.dart';
 import 'driver_login_controller.dart';
 import 'driver_online_auth_sheet.dart';
 
+/// Errores al activar el switch "en línea" por permisos / GPS / notificaciones:
+/// mostramos un hint breve solo en este contexto, no en otras pantallas.
+const _kDriverOnlinePermissionHintCodes = <String>{
+  'NO_GPS',
+  'GPS_SERVICE_OFF',
+  'NO_NOTIFICATIONS',
+};
+
 Widget _buildMiniProfileAvatar(DriverRealtimeState realtime) {
   const size = 52.0;
   final raw = realtime.driverPictureProfile?.trim() ?? '';
@@ -113,6 +121,10 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
   late final Animation<Offset> _homeListSlide;
   bool _keepScreenOnApplied = false;
   int _lastHandledFcmTripOfferBump = 0;
+
+  /// La tarjeta de viaje en mapa: el estado no depende de ticks de GPS ni rebuilds del mapa.
+  String? _activeTripCardExpansionTripId;
+  bool _activeTripCardExpanded = true;
 
   void _onFcmTripOfferOpenBump() {
     final bump = driverFcmTripOfferOpenBump.value;
@@ -201,6 +213,8 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
         .setOnline(false, forceOffline: true);
     ref.invalidate(driverOperationalProfileProvider);
     ref.invalidate(driverInternalToolsVisibleProvider);
+    // Nueva sesión = controlador nuevo; si no, el estado realtime (perfil, ofertas) del conductor anterior persiste en memoria.
+    ref.invalidate(driverRealtimeProvider);
     await ref.read(driverLoginControllerProvider.notifier).logout();
     if (context.mounted) context.go('/login');
   }
@@ -479,6 +493,13 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
             tripPendingRating.tripId != activeTrip.tripId) &&
         !shouldIgnoreActiveTripRestore;
 
+    if (activeTrip == null) {
+      _activeTripCardExpansionTripId = null;
+    } else if (_activeTripCardExpansionTripId != activeTrip.tripId) {
+      _activeTripCardExpansionTripId = activeTrip.tripId;
+      _activeTripCardExpanded = true;
+    }
+
     _syncHomeListEntrance(shouldShowMap);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _syncKeepScreenOnForDriverMode();
@@ -540,6 +561,12 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
         break;
       case 'NO_GPS':
         errorMessage = l10n.driverOnlineErrorNoGps;
+        break;
+      case 'GPS_SERVICE_OFF':
+        errorMessage = l10n.driverOnlineErrorGpsServiceOff;
+        break;
+      case 'NO_NOTIFICATIONS':
+        errorMessage = l10n.driverOnlineErrorNoNotifications;
         break;
       case 'NO_TOKEN':
         errorMessage = l10n.driverOnlineErrorNoToken;
@@ -649,6 +676,8 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
               trip: activeTrip,
               bottomCard: _RetractableTripCard(
                 trip: activeTrip,
+                expanded: _activeTripCardExpanded,
+                onExpandedChanged: (v) => setState(() => _activeTripCardExpanded = v),
                 processingAction: realtime.processingTripAction,
                 errorMessage: realtime.tripErrorMessage,
                 onMarkArrived: () => ref
@@ -946,6 +975,23 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
               DriverInlineError(
                 message: errorMessage,
               ),
+              if (realtime.errorCode != null &&
+                  _kDriverOnlinePermissionHintCodes
+                      .contains(realtime.errorCode)) ...[
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
+                  child: Text(
+                    l10n.driverHomeOnlineRequirementsHint,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.35,
+                      color: AppColors.textSecondary.withValues(alpha: 0.88),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ],
             const SizedBox(height: 20),
             if (pendingOffers.isNotEmpty) ...[
@@ -1493,8 +1539,10 @@ class _RatingSheetContentState extends State<_RatingSheetContent>
 }
 
 /// Panel inferior retraíble: colapsado muestra barra con estado y precio; expandido muestra detalle del viaje.
-class _RetractableTripCard extends StatefulWidget {
+class _RetractableTripCard extends StatelessWidget {
   final DriverActiveTrip trip;
+  final bool expanded;
+  final ValueChanged<bool> onExpandedChanged;
   final String? processingAction;
   final String? errorMessage;
   final VoidCallback onMarkArrived;
@@ -1506,6 +1554,8 @@ class _RetractableTripCard extends StatefulWidget {
 
   const _RetractableTripCard({
     required this.trip,
+    required this.expanded,
+    required this.onExpandedChanged,
     required this.processingAction,
     required this.errorMessage,
     required this.onMarkArrived,
@@ -1516,14 +1566,6 @@ class _RetractableTripCard extends StatefulWidget {
     required this.onReactivate,
   });
 
-  @override
-  State<_RetractableTripCard> createState() => _RetractableTripCardState();
-}
-
-class _RetractableTripCardState extends State<_RetractableTripCard>
-    with SingleTickerProviderStateMixin {
-  bool _expanded = true;
-
   String _statusLabel(AppLocalizations l10n, String status) {
     switch (status) {
       case 'accepted':
@@ -1531,6 +1573,7 @@ class _RetractableTripCardState extends State<_RetractableTripCard>
       case 'arrived':
         return l10n.driverTripStatusArrived;
       case 'started':
+      case 'in_trip':
         return l10n.driverTripStatusStarted;
       case 'completed':
         return l10n.driverTripStatusCompleted;
@@ -1543,7 +1586,6 @@ class _RetractableTripCardState extends State<_RetractableTripCard>
 
   @override
   Widget build(BuildContext context) {
-    final trip = widget.trip;
     final l10n = AppLocalizations.of(context);
 
     // Un solo árbol con Column + AnimatedSize evita clipping/erratas de altura
@@ -1557,11 +1599,11 @@ class _RetractableTripCardState extends State<_RetractableTripCard>
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_expanded) ...[
+          if (expanded) ...[
             Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () => setState(() => _expanded = false),
+                onTap: () => onExpandedChanged(false),
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(16)),
                 child: Padding(
@@ -1591,22 +1633,22 @@ class _RetractableTripCardState extends State<_RetractableTripCard>
               ),
             ),
             _ActiveTripCard(
-              trip: widget.trip,
-              processingAction: widget.processingAction,
-              errorMessage: widget.errorMessage,
-              onMarkArrived: widget.onMarkArrived,
-              onStartTrip: widget.onStartTrip,
-              onCompleteTrip: widget.onCompleteTrip,
-              onNavigateToPickup: widget.onNavigateToPickup,
-              onNavigateToDestination: widget.onNavigateToDestination,
-              onReactivate: widget.onReactivate,
+              trip: trip,
+              processingAction: processingAction,
+              errorMessage: errorMessage,
+              onMarkArrived: onMarkArrived,
+              onStartTrip: onStartTrip,
+              onCompleteTrip: onCompleteTrip,
+              onNavigateToPickup: onNavigateToPickup,
+              onNavigateToDestination: onNavigateToDestination,
+              onReactivate: onReactivate,
             ),
           ] else
             Material(
               color: AppColors.surfaceCard.withValues(alpha: 0.95),
               borderRadius: BorderRadius.circular(AppFoundation.radiusMd),
               child: InkWell(
-                onTap: () => setState(() => _expanded = true),
+                onTap: () => onExpandedChanged(true),
                 borderRadius: BorderRadius.circular(AppFoundation.radiusMd),
                 child: Padding(
                   padding:
@@ -1951,6 +1993,7 @@ class _ActiveTripCard extends StatelessWidget {
       case 'arrived':
         return l10n.driverTripStatusArrived;
       case 'started':
+      case 'in_trip':
         return l10n.driverTripStatusStarted;
       case 'completed':
         return l10n.driverTripStatusCompleted;
@@ -1969,11 +2012,15 @@ class _ActiveTripCard extends StatelessWidget {
         trip.status != 'completed' &&
         trip.status != 'cancelled';
     final hasPassenger = trip.passengerName != null && trip.passengerName!.isNotEmpty;
-    final hasAddresses =
-        (trip.originAddress != null && trip.originAddress!.isNotEmpty) ||
-            (trip.destinationAddress != null && trip.destinationAddress!.isNotEmpty);
+    final hasPickupCoords = trip.pickupLat != null && trip.pickupLng != null;
+    final hasDestCoords = trip.destinationLat != null && trip.destinationLng != null;
+    final hasOriginLine = (trip.originAddress != null && trip.originAddress!.isNotEmpty) ||
+        hasPickupCoords;
+    final hasDestLine = (trip.destinationAddress != null && trip.destinationAddress!.isNotEmpty) ||
+        hasDestCoords;
     final hasMetrics =
         trip.tripDistanceKm != null || trip.etaToDestinationMinutes != null;
+    final hasRouteDetail = hasPassenger || hasMetrics || hasOriginLine || hasDestLine;
 
     Widget section({
       required Widget child,
@@ -2050,7 +2097,7 @@ class _ActiveTripCard extends StatelessWidget {
               ],
             ),
           ),
-          if (hasPassenger || hasAddresses || hasMetrics) ...[
+          if (hasRouteDetail) ...[
             const SizedBox(height: 10),
             section(
               child: Column(
@@ -2083,7 +2130,7 @@ class _ActiveTripCard extends StatelessWidget {
                         ],
                       ],
                     ),
-                  if (hasPassenger && (hasAddresses || hasMetrics))
+                  if (hasPassenger && (hasOriginLine || hasDestLine || hasMetrics))
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Divider(height: 1, color: AppColors.border.withValues(alpha: 0.5)),
@@ -2103,12 +2150,24 @@ class _ActiveTripCard extends StatelessWidget {
                           ),
                         ),
                       ],
+                    )
+                  else if (hasPickupCoords)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.place_rounded, size: 18, color: AppColors.primary),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${l10n.driverMapPickupPoint}: ${trip.pickupLat!.toStringAsFixed(5)}, ${trip.pickupLng!.toStringAsFixed(5)}',
+                            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
-                  if (trip.originAddress != null &&
-                      trip.originAddress!.isNotEmpty &&
-                      trip.destinationAddress != null &&
-                      trip.destinationAddress!.isNotEmpty)
-                    const SizedBox(height: 6),
+                  if (hasOriginLine && hasDestLine) const SizedBox(height: 6),
                   if (trip.destinationAddress != null && trip.destinationAddress!.isNotEmpty)
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2124,8 +2183,24 @@ class _ActiveTripCard extends StatelessWidget {
                           ),
                         ),
                       ],
+                    )
+                  else if (hasDestCoords)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.flag_rounded, size: 18, color: AppColors.error),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${l10n.driverMapDestinationPoint}: ${trip.destinationLat!.toStringAsFixed(5)}, ${trip.destinationLng!.toStringAsFixed(5)}',
+                            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
-                  if (hasAddresses && hasMetrics)
+                  if ((hasOriginLine || hasDestLine) && hasMetrics)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Divider(height: 1, color: AppColors.border.withValues(alpha: 0.5)),
@@ -2224,7 +2299,8 @@ class _ActiveTripCard extends StatelessWidget {
               ),
             ),
           ],
-          if (trip.status == 'started' && canAct) ...[
+          if ((trip.status == 'started' || trip.status == 'in_trip') &&
+              canAct) ...[
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,

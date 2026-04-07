@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
@@ -22,8 +23,8 @@ final driverRealtimeProvider =
 class DriverRealtimeState {
   final bool online;
   final bool connecting;
-  /// Código de error simple para i18n (NO_INTERNET, NO_GPS, NO_TOKEN, SOCKET,
-  /// DRIVER_VEHICLE_REQUIRED, UNKNOWN).
+  /// Código de error simple para i18n (NO_INTERNET, NO_GPS, GPS_SERVICE_OFF,
+  /// NO_NOTIFICATIONS, NO_TOKEN, SOCKET, DRIVER_VEHICLE_REQUIRED, UNKNOWN).
   final String? errorCode;
   /// Ofertas de viaje pendientes (trip:offer) que el conductor puede aceptar/rechazar.
   final List<DriverTripOffer> pendingOffers;
@@ -396,8 +397,56 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       debugPrint('[DRIVER_RT] Permisos de GPS denegados.');
       throw const _RealtimeException('NO_GPS');
     }
+    if (permission != LocationPermission.whileInUse &&
+        permission != LocationPermission.always) {
+      _locationPermissionCached = null;
+      _locationPermissionCachedAt = null;
+      debugPrint('[DRIVER_RT] Permiso de ubicación insuficiente: $permission');
+      throw const _RealtimeException('NO_GPS');
+    }
     _locationPermissionCached = permission;
     _locationPermissionCachedAt = DateTime.now();
+  }
+
+  Future<void> _ensureLocationServiceEnabled () async {
+    if (kIsWeb) return;
+    final enabled = await Geolocator.isLocationServiceEnabled();
+    if (!enabled) {
+      debugPrint('[DRIVER_RT] Servicio de ubicación del sistema desactivado.');
+      throw const _RealtimeException('GPS_SERVICE_OFF');
+    }
+  }
+
+  /// Notificaciones son necesarias para ofertas en segundo plano (FCM).
+  Future<void> _ensureNotificationPermissionForTripOffers () async {
+    if (kIsWeb) return;
+    if (defaultTargetPlatform != TargetPlatform.android &&
+        defaultTargetPlatform != TargetPlatform.iOS) {
+      return;
+    }
+    final messaging = FirebaseMessaging.instance;
+    NotificationSettings settings = await messaging.getNotificationSettings();
+    if (_notificationPermissionOk(settings)) {
+      return;
+    }
+    settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false,
+    );
+    if (_notificationPermissionOk(settings)) {
+      return;
+    }
+    debugPrint(
+        '[DRIVER_RT] Permiso de notificaciones denegado: ${settings.authorizationStatus}');
+    throw const _RealtimeException('NO_NOTIFICATIONS');
+  }
+
+  bool _notificationPermissionOk (NotificationSettings settings) {
+    final s = settings.authorizationStatus;
+    return s == AuthorizationStatus.authorized ||
+        s == AuthorizationStatus.provisional;
   }
 
   bool _shouldRefreshDriverPhoto() {
@@ -474,6 +523,23 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     _cancelAvailabilityReconnectLoop();
     _lastTouchReconnect = null;
     await _goOffline(userInitiated: true, preserveTripState: false);
+    if (forceOffline) {
+      _pendingTripCompletedTripId = null;
+      _locationPermissionCached = null;
+      _locationPermissionCachedAt = null;
+      _lastDriverPhotoRefreshAt = null;
+      // Evita que otro conductor en el mismo dispositivo herede mini perfil / foto del anterior.
+      state = state.copyWith(
+        driverDisplayName: null,
+        driverVehicleLabel: null,
+        driverRating: null,
+        driverPictureProfile: null,
+        driverPictureExpiresAt: null,
+        lastCompletedTripId: null,
+        ignoreActiveTripRestoreTripId: null,
+        ignoreActiveTripRestoreUntilMs: null,
+      );
+    }
   }
 
   Future<void> _handleUnexpectedDisconnectWhileAvailable() async {
@@ -673,7 +739,9 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       }
       debugPrint('[DRIVER_RT] Token leído. length=${token.length}');
 
+      await _ensureLocationServiceEnabled();
       await _ensureLocationPermissionForSocket();
+      await _ensureNotificationPermissionForTripOffers();
 
       debugPrint(
           '[DRIVER_RT] Conectando socket a ${DriverRealtimeConfig.socketUrl}${DriverRealtimeConfig.socketPath}...');
@@ -1180,6 +1248,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
                   tripErrorMessage: null,
                 );
               } else {
+              final existingTrip = state.activeTrip;
               final parsedTrip = DriverActiveTrip(
                 tripId: tripId,
                 status: status,
@@ -1195,6 +1264,25 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
                 tripDistanceKm: tripDistanceKm,
                 etaToDestinationMinutes: etaToDestinationMinutes,
               );
+              // El ack a veces trae solo status/coords; no pisar dirección/pasajero ya mostrados.
+              final mergedTrip = (existingTrip != null && existingTrip.tripId == tripId)
+                  ? existingTrip.copyWith(
+                      status: status,
+                      estimatedPrice: estimatedPrice ?? existingTrip.estimatedPrice,
+                      pickupLat: pickupLat ?? existingTrip.pickupLat,
+                      pickupLng: pickupLng ?? existingTrip.pickupLng,
+                      destinationLat: destLat ?? existingTrip.destinationLat,
+                      destinationLng: destLng ?? existingTrip.destinationLng,
+                      passengerName: passengerName ?? existingTrip.passengerName,
+                      passengerRating: passengerRating ?? existingTrip.passengerRating,
+                      originAddress: originAddress ?? existingTrip.originAddress,
+                      destinationAddress:
+                          destinationAddress ?? existingTrip.destinationAddress,
+                      tripDistanceKm: tripDistanceKm ?? existingTrip.tripDistanceKm,
+                      etaToDestinationMinutes:
+                          etaToDestinationMinutes ?? existingTrip.etaToDestinationMinutes,
+                    )
+                  : parsedTrip;
 
               // Si ya estamos en flujo de rating para este mismo trip, no
               // restauremos el mapa aunque el backend aún mande estados
@@ -1218,7 +1306,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
                     .millisecondsSinceEpoch;
                 state = state.copyWith(
                   activeTrip: null,
-                  tripPendingRating: parsedTrip,
+                  tripPendingRating: mergedTrip,
                   lastCompletedTripId: tripId,
                   processingTripAction: null,
                   tripErrorMessage: null,
@@ -1229,7 +1317,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
                     '[DRIVER_RT] connection:ack recibió viaje final -> guardando para rating tripId=$tripId status=$status');
               } else {
                 state = state.copyWith(
-                  activeTrip: parsedTrip,
+                  activeTrip: mergedTrip,
                   tripPendingRating: null,
                   processingTripAction: null,
                 );
@@ -1430,7 +1518,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
           '[DRIVER_RT] completeTrip ignorado por ignoreActiveTripRestoreTripId tripId=${trip.tripId}');
       return;
     }
-    if (trip.status != 'started') {
+    if (trip.status != 'started' && trip.status != 'in_trip') {
       debugPrint(
           '[DRIVER_RT] completeTrip ignorado: status=${trip.status}');
       return;

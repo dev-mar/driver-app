@@ -11,6 +11,7 @@ import '../../core/ui/driver_ui_states.dart';
 import '../../gen_l10n/app_localizations.dart';
 import '../session/driver_operational_profile.dart';
 import 'driver_login_controller.dart';
+import 'driver_realtime_controller.dart';
 
 /// Pantalla de login para conductores: teléfono (+591) y contraseña.
 class DriverLoginScreen extends ConsumerStatefulWidget {
@@ -98,6 +99,7 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
     if (success) {
       ref.invalidate(driverOperationalProfileProvider);
       ref.invalidate(driverInternalToolsVisibleProvider);
+      ref.invalidate(driverRealtimeProvider);
       try {
         final profile = await ref.read(driverOperationalProfileProvider.future);
         if (profile.needsResumeRegistration) {
