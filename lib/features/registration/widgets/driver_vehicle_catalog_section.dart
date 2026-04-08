@@ -247,6 +247,11 @@ class DriverVehicleCatalogSection extends StatelessWidget {
                   if (v != null) onSelectVehicleCategory(v);
                 },
               ),
+            if (categoriesForType.length == 1)
+              RegistrationSoftInfoRow(
+                text:
+                    '${l10n.driverRegFieldVehicleCategory}: ${categoriesForType.first.label}',
+              ),
           ] else ...[
             DropdownButtonFormField<int>(
               key: ValueKey<int?>(selectedVehicleTypeId),

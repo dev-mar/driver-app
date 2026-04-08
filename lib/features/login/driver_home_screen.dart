@@ -121,6 +121,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
   late final Animation<Offset> _homeListSlide;
   bool _keepScreenOnApplied = false;
   int _lastHandledFcmTripOfferBump = 0;
+  bool _handlingAuthSessionExpired = false;
 
   /// La tarjeta de viaje en mapa: el estado no depende de ticks de GPS ni rebuilds del mapa.
   String? _activeTripCardExpansionTripId;
@@ -217,6 +218,23 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     ref.invalidate(driverRealtimeProvider);
     await ref.read(driverLoginControllerProvider.notifier).logout();
     if (context.mounted) context.go('/login');
+  }
+
+  void _handleAuthSessionExpired() {
+    if (_handlingAuthSessionExpired || !mounted) return;
+    _handlingAuthSessionExpired = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text(l10n.driverOnlineErrorSessionExpiredReLogin),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      unawaited(_logout(context));
+    });
   }
 
   /// Impide pasar a online si el perfil indica registro de vehículo pendiente.
@@ -556,6 +574,10 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
 
     String? errorMessage;
     switch (realtime.errorCode) {
+      case 'AUTH':
+        errorMessage = l10n.driverOnlineErrorSessionExpiredReLogin;
+        _handleAuthSessionExpired();
+        break;
       case 'NO_INTERNET':
         errorMessage = l10n.driverOnlineErrorNoInternet;
         break;
@@ -599,6 +621,10 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
         errorMessage = l10n.driverOnlineErrorRbacTechnical;
         break;
     }
+    final String? tripErrorMessage = switch (realtime.tripErrorCode) {
+      'TRIP_UPDATE_FAILED' => l10n.driverTripErrorGeneric,
+      _ => realtime.tripErrorMessage,
+    };
     final bool isRestoring = !online && switchVisualOn;
     final String connectionLabel = connecting
         ? l10n.driverHomeMiniConnecting
@@ -679,7 +705,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                 expanded: _activeTripCardExpanded,
                 onExpandedChanged: (v) => setState(() => _activeTripCardExpanded = v),
                 processingAction: realtime.processingTripAction,
-                errorMessage: realtime.tripErrorMessage,
+                errorMessage: tripErrorMessage,
                 onMarkArrived: () => ref
                     .read(driverRealtimeProvider.notifier)
                     .markArrived(),

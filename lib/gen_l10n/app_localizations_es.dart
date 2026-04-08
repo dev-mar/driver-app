@@ -209,6 +209,26 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverLoginErrorGeneric => 'No se pudo iniciar sesión';
 
   @override
+  String get driverLoginErrorNetwork =>
+      'No se pudo conectar. Revisa tu internet e intenta de nuevo.';
+
+  @override
+  String get driverLoginErrorConnection =>
+      'Sin conexión con el servidor. Verifica tu red.';
+
+  @override
+  String get driverLoginErrorInvalidResponse =>
+      'Respuesta inválida del servidor. Intenta nuevamente.';
+
+  @override
+  String get driverLoginErrorTokenMissing =>
+      'No se recibió token de sesión. Intenta nuevamente.';
+
+  @override
+  String get driverLoginErrorUnexpected =>
+      'Error inesperado al iniciar sesión. Intenta nuevamente.';
+
+  @override
   String get driverLoginRegisterHint =>
       '¿No tienes credenciales? Puedes registrarte como conductor.';
 
@@ -424,6 +444,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Sesión inválida. Vuelve a iniciar sesión.';
 
   @override
+  String get driverOnlineErrorSessionExpiredReLogin =>
+      'Tu sesión expiró o ya no es válida. Vuelve a iniciar sesión.';
+
+  @override
   String get driverOnlineErrorSocket =>
       'No se pudo conectar al servidor. Intenta de nuevo.';
 
@@ -546,6 +570,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverOfferErrorGeneric => 'No se pudo actualizar la solicitud.';
+
+  @override
+  String get driverTripErrorGeneric =>
+      'No se pudo actualizar el estado del viaje.';
 
   @override
   String get driverTripNavigatePickup => 'Navegar al origen';
@@ -1046,6 +1074,46 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get driverRegCatalogNoServiceTypes =>
       'No hay tipos de servicio disponibles. Reintenta más tarde o contacta soporte.';
+
+  @override
+  String get driverRegErrorVehicleServiceBridgeMissing =>
+      'No se pudieron sincronizar los servicios del conductor en este entorno. Intenta nuevamente en unos segundos.';
+
+  @override
+  String get driverRegErrorMissingUserId =>
+      'No se encontró el identificador del conductor. Vuelve al inicio del registro.';
+
+  @override
+  String get driverRegErrorVehicleCatalogLoading =>
+      'Espera a que cargue el catálogo del vehículo o reintenta.';
+
+  @override
+  String get driverRegErrorVehicleCatalogIncomplete =>
+      'El catálogo del servidor no incluye tipo o categoría de vehículo. Contacta soporte.';
+
+  @override
+  String get driverRegErrorVehicleTypeCategoryRequired =>
+      'Completa tipo de vehículo y categoría.';
+
+  @override
+  String get driverRegErrorVehicleCategoryInvalid =>
+      'La categoría seleccionada no es válida. Elige otra.';
+
+  @override
+  String get driverRegErrorVehicleNoServicesConfigured =>
+      'No hay servicios configurados para esta categoría. Elige otra o contacta soporte.';
+
+  @override
+  String get driverRegErrorVehicleServiceNotAllowedForCategory =>
+      'Hay un servicio seleccionado que no aplica a la categoría.';
+
+  @override
+  String get driverRegErrorVehicleServiceCodeMissing =>
+      'El catálogo no trae código de servicio para la selección actual. Reintenta o actualiza la app.';
+
+  @override
+  String get driverRegErrorSessionUnavailable =>
+      'Sesión no disponible. Inicia sesión nuevamente.';
 
   @override
   String get driverRegCatalogCompatEmptyUsesDefault =>

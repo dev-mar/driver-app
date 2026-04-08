@@ -203,6 +203,34 @@ class DriverRegistrationFlowController
     state = state.copyWith(clearGlobalError: true);
   }
 
+  void restoreDraftState({
+    required int step,
+    String? userUuid,
+    String? carUuid,
+    String? selectedCountryName,
+    String? selectedCountryPhoneCode,
+    String? selectedDepartmentName,
+    int? selectedLocalityId,
+    String? selectedLocalityLabel,
+    int? selectedCountryId,
+    String? identityFaceImageB64,
+  }) {
+    state = state.copyWith(
+      step: step.clamp(0, 5),
+      userUuid: userUuid ?? state.userUuid,
+      carUuid: carUuid ?? state.carUuid,
+      selectedCountryName: selectedCountryName ?? state.selectedCountryName,
+      selectedCountryPhoneCode:
+          selectedCountryPhoneCode ?? state.selectedCountryPhoneCode,
+      selectedDepartmentName:
+          selectedDepartmentName ?? state.selectedDepartmentName,
+      selectedLocalityId: selectedLocalityId ?? state.selectedLocalityId,
+      selectedLocalityLabel: selectedLocalityLabel ?? state.selectedLocalityLabel,
+      selectedCountryId: selectedCountryId ?? state.selectedCountryId,
+      identityFaceImageB64: identityFaceImageB64 ?? state.identityFaceImageB64,
+    );
+  }
+
   /// Reinicia el flujo (p. ej. antes de reanudar con datos del servidor).
   void resetFlow() {
     state = const DriverRegistrationFlowState();
@@ -535,7 +563,12 @@ class DriverRegistrationFlowController
     List<int> categoryRawIds,
   ) {
     final reg = filterServiceTypeIdsForVehicleRegistration(cat, categoryRawIds);
-    if (reg.isEmpty) return [];
+    if (reg.isEmpty) {
+      final all = cat.serviceTypes.map((s) => s.id).toList(growable: false);
+      final dAll = _defaultServiceTypeIdPreferStandard(cat, all);
+      if (dAll != null) return [dAll];
+      return [];
+    }
     final d = _defaultServiceTypeIdPreferStandard(cat, reg);
     if (d != null) return [d];
     return [reg.first];
@@ -858,7 +891,7 @@ class DriverRegistrationFlowController
     }
   }
 
-  /// Tras licencia: `PUT update-user` (activa usuario) → login → token para vehículo.
+  /// Tras licencia: `PUT /api/v2/driver/registration/activate` → login → token para vehículo.
   Future<void> completeLoginAndContinue({
     required String fullPhone,
     required String password,
@@ -979,26 +1012,35 @@ class DriverRegistrationFlowController
         return;
       }
       final category = vcat.categoryById(cid);
-      if (category == null || category.serviceTypeIds.isEmpty) {
+      if (category == null) {
         state = state.copyWith(
           loading: false,
-          globalError: 'La categoría elegida no tiene servicios habilitados. Elige otra.',
+          globalError: 'The selected category is invalid. Choose another one.',
         );
         return;
       }
       final regIds = filterServiceTypeIdsForVehicleRegistration(vcat, category.serviceTypeIds);
-      if (regIds.isEmpty) {
-        state = state.copyWith(
-          loading: false,
-          globalError:
-              'No hay servicios disponibles para registro en esta categoría. Elige otra o contacta soporte.',
-        );
-        return;
+      var effectiveRegIds = List<int>.from(regIds);
+      if (effectiveRegIds.isEmpty) {
+        // Fallback controlado: algunos entornos preprod aún no cargan vínculos
+        // category->service. Permitimos continuar con "standard/economy" si existe.
+        final all = vcat.serviceTypes.map((s) => s.id).toList(growable: false);
+        final fb = _defaultServiceTypeIdPreferStandard(vcat, all);
+        if (fb != null) {
+          effectiveRegIds = [fb];
+        } else {
+          state = state.copyWith(
+            loading: false,
+            globalError:
+                'No services are available for registration in this category. Choose another one or contact support.',
+          );
+          return;
+        }
       }
       var enabled = List<int>.from(state.selectedEnabledServiceTypeIds);
       final hadNoneSelected = enabled.isEmpty;
       if (hadNoneSelected) {
-        final fb = _defaultServiceTypeIdPreferStandard(vcat, regIds);
+        final fb = _defaultServiceTypeIdPreferStandard(vcat, effectiveRegIds);
         if (fb != null) enabled = [fb];
       }
       if (hadNoneSelected && enabled.isNotEmpty) {
@@ -1007,12 +1049,12 @@ class DriverRegistrationFlowController
       if (enabled.isEmpty) {
         state = state.copyWith(
           loading: false,
-          globalError: 'No hay servicios configurados para esta categoría. Elige otra o contacta soporte.',
+          globalError: 'No services are configured for this category. Choose another one or contact support.',
         );
         return;
       }
       for (final e in enabled) {
-        if (!regIds.contains(e)) {
+        if (!effectiveRegIds.contains(e)) {
           state = state.copyWith(
             loading: false,
             globalError: 'Hay un servicio seleccionado que no aplica a la categoría.',

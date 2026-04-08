@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -31,6 +32,7 @@ class DriverActiveTripMapView extends StatefulWidget {
 class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
   final DirectionsService _directions = DirectionsService();
   GoogleMapController? _mapController;
+  LatLng? _deviceSeedLatLng;
 
   List<LatLng>? _routeToPickup;
   List<LatLng>? _routePickupToDest;
@@ -73,8 +75,47 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
   @override
   void initState() {
     super.initState();
+    _resolveDeviceSeedLocation();
     _fetchRoutesAndFit();
   }
+
+  Future<void> _resolveDeviceSeedLocation() async {
+    try {
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null && mounted) {
+        setState(() {
+          _deviceSeedLatLng = LatLng(last.latitude, last.longitude);
+        });
+        if (_mapController != null && !_hasTripAnchors) {
+          await _mapController!.animateCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(target: _deviceSeedLatLng!, zoom: 15),
+            ),
+          );
+        }
+        return;
+      }
+      final current = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+      ).timeout(const Duration(seconds: 6));
+      if (!mounted) return;
+      setState(() {
+        _deviceSeedLatLng = LatLng(current.latitude, current.longitude);
+      });
+      if (_mapController != null && !_hasTripAnchors) {
+        await _mapController!.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(target: _deviceSeedLatLng!, zoom: 15),
+          ),
+        );
+      }
+    } catch (_) {
+      // Si falla GPS inicial, mantenemos fallback existente sin romper el mapa.
+    }
+  }
+
+  bool get _hasTripAnchors =>
+      _driverLatLng != null || _pickupLatLng != null || _destinationLatLng != null;
 
   Future<void> _fetchRoutesAndFit() async {
     final driver = _driverLatLng;
@@ -192,6 +233,9 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
     if (dest != null) {
       return CameraPosition(target: dest, zoom: 15);
     }
+    if (_deviceSeedLatLng != null) {
+      return CameraPosition(target: _deviceSeedLatLng!, zoom: 15);
+    }
     return const CameraPosition(
       target: LatLng(-12.0464, -77.0428),
       zoom: 12,
@@ -279,6 +323,13 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
           onMapCreated: (controller) {
             _mapController = controller;
             _fitBounds();
+            if (!_hasTripAnchors && _deviceSeedLatLng != null) {
+              controller.animateCamera(
+                CameraUpdate.newCameraPosition(
+                  CameraPosition(target: _deviceSeedLatLng!, zoom: 15),
+                ),
+              );
+            }
           },
           myLocationEnabled: true,
           myLocationButtonEnabled: true,

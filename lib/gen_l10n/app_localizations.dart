@@ -470,6 +470,36 @@ abstract class AppLocalizations {
   /// **'Could not sign in'**
   String get driverLoginErrorGeneric;
 
+  /// No description provided for @driverLoginErrorNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect. Check your internet and try again.'**
+  String get driverLoginErrorNetwork;
+
+  /// No description provided for @driverLoginErrorConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'No connection to the server. Check your network.'**
+  String get driverLoginErrorConnection;
+
+  /// No description provided for @driverLoginErrorInvalidResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid server response. Please try again.'**
+  String get driverLoginErrorInvalidResponse;
+
+  /// No description provided for @driverLoginErrorTokenMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Session token was not received. Please try again.'**
+  String get driverLoginErrorTokenMissing;
+
+  /// No description provided for @driverLoginErrorUnexpected.
+  ///
+  /// In en, this message translates to:
+  /// **'Unexpected sign-in error. Please try again.'**
+  String get driverLoginErrorUnexpected;
+
   /// No description provided for @driverLoginRegisterHint.
   ///
   /// In en, this message translates to:
@@ -854,6 +884,12 @@ abstract class AppLocalizations {
   /// **'Invalid session. Please sign in again.'**
   String get driverOnlineErrorNoToken;
 
+  /// No description provided for @driverOnlineErrorSessionExpiredReLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session expired or is no longer valid. Please sign in again.'**
+  String get driverOnlineErrorSessionExpiredReLogin;
+
   /// No description provided for @driverOnlineErrorSocket.
   ///
   /// In en, this message translates to:
@@ -1057,6 +1093,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not update the request.'**
   String get driverOfferErrorGeneric;
+
+  /// No description provided for @driverTripErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update trip status.'**
+  String get driverTripErrorGeneric;
 
   /// No description provided for @driverTripNavigatePickup.
   ///
@@ -1963,6 +2005,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No service types available. Try again later or contact support.'**
   String get driverRegCatalogNoServiceTypes;
+
+  /// No description provided for @driverRegErrorVehicleServiceBridgeMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not sync driver services in this environment. Please try again in a few seconds.'**
+  String get driverRegErrorVehicleServiceBridgeMissing;
+
+  /// No description provided for @driverRegErrorMissingUserId.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver identifier is missing. Return to the beginning of registration.'**
+  String get driverRegErrorMissingUserId;
+
+  /// No description provided for @driverRegErrorVehicleCatalogLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for the vehicle catalog to load, then try again.'**
+  String get driverRegErrorVehicleCatalogLoading;
+
+  /// No description provided for @driverRegErrorVehicleCatalogIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'The server catalog does not include vehicle type or category. Contact support.'**
+  String get driverRegErrorVehicleCatalogIncomplete;
+
+  /// No description provided for @driverRegErrorVehicleTypeCategoryRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete vehicle type and category.'**
+  String get driverRegErrorVehicleTypeCategoryRequired;
+
+  /// No description provided for @driverRegErrorVehicleCategoryInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected category is invalid. Choose another one.'**
+  String get driverRegErrorVehicleCategoryInvalid;
+
+  /// No description provided for @driverRegErrorVehicleNoServicesConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'No services are configured for this category. Choose another one or contact support.'**
+  String get driverRegErrorVehicleNoServicesConfigured;
+
+  /// No description provided for @driverRegErrorVehicleServiceNotAllowedForCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'A selected service does not apply to this category.'**
+  String get driverRegErrorVehicleServiceNotAllowedForCategory;
+
+  /// No description provided for @driverRegErrorVehicleServiceCodeMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'The catalog is missing a service code for the current selection. Retry or update the app.'**
+  String get driverRegErrorVehicleServiceCodeMissing;
+
+  /// No description provided for @driverRegErrorSessionUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Session unavailable. Please sign in again.'**
+  String get driverRegErrorSessionUnavailable;
 
   /// No description provided for @driverRegCatalogCompatEmptyUsesDefault.
   ///

@@ -12,10 +12,10 @@
         android:label="texi_driver_app"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
-        <!-- Google Maps API Key (misma que texi_passenger_app) -->
+        <!-- Google Maps API Key inyectada por Gradle (GOOGLE_MAPS_API_KEY) -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyCiPWUT7LoCjEFruA6ebXaBBRwgptjQ4lQ" />
+            android:value="${GOOGLE_MAPS_API_KEY}" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="texi_driver_trip_offers" />

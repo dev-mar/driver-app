@@ -207,6 +207,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverLoginErrorGeneric => 'Could not sign in';
 
   @override
+  String get driverLoginErrorNetwork =>
+      'Could not connect. Check your internet and try again.';
+
+  @override
+  String get driverLoginErrorConnection =>
+      'No connection to the server. Check your network.';
+
+  @override
+  String get driverLoginErrorInvalidResponse =>
+      'Invalid server response. Please try again.';
+
+  @override
+  String get driverLoginErrorTokenMissing =>
+      'Session token was not received. Please try again.';
+
+  @override
+  String get driverLoginErrorUnexpected =>
+      'Unexpected sign-in error. Please try again.';
+
+  @override
   String get driverLoginRegisterHint =>
       'Don\'t have credentials? You can register as a driver.';
 
@@ -421,6 +441,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Invalid session. Please sign in again.';
 
   @override
+  String get driverOnlineErrorSessionExpiredReLogin =>
+      'Your session expired or is no longer valid. Please sign in again.';
+
+  @override
   String get driverOnlineErrorSocket =>
       'Could not connect to the server. Please try again.';
 
@@ -541,6 +565,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverOfferErrorGeneric => 'Could not update the request.';
+
+  @override
+  String get driverTripErrorGeneric => 'Could not update trip status.';
 
   @override
   String get driverTripNavigatePickup => 'Navigate to pickup';
@@ -1037,6 +1064,46 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get driverRegCatalogNoServiceTypes =>
       'No service types available. Try again later or contact support.';
+
+  @override
+  String get driverRegErrorVehicleServiceBridgeMissing =>
+      'We could not sync driver services in this environment. Please try again in a few seconds.';
+
+  @override
+  String get driverRegErrorMissingUserId =>
+      'Driver identifier is missing. Return to the beginning of registration.';
+
+  @override
+  String get driverRegErrorVehicleCatalogLoading =>
+      'Wait for the vehicle catalog to load, then try again.';
+
+  @override
+  String get driverRegErrorVehicleCatalogIncomplete =>
+      'The server catalog does not include vehicle type or category. Contact support.';
+
+  @override
+  String get driverRegErrorVehicleTypeCategoryRequired =>
+      'Complete vehicle type and category.';
+
+  @override
+  String get driverRegErrorVehicleCategoryInvalid =>
+      'The selected category is invalid. Choose another one.';
+
+  @override
+  String get driverRegErrorVehicleNoServicesConfigured =>
+      'No services are configured for this category. Choose another one or contact support.';
+
+  @override
+  String get driverRegErrorVehicleServiceNotAllowedForCategory =>
+      'A selected service does not apply to this category.';
+
+  @override
+  String get driverRegErrorVehicleServiceCodeMissing =>
+      'The catalog is missing a service code for the current selection. Retry or update the app.';
+
+  @override
+  String get driverRegErrorSessionUnavailable =>
+      'Session unavailable. Please sign in again.';
 
   @override
   String get driverRegCatalogCompatEmptyUsesDefault =>

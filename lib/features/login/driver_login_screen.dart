@@ -119,9 +119,17 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
       context.goNamed(AppRouter.home);
     } else {
       setState(() {
-        _errorMessage =
-            ref.read(driverLoginControllerProvider).errorMessage ??
-                l10n.driverLoginErrorGeneric;
+        final loginState = ref.read(driverLoginControllerProvider);
+        _errorMessage = switch (loginState.errorCode) {
+          'NETWORK_TIMEOUT' => l10n.driverLoginErrorNetwork,
+          'NETWORK_CONNECTION' => l10n.driverLoginErrorConnection,
+          'NETWORK_REQUEST_FAILED' => l10n.driverLoginErrorNetwork,
+          'CLIENT_INVALID_RESPONSE' => l10n.driverLoginErrorInvalidResponse,
+          'CLIENT_EMPTY_DATA' => l10n.driverLoginErrorInvalidResponse,
+          'CLIENT_TOKEN_MISSING' => l10n.driverLoginErrorTokenMissing,
+          'CLIENT_UNEXPECTED' => l10n.driverLoginErrorUnexpected,
+          _ => loginState.errorMessage ?? l10n.driverLoginErrorGeneric,
+        };
       });
     }
   }

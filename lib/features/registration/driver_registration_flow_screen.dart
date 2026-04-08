@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -14,6 +15,8 @@ import '../login/driver_login_controller.dart';
 import '../login/driver_realtime_controller.dart';
 import '../session/driver_operational_profile.dart';
 import 'driver_registration_controller.dart';
+import 'driver_registration_draft_store.dart';
+import 'driver_registration_draft_media_store.dart';
 import 'driver_registration_models.dart';
 import 'registration_image_helper.dart';
 import 'widgets/driver_vehicle_catalog_section.dart';
@@ -42,7 +45,7 @@ class DriverRegistrationFlowScreen extends ConsumerStatefulWidget {
     this.addVehicleOnly = false,
   });
 
-  /// Si es true: sesión ya iniciada; se consulta `registration-status` y se salta a la etapa faltante.
+  /// Si es true: sesión ya iniciada; se consulta `GET /api/v2/driver/registration` y se salta a la etapa faltante.
   final bool resumeAfterLogin;
 
   /// Desde home: alta de un vehículo adicional (pasos vehículo + fotos) con sesión activa.
@@ -97,6 +100,185 @@ class _DriverRegistrationFlowScreenState
   String? _carBackB64;
   String? _carLeftB64;
   String? _carRightB64;
+  bool _suppressDraftSave = false;
+  final Map<String, String?> _draftImagePaths = <String, String?>{};
+
+  Future<void> _persistDraft() async {
+    if (_suppressDraftSave || !mounted) return;
+    final flow = ref.read(driverRegistrationFlowControllerProvider);
+    _draftImagePaths['idFront'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'id_front',
+      base64Image: _idFrontB64,
+      existingPath: _draftImagePaths['idFront'],
+    );
+    _draftImagePaths['idBack'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'id_back',
+      base64Image: _idBackB64,
+      existingPath: _draftImagePaths['idBack'],
+    );
+    _draftImagePaths['face'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'identity_face',
+      base64Image: _faceB64,
+      existingPath: _draftImagePaths['face'],
+    );
+    _draftImagePaths['licenseFront'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'license_front',
+      base64Image: _licFrontB64,
+      existingPath: _draftImagePaths['licenseFront'],
+    );
+    _draftImagePaths['licenseBack'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'license_back',
+      base64Image: _licBackB64,
+      existingPath: _draftImagePaths['licenseBack'],
+    );
+    _draftImagePaths['carFront'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'vehicle_front',
+      base64Image: _carFrontB64,
+      existingPath: _draftImagePaths['carFront'],
+    );
+    _draftImagePaths['carBack'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'vehicle_back',
+      base64Image: _carBackB64,
+      existingPath: _draftImagePaths['carBack'],
+    );
+    _draftImagePaths['carLeft'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'vehicle_left',
+      base64Image: _carLeftB64,
+      existingPath: _draftImagePaths['carLeft'],
+    );
+    _draftImagePaths['carRight'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'vehicle_right',
+      base64Image: _carRightB64,
+      existingPath: _draftImagePaths['carRight'],
+    );
+
+    final draft = DriverRegistrationDraft(
+      step: flow.step,
+      userUuid: flow.userUuid,
+      carUuid: flow.carUuid,
+      selectedCountryName: flow.selectedCountryName,
+      selectedCountryPhoneCode: flow.selectedCountryPhoneCode,
+      selectedDepartmentName: flow.selectedDepartmentName,
+      selectedLocalityId: flow.selectedLocalityId,
+      selectedLocalityLabel: flow.selectedLocalityLabel,
+      selectedCountryId: flow.selectedCountryId,
+      firstName: _firstNameCtrl.text.trim(),
+      lastName: _lastNameCtrl.text.trim(),
+      email: _emailCtrl.text.trim(),
+      phoneLocal: _phoneLocalCtrl.text.trim(),
+      birthDateIso: _birthDateCtrl.text.trim(),
+      address: _addressCtrl.text.trim(),
+      genderValue: _genderValue,
+      documentNumber: _docNumberCtrl.text.trim(),
+      documentExpireIso: _docExpireCtrl.text.trim(),
+      licenseExpireIso: _licenseExpireCtrl.text.trim(),
+      licenseCategoryId: _licenseCategory?.id,
+      idFrontPath: _draftImagePaths['idFront'],
+      idBackPath: _draftImagePaths['idBack'],
+      facePath: _draftImagePaths['face'],
+      licenseFrontPath: _draftImagePaths['licenseFront'],
+      licenseBackPath: _draftImagePaths['licenseBack'],
+      vehicleBrand: _vehicleBrandCtrl.text.trim(),
+      vehicleModel: _vehicleModelCtrl.text.trim(),
+      vehicleYear: _vehicleYearCtrl.text.trim(),
+      vehicleColor: _vehicleColorCtrl.text.trim(),
+      vehicleVin: _vehicleVinCtrl.text.trim(),
+      vehiclePlate: _vehiclePlateCtrl.text.trim(),
+      vehicleInsurance: _vehicleInsuranceCtrl.text.trim(),
+      vehicleTitle: _vehicleTitleCtrl.text.trim(),
+      carFrontPath: _draftImagePaths['carFront'],
+      carBackPath: _draftImagePaths['carBack'],
+      carLeftPath: _draftImagePaths['carLeft'],
+      carRightPath: _draftImagePaths['carRight'],
+    );
+    await DriverRegistrationDraftStore.save(draft);
+  }
+
+  Future<void> _restoreDraftIntoForm(DriverRegistrationDraft draft) async {
+    _suppressDraftSave = true;
+    try {
+      _firstNameCtrl.text = draft.firstName ?? '';
+      _lastNameCtrl.text = draft.lastName ?? '';
+      _emailCtrl.text = draft.email ?? '';
+      _phoneLocalCtrl.text = draft.phoneLocal ?? '';
+      _birthDateCtrl.text = draft.birthDateIso ?? '';
+      _addressCtrl.text = draft.address ?? '';
+      _genderValue = draft.genderValue;
+      _docNumberCtrl.text = draft.documentNumber ?? '';
+      _docExpireCtrl.text = draft.documentExpireIso ?? '';
+      _licenseExpireCtrl.text = draft.licenseExpireIso ?? '';
+      _vehicleBrandCtrl.text = draft.vehicleBrand ?? '';
+      _vehicleModelCtrl.text = draft.vehicleModel ?? '';
+      _vehicleYearCtrl.text = (draft.vehicleYear != null && draft.vehicleYear!.isNotEmpty)
+          ? draft.vehicleYear!
+          : '2020';
+      _vehicleColorCtrl.text = draft.vehicleColor ?? '';
+      _vehicleVinCtrl.text = draft.vehicleVin ?? '';
+      _vehiclePlateCtrl.text = draft.vehiclePlate ?? '';
+      _vehicleInsuranceCtrl.text = draft.vehicleInsurance ?? '';
+      _vehicleTitleCtrl.text = draft.vehicleTitle ?? '';
+      _draftImagePaths['idFront'] = draft.idFrontPath;
+      _draftImagePaths['idBack'] = draft.idBackPath;
+      _draftImagePaths['face'] = draft.facePath;
+      _draftImagePaths['licenseFront'] = draft.licenseFrontPath;
+      _draftImagePaths['licenseBack'] = draft.licenseBackPath;
+      _draftImagePaths['carFront'] = draft.carFrontPath;
+      _draftImagePaths['carBack'] = draft.carBackPath;
+      _draftImagePaths['carLeft'] = draft.carLeftPath;
+      _draftImagePaths['carRight'] = draft.carRightPath;
+      _idFrontB64 = await DriverRegistrationDraftMediaStore.restoreBase64(
+            draft.idFrontPath,
+          ) ??
+          draft.idFrontB64;
+      _idBackB64 = await DriverRegistrationDraftMediaStore.restoreBase64(
+            draft.idBackPath,
+          ) ??
+          draft.idBackB64;
+      _faceB64 = await DriverRegistrationDraftMediaStore.restoreBase64(
+            draft.facePath,
+          ) ??
+          draft.faceB64;
+      _licFrontB64 = await DriverRegistrationDraftMediaStore.restoreBase64(
+            draft.licenseFrontPath,
+          ) ??
+          draft.licenseFrontB64;
+      _licBackB64 = await DriverRegistrationDraftMediaStore.restoreBase64(
+            draft.licenseBackPath,
+          ) ??
+          draft.licenseBackB64;
+      _carFrontB64 = await DriverRegistrationDraftMediaStore.restoreBase64(
+            draft.carFrontPath,
+          ) ??
+          draft.carFrontB64;
+      _carBackB64 = await DriverRegistrationDraftMediaStore.restoreBase64(
+            draft.carBackPath,
+          ) ??
+          draft.carBackB64;
+      _carLeftB64 = await DriverRegistrationDraftMediaStore.restoreBase64(
+            draft.carLeftPath,
+          ) ??
+          draft.carLeftB64;
+      _carRightB64 = await DriverRegistrationDraftMediaStore.restoreBase64(
+            draft.carRightPath,
+          ) ??
+          draft.carRightB64;
+      final notifier = ref.read(driverRegistrationFlowControllerProvider.notifier);
+      notifier.restoreDraftState(
+        step: draft.step,
+        userUuid: draft.userUuid,
+        carUuid: draft.carUuid,
+        selectedCountryName: draft.selectedCountryName,
+        selectedCountryPhoneCode: draft.selectedCountryPhoneCode,
+        selectedDepartmentName: draft.selectedDepartmentName,
+        selectedLocalityId: draft.selectedLocalityId,
+        selectedLocalityLabel: draft.selectedLocalityLabel,
+        selectedCountryId: draft.selectedCountryId,
+        identityFaceImageB64: draft.faceB64,
+      );
+    } finally {
+      _suppressDraftSave = false;
+    }
+  }
 
   List<String> _stepLabels(AppLocalizations l10n) => [
         l10n.driverRegStepData,
@@ -132,6 +314,10 @@ class _DriverRegistrationFlowScreenState
     _carBackB64 = null;
     _carLeftB64 = null;
     _carRightB64 = null;
+    _draftImagePaths['carFront'] = null;
+    _draftImagePaths['carBack'] = null;
+    _draftImagePaths['carLeft'] = null;
+    _draftImagePaths['carRight'] = null;
   }
 
   List<MapEntry<String, String>> _genderChoices(AppLocalizations l10n) => [
@@ -198,6 +384,19 @@ class _DriverRegistrationFlowScreenState
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final notifier = ref.read(driverRegistrationFlowControllerProvider.notifier);
+      final draft = await DriverRegistrationDraftStore.load();
+      if (draft != null && mounted) {
+        await _restoreDraftIntoForm(draft);
+        if (draft.licenseCategoryId != null) {
+          for (final item in DriverLicenseCategory.legacyBoliviaFallback) {
+            if (item.id == draft.licenseCategoryId) {
+              _licenseCategory = item;
+              break;
+            }
+          }
+        }
+        setState(() {});
+      }
       if (widget.addVehicleOnly) {
         _clearVehicleOnlyFields();
         notifier.resetFlow();
@@ -214,11 +413,13 @@ class _DriverRegistrationFlowScreenState
       } else {
         notifier.loadCountries();
       }
+      unawaited(_persistDraft());
     });
   }
 
   @override
   void dispose() {
+    unawaited(_persistDraft());
     _firstNameCtrl.dispose();
     _lastNameCtrl.dispose();
     _emailCtrl.dispose();
@@ -274,6 +475,7 @@ class _DriverRegistrationFlowScreenState
     if (b64 == null) return;
     HapticFeedback.lightImpact();
     setState(() => assign(b64));
+    unawaited(_persistDraft());
   }
 
   /// Línea legible: país · departamento · localidad (para resumen del paso Activar).
@@ -361,6 +563,7 @@ class _DriverRegistrationFlowScreenState
           genderApiValue: _genderValue ?? 'Other',
           password: _passwordCtrl.text,
         );
+        unawaited(_persistDraft());
         return;
       case 1:
         if (!_formId.currentState!.validate()) return;
@@ -386,6 +589,7 @@ class _DriverRegistrationFlowScreenState
           faceB64: _faceB64!,
           expireDateIso: _docExpireCtrl.text.trim(),
         );
+        unawaited(_persistDraft());
         return;
       case 2:
         if (!_formLicense.currentState!.validate()) return;
@@ -413,12 +617,14 @@ class _DriverRegistrationFlowScreenState
           backB64: _licBackB64!,
           expireDateIso: _licenseExpireCtrl.text.trim(),
         );
+        unawaited(_persistDraft());
         return;
       case 3:
         await notifier.completeLoginAndContinue(
           fullPhone: _composeFullPhone(flow),
           password: _passwordCtrl.text,
         );
+        unawaited(_persistDraft());
         return;
       case 4:
         if (!_formVehicle.currentState!.validate()) return;
@@ -453,6 +659,7 @@ class _DriverRegistrationFlowScreenState
           titleDeed: _vehicleTitleCtrl.text.trim(),
           vin: _vehicleVinCtrl.text.trim().toUpperCase(),
         );
+        unawaited(_persistDraft());
         return;
       case 5:
         if (_carFrontB64 == null ||
@@ -478,6 +685,7 @@ class _DriverRegistrationFlowScreenState
           leftB64: _carLeftB64!,
           rightB64: _carRightB64!,
         );
+        unawaited(_persistDraft());
         if (!mounted) return;
         final st = ref.read(driverRegistrationFlowControllerProvider);
         if (st.globalError != null) return;
@@ -502,6 +710,8 @@ class _DriverRegistrationFlowScreenState
                 FilledButton(
                   onPressed: () {
                     Navigator.of(ctx).pop();
+                    unawaited(DriverRegistrationDraftStore.clear());
+                    unawaited(DriverRegistrationDraftMediaStore.clearAll());
                     ref.invalidate(driverOperationalProfileProvider);
                     DriverRegistrationResumeGate.invalidate();
                     if (context.mounted) context.goNamed(AppRouter.home);
@@ -527,9 +737,17 @@ class _DriverRegistrationFlowScreenState
                 FilledButton(
                   onPressed: () {
                     Navigator.of(ctx).pop();
-                    ref.invalidate(driverRealtimeProvider);
-                    ref.read(driverLoginControllerProvider.notifier).logout();
-                    if (context.mounted) context.goNamed(AppRouter.login);
+                    unawaited(DriverRegistrationDraftStore.clear());
+                    unawaited(DriverRegistrationDraftMediaStore.clearAll());
+                    unawaited(() async {
+                      await ref
+                          .read(driverRealtimeProvider.notifier)
+                          .setOnline(false, forceOffline: true);
+                      ref.invalidate(driverRealtimeProvider);
+                      await ref.read(driverLoginControllerProvider.notifier).logout();
+                      if (!mounted) return;
+                      context.goNamed(AppRouter.login);
+                    }());
                   },
                   child: Text(l10n.driverRegDoneGoLogin),
                 ),
@@ -545,14 +763,17 @@ class _DriverRegistrationFlowScreenState
     final flow = ref.read(driverRegistrationFlowControllerProvider);
     final notifier = ref.read(driverRegistrationFlowControllerProvider.notifier);
     if (widget.addVehicleOnly && flow.step <= 4) {
+      unawaited(_persistDraft());
       context.goNamed(AppRouter.home);
       return;
     }
     if (flow.step <= 0) {
+      unawaited(_persistDraft());
       context.goNamed(AppRouter.login);
       return;
     }
     notifier.goToStep(flow.step - 1);
+    unawaited(_persistDraft());
   }
 
   @override
@@ -623,7 +844,7 @@ class _DriverRegistrationFlowScreenState
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  flow.globalError!,
+                  _localizedFlowError(flow.globalError!, l10n),
                   style: const TextStyle(
                     color: AppColors.error,
                     fontSize: 13,
@@ -697,6 +918,43 @@ class _DriverRegistrationFlowScreenState
     }
   }
 
+  String _localizedFlowError(String raw, AppLocalizations l10n) {
+    final msg = raw.trim();
+    final low = msg.toLowerCase();
+    if (low.contains('driver_id_bridge_missing') ||
+        low.contains('legacy para asignar service types')) {
+      return l10n.driverRegErrorVehicleServiceBridgeMissing;
+    }
+    if (low.contains('no se encontró el identificador de usuario')) {
+      return l10n.driverRegErrorMissingUserId;
+    }
+    if (low.contains('espera a que cargue el catálogo del vehículo')) {
+      return l10n.driverRegErrorVehicleCatalogLoading;
+    }
+    if (low.contains('catálogo del servidor no incluye tipo/categoría')) {
+      return l10n.driverRegErrorVehicleCatalogIncomplete;
+    }
+    if (low.contains('completa tipo de vehículo y categoría')) {
+      return l10n.driverRegErrorVehicleTypeCategoryRequired;
+    }
+    if (low.contains('selected category is invalid')) {
+      return l10n.driverRegErrorVehicleCategoryInvalid;
+    }
+    if (low.contains('no services are configured for this category')) {
+      return l10n.driverRegErrorVehicleNoServicesConfigured;
+    }
+    if (low.contains('servicio seleccionado que no aplica a la categoría')) {
+      return l10n.driverRegErrorVehicleServiceNotAllowedForCategory;
+    }
+    if (low.contains('catálogo no trae código de servicio')) {
+      return l10n.driverRegErrorVehicleServiceCodeMissing;
+    }
+    if (low.contains('sesión no disponible')) {
+      return l10n.driverRegErrorSessionUnavailable;
+    }
+    return msg;
+  }
+
   Widget _buildPersonalStep(
     DriverRegistrationFlowState flow,
     DriverRegistrationFlowController notifier,
@@ -752,6 +1010,7 @@ class _DriverRegistrationFlowScreenState
                       : (v) {
                           notifier.selectCountry(v);
                           setState(() {});
+                          unawaited(_persistDraft());
                         },
                   validator: (v) => v == null || v.isEmpty ? l10n.driverRegValidationSelectCountry : null,
                 ),
@@ -775,6 +1034,7 @@ class _DriverRegistrationFlowScreenState
                       : (v) {
                           notifier.selectDepartment(v);
                           setState(() {});
+                          unawaited(_persistDraft());
                         },
                   validator: (v) {
                     if (!flow.isBoliviaSelected) return null;
@@ -813,6 +1073,7 @@ class _DriverRegistrationFlowScreenState
                               final loc = locs.firstWhere((e) => e.id == id);
                               notifier.selectLocality(loc);
                               setState(() {});
+                              unawaited(_persistDraft());
                             },
                       validator: (v) {
                         if (!flow.isBoliviaSelected) return null;
@@ -879,7 +1140,10 @@ class _DriverRegistrationFlowScreenState
                         ),
                       )
                       .toList(),
-                  onChanged: (v) => setState(() => _genderValue = v),
+                  onChanged: (v) {
+                    setState(() => _genderValue = v);
+                    unawaited(_persistDraft());
+                  },
                   validator: (v) => v == null ? l10n.driverRegValidationSelectOption : null,
                 ),
               ],
@@ -1114,7 +1378,10 @@ class _DriverRegistrationFlowScreenState
                         ),
                       )
                       .toList(),
-                  onChanged: (v) => setState(() => _licenseCategory = v),
+                  onChanged: (v) {
+                    setState(() => _licenseCategory = v);
+                    unawaited(_persistDraft());
+                  },
                   validator: (v) => v == null ? l10n.driverRegValidationChooseCategory : null,
                 ),
                 const SizedBox(height: 10),
@@ -1328,6 +1595,7 @@ class _DriverRegistrationFlowScreenState
                           onSelected: (selected) {
                             if (selected) _vehicleColorCtrl.text = c;
                             setState(() {});
+                            unawaited(_persistDraft());
                           },
                           selectedColor: AppColors.primary.withValues(alpha: 0.22),
                           checkmarkColor: AppColors.onPrimary,

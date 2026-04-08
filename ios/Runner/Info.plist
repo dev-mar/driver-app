@@ -60,5 +60,7 @@
 		<string>Texi necesita acceso a tus fotos para adjuntar documentos e imágenes del vehículo en el registro.</string>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>GOOGLE_MAPS_API_KEY</key>
+		<string>$(GOOGLE_MAPS_API_KEY)</string>
 	</dict>
 </plist>

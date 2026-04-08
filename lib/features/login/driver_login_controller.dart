@@ -13,9 +13,15 @@ final driverLoginControllerProvider =
   return DriverLoginController();
 });
 
+/// Convención de errores (login/realtime):
+/// 1) Controller emite `errorCode` estable (no texto UI hardcodeado).
+/// 2) UI mapea `errorCode` -> `l10n`.
+/// 3) `errorMessage` queda solo como fallback para mensajes backend.
+/// 4) Códigos nuevos deben agregarse también al mapping de pantalla.
 class DriverLoginState {
   final String? errorMessage;
-  DriverLoginState({this.errorMessage});
+  final String? errorCode;
+  DriverLoginState({this.errorMessage, this.errorCode});
 }
 
 class DriverLoginController extends StateNotifier<DriverLoginState> {
@@ -61,25 +67,32 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
       );
 
       final data = response.data;
-      if (data is! Map) return _fail('Respuesta inválida del servidor');
+      if (data is! Map) return _fail(code: 'CLIENT_INVALID_RESPONSE');
 
       if (data['success'] != true) {
         // Algunos backends envían token en data aunque success sea false.
         if (await _tryPersistTokenFromLoginPayload(data, fullPhone: fullPhone)) {
           return true;
         }
-        return _fail(data['message']?.toString() ?? 'Error al iniciar sesión');
+        return _fail(
+          code: data['code']?.toString() ?? 'AUTH_LOGIN_FAILED',
+          message: data['message']?.toString(),
+        );
       }
 
       final payload = data['data'];
-      if (payload is! Map) return _fail('Respuesta sin datos');
+      if (payload is! Map) return _fail(code: 'CLIENT_EMPTY_DATA');
 
       final token = payload['token']?.toString();
       if (token == null || token.isEmpty) {
-        return _fail('No se recibió token');
+        return _fail(code: 'CLIENT_TOKEN_MISSING');
       }
+      final refreshToken = payload['refresh_token']?.toString();
 
       await _storage.write(key: 'driver_token', value: token);
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await _storage.write(key: 'driver_refresh_token', value: refreshToken);
+      }
       await _storage.write(
         key: DriverInternalToolsGate.storageKeyLoginPhone,
         value: fullPhone,
@@ -93,10 +106,22 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
           await _tryPersistTokenFromLoginPayload(body, fullPhone: fullPhone)) {
         return true;
       }
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        return _fail(code: 'NETWORK_TIMEOUT');
+      }
+      if (e.type == DioExceptionType.connectionError) {
+        return _fail(code: 'NETWORK_CONNECTION');
+      }
       final msg = body is Map ? body['message']?.toString() : null;
-      return _fail(msg ?? e.message ?? 'Error de conexión');
+      final code = body is Map ? body['code']?.toString() : null;
+      return _fail(
+        code: code ?? 'NETWORK_REQUEST_FAILED',
+        message: msg ?? e.message,
+      );
     } catch (_) {
-      return _fail('Error inesperado');
+      return _fail(code: 'CLIENT_UNEXPECTED');
     }
   }
 
@@ -109,11 +134,19 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
     if (root['data'] is Map) candidates.add(root['data'] as Map);
     candidates.add(root);
     const keys = ['token', 'access_token', 'accessToken', 'driver_token', 'bearer'];
+    const refreshKeys = ['refresh_token', 'refreshToken', 'driver_refresh_token'];
     for (final map in candidates) {
       for (final k in keys) {
         final v = map[k];
         if (v != null && v.toString().isNotEmpty) {
           await _storage.write(key: 'driver_token', value: v.toString());
+          for (final rk in refreshKeys) {
+            final rv = map[rk];
+            if (rv != null && rv.toString().isNotEmpty) {
+              await _storage.write(key: 'driver_refresh_token', value: rv.toString());
+              break;
+            }
+          }
           await _storage.write(
             key: DriverInternalToolsGate.storageKeyLoginPhone,
             value: fullPhone,
@@ -131,12 +164,13 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
   Future<void> logout() async {
     DriverRegistrationResumeGate.invalidate();
     await _storage.delete(key: 'driver_token');
+    await _storage.delete(key: 'driver_refresh_token');
     await _storage.delete(key: DriverInternalToolsGate.storageKeyLoginPhone);
     state = DriverLoginState();
   }
 
-  bool _fail(String message) {
-    state = DriverLoginState(errorMessage: message);
+  bool _fail({required String code, String? message}) {
+    state = DriverLoginState(errorMessage: message, errorCode: code);
     return false;
   }
 

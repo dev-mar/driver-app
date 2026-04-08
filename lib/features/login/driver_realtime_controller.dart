@@ -20,6 +20,11 @@ final driverRealtimeProvider =
   (ref) => DriverRealtimeController(),
 );
 
+/// Convención de errores (login/realtime):
+/// - Estado/controladores publican códigos (`errorCode`, `offersErrorCode`,
+///   `tripErrorCode`) en lugar de textos hardcodeados para UI.
+/// - La pantalla (`driver_home_screen`) traduce códigos con `l10n`.
+/// - Mensajes textuales solo se permiten como fallback de backend.
 class DriverRealtimeState {
   final bool online;
   final bool connecting;
@@ -52,6 +57,8 @@ class DriverRealtimeState {
   final String? processingTripAction;
   /// Mensaje de error en cambio de estado del viaje (trip:error).
   final String? tripErrorMessage;
+  /// Código de error en cambio de estado del viaje (trip:error).
+  final String? tripErrorCode;
   /// Posición actual del conductor (actualizada con location:update) para el mapa.
   final double? driverLat;
   final double? driverLng;
@@ -85,6 +92,7 @@ class DriverRealtimeState {
     this.lastCompletedTripId,
     this.processingTripAction,
     this.tripErrorMessage,
+    this.tripErrorCode,
     this.driverLat,
     this.driverLng,
     this.driverDisplayName,
@@ -110,6 +118,7 @@ class DriverRealtimeState {
     Object? lastCompletedTripId = _unset,
     Object? processingTripAction = _unset,
     String? tripErrorMessage,
+    String? tripErrorCode,
     Object? driverLat = _unset,
     Object? driverLng = _unset,
     Object? driverDisplayName = _unset,
@@ -147,6 +156,7 @@ class DriverRealtimeState {
           ? this.processingTripAction
           : processingTripAction as String?,
       tripErrorMessage: tripErrorMessage,
+      tripErrorCode: tripErrorCode,
       driverLat: identical(driverLat, _unset) ? this.driverLat : driverLat as double?,
       driverLng: identical(driverLng, _unset) ? this.driverLng : driverLng as double?,
       driverDisplayName: identical(driverDisplayName, _unset)
@@ -184,6 +194,7 @@ class DriverRealtimeState {
         lastCompletedTripId: null,
         processingTripAction: null,
         tripErrorMessage: null,
+        tripErrorCode: null,
         driverLat: null,
         driverLng: null,
         driverDisplayName: null,
@@ -215,6 +226,14 @@ extension DriverRealtimeStateAvailabilityUi on DriverRealtimeState {
 
 String _socketConnectErrorToCode(dynamic data) {
   final s = data?.toString() ?? '';
+  final up = s.toUpperCase();
+  if (up.contains('AUTH_FAILED') ||
+      up.contains('UNAUTHORIZED') ||
+      up.contains('AUTH_REQUIRED') ||
+      up.contains('DRIVER_NOT_FOUND') ||
+      up.contains('INVALID_PAYLOAD_CONTENT')) {
+    return 'AUTH';
+  }
   if (s.contains('DRIVER_VEHICLE_REQUIRED')) {
     return 'DRIVER_VEHICLE_REQUIRED';
   }
@@ -449,6 +468,52 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
         s == AuthorizationStatus.provisional;
   }
 
+  bool _isAuthSocketErrorCode(String code) => code == 'AUTH';
+
+  Future<bool> _tryRefreshDriverSession() async {
+    final refreshToken = await _storage.read(key: 'driver_refresh_token');
+    if (refreshToken == null || refreshToken.isEmpty) {
+      debugPrint('[DRIVER_RT] No hay refresh token para renovar sesión.');
+      return false;
+    }
+    try {
+      final res = await _profileDio().post<Map<String, dynamic>>(
+        '/api/v2/auth/refresh',
+        data: <String, dynamic>{'refresh_token': refreshToken},
+      );
+      final body = res.data;
+      if (body == null) return false;
+      final token = body['token']?.toString();
+      final newRefreshToken = body['refresh_token']?.toString();
+      if (token == null || token.isEmpty) return false;
+      await _storage.write(key: 'driver_token', value: token);
+      if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
+        await _storage.write(key: 'driver_refresh_token', value: newRefreshToken);
+      }
+      debugPrint('[DRIVER_RT] Refresh de sesión OK. Reintentando socket...');
+      return true;
+    } catch (e) {
+      debugPrint('[DRIVER_RT] Refresh de sesión falló: $e');
+      return false;
+    }
+  }
+
+  Future<void> _stopRealtimeAndInvalidateSession() async {
+    _userRequestedOffline = true;
+    _availabilitySessionDesired = false;
+    _cancelTripReconnectLoop();
+    _cancelAvailabilityReconnectLoop();
+    _lastTouchReconnect = null;
+    _pendingTripCompletedTripId = null;
+    await _storage.delete(key: 'driver_token');
+    await _storage.delete(key: 'driver_refresh_token');
+    await _goOffline(
+      internal: true,
+      preserveTripState: false,
+      retainConnectingIndicator: false,
+    );
+  }
+
   bool _shouldRefreshDriverPhoto() {
     final pic = state.driverPictureProfile?.trim() ?? '';
     final exp = state.driverPictureExpiresAt;
@@ -504,7 +569,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
 
   /// [forceOffline]: logout u otros casos que deben cortar sesión aunque haya viaje activo.
   Future<void> setOnline(bool value, {bool forceOffline = false}) async {
-    if (value == state.online && !state.connecting) return;
+    // En logout forzado debemos ejecutar limpieza total incluso si ya estaba offline.
+    if (value == state.online && !state.connecting && !(forceOffline && !value)) return;
     if (value) {
       _userRequestedOffline = false;
       _availabilitySessionDesired = true;
@@ -548,6 +614,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       internal: true,
       preserveTripState: false,
       retainConnectingIndicator: true,
+      preservePendingOffers: true,
     );
     if (_userRequestedOffline || _disposed) return;
     await Future<void>.delayed(const Duration(milliseconds: 600));
@@ -566,7 +633,11 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
   }
 
   Future<void> _handleUnexpectedDisconnectWithTrip() async {
-    await _goOffline(internal: true, preserveTripState: true);
+    await _goOffline(
+      internal: true,
+      preserveTripState: true,
+      preservePendingOffers: true,
+    );
     if (_userRequestedOffline || _disposed) return;
     state = state.copyWith(connecting: true, errorCode: 'SOCKET_RECONNECTING');
     await Future<void>.delayed(const Duration(milliseconds: 600));
@@ -716,11 +787,21 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     }
   }
 
-  Future<void> _performGoOnline() async {
+  Future<void> _performGoOnline({bool allowAuthRefreshRetry = true}) async {
     debugPrint('[DRIVER_RT] setOnline(true) iniciando...');
     _cancelTripReconnectLoop();
     _cancelAvailabilityReconnectLoop();
-    state = state.copyWith(connecting: true, errorCode: null);
+    state = state.copyWith(
+      connecting: true,
+      errorCode: null,
+      // Evita mostrar datos del conductor anterior durante reconexión
+      // o cuando `connection:ack` llega incompleto.
+      driverDisplayName: null,
+      driverVehicleLabel: null,
+      driverRating: null,
+      driverPictureProfile: null,
+      driverPictureExpiresAt: null,
+    );
 
     try {
       // connectivity_plus 6.x devuelve List<ConnectivityResult>
@@ -751,6 +832,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
         io.OptionBuilder()
             .setTransports(['websocket', 'polling'])
             .setPath(DriverRealtimeConfig.socketPath)
+            .enableForceNew()
+            .disableMultiplex()
             .setExtraHeaders({
               'Authorization': 'Bearer $token',
             })
@@ -1041,10 +1124,11 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
           state = state.copyWith(
             pendingOffers: updatedOffers,
             processingOfferTripId: null,
-            offersErrorMessage: message ?? 'Error al actualizar el viaje',
+            offersErrorMessage: message,
             offersErrorCode: normalized,
             processingTripAction: null,
-            tripErrorMessage: message ?? 'Error al actualizar el viaje',
+            tripErrorMessage: message,
+            tripErrorCode: normalized ?? 'TRIP_UPDATE_FAILED',
           );
         } catch (e) {
           debugPrint('[DRIVER_RT] Error manejando trip:error: $e');
@@ -1354,9 +1438,41 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       unawaited(_startGpsTracking());
     } on _RealtimeException catch (e) {
       debugPrint('[DRIVER_RT] Error controlado: ${e.code}');
+      if (_isAuthSocketErrorCode(e.code) && allowAuthRefreshRetry) {
+        final refreshed = await _tryRefreshDriverSession();
+        if (refreshed) {
+          await _goOffline(
+            internal: true,
+            preserveTripState: false,
+            preservePendingOffers: true,
+          );
+          await _performGoOnline(allowAuthRefreshRetry: false);
+          return;
+        }
+        await _stopRealtimeAndInvalidateSession();
+        state = state.copyWith(
+          online: false,
+          connecting: false,
+          errorCode: 'AUTH',
+        );
+        return;
+      }
+      if (_isAuthSocketErrorCode(e.code)) {
+        await _stopRealtimeAndInvalidateSession();
+        state = state.copyWith(
+          online: false,
+          connecting: false,
+          errorCode: 'AUTH',
+        );
+        return;
+      }
       final preserveTrip = state.activeTrip != null ||
           state.tripPendingRating != null;
-      await _goOffline(internal: true, preserveTripState: preserveTrip);
+      await _goOffline(
+        internal: true,
+        preserveTripState: preserveTrip,
+        preservePendingOffers: true,
+      );
       state = state.copyWith(
         online: false,
         connecting: false,
@@ -1372,7 +1488,11 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       debugPrint('[DRIVER_RT] $stackTrace');
       final preserveTrip = state.activeTrip != null ||
           state.tripPendingRating != null;
-      await _goOffline(internal: true, preserveTripState: preserveTrip);
+      await _goOffline(
+        internal: true,
+        preserveTripState: preserveTrip,
+        preservePendingOffers: true,
+      );
       state = state.copyWith(
         online: false,
         connecting: false,
@@ -1386,11 +1506,16 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     }
   }
 
+  /// [preservePendingOffers]: si es true, no vacía la lista de solicitudes ni el
+  /// procesamiento en curso. Usar en reconexiones automáticas (caída de socket,
+  /// refresh de sesión) para que una oferta siga visible hasta aceptar/rechazar
+  /// o hasta evento del backend — no al pedir offline explícito ni al invalidar sesión.
   Future<void> _goOffline({
     bool internal = false,
     bool userInitiated = false,
     bool preserveTripState = false,
     bool retainConnectingIndicator = false,
+    bool preservePendingOffers = false,
   }) async {
     await _positionSub?.cancel();
     _positionSub = null;
@@ -1409,14 +1534,20 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       online: false,
       connecting: retainConnectingIndicator,
       errorCode: userInitiated ? null : (internal ? state.errorCode : null),
-      pendingOffers: [],
-      processingOfferTripId: null,
-      offersErrorMessage: null,
-      offersErrorCode: null,
+      pendingOffers: preservePendingOffers ? state.pendingOffers : const [],
+      processingOfferTripId: preservePendingOffers
+          ? state.processingOfferTripId
+          : null,
+      processingIsAccept:
+          preservePendingOffers ? state.processingIsAccept : true,
+      offersErrorMessage:
+          preservePendingOffers ? state.offersErrorMessage : null,
+      offersErrorCode: preservePendingOffers ? state.offersErrorCode : null,
       activeTrip: preserve ? state.activeTrip : null,
       tripPendingRating: preserve ? state.tripPendingRating : null,
       processingTripAction: preserve ? state.processingTripAction : null,
       tripErrorMessage: preserve ? state.tripErrorMessage : null,
+      tripErrorCode: preserve ? state.tripErrorCode : null,
       driverLat: preserve ? state.driverLat : null,
       driverLng: preserve ? state.driverLng : null,
     );
@@ -1429,9 +1560,10 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     try {
       final initialPos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 0,
         ),
-      ).timeout(const Duration(seconds: 8));
+      ).timeout(const Duration(seconds: 15));
       if (_disposed) return;
       state = state.copyWith(
         driverLat: initialPos.latitude,
@@ -1452,8 +1584,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     if (_disposed) return;
     _positionSub = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.medium,
-        distanceFilter: 10,
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 5,
       ),
     ).listen((pos) {
       if (kDebugMode) {
@@ -1614,7 +1746,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       debugPrint(
           '[DRIVER_RT] acceptOffer sin conexión de socket, abortando.');
       state = state.copyWith(
-        offersErrorMessage: 'No hay conexión con el servidor.',
+        offersErrorMessage: null,
         offersErrorCode: 'NO_CONNECTION',
       );
       return;
@@ -1645,7 +1777,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       debugPrint(
           '[DRIVER_RT] rejectOffer sin conexión de socket, abortando.');
       state = state.copyWith(
-        offersErrorMessage: 'No hay conexión con el servidor.',
+        offersErrorMessage: null,
         offersErrorCode: 'NO_CONNECTION',
       );
       return;

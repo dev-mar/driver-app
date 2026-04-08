@@ -78,7 +78,7 @@ class DriverRegistrationRepository {
     return out;
   }
 
-  /// Categorías de licencia por país (`public.countries.id`).
+  /// Categorías de licencia por país (`countryId` alineado al catálogo geo / `reference.countries` en backend).
   Future<List<DriverLicenseCategory>> fetchLicenseCategories({required int countryId}) async {
     final response = await _geoDio.get<Map<String, dynamic>>(
       '/api/v2/geo/license-categories',

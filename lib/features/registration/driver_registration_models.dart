@@ -107,7 +107,7 @@ class DriverLicenseCategory {
     this.isForeign = false,
   });
 
-  /// Mismo valor que `document_type` en `POST .../document-info` (≠ 1).
+  /// Mismo valor que `document_type` en `POST /api/v2/driver/documents` (paso licencia, ≠ 1).
   final int id;
   final String label;
   final String code;
@@ -763,7 +763,7 @@ int? registrationDefaultCompatServiceTypeId(
   return visible.first.id;
 }
 
-/// Estado de reanudación: `GET /api/v2/driver/registration` (data incluye campos v1 + `schema_version`).
+/// Estado de reanudación: `GET /api/v2/driver/registration` (data incluye `schema_version` y campos de flujo del backend).
 class DriverRegistrationStatusDto {
   const DriverRegistrationStatusDto({
     required this.uuid,
