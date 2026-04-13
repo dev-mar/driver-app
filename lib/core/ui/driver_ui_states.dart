@@ -3,6 +3,88 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_foundation.dart';
 
+enum DriverInlineNoticeTone { error, info, success }
+
+class DriverInlineNotice extends StatelessWidget {
+  const DriverInlineNotice({
+    super.key,
+    required this.message,
+    required this.tone,
+    this.icon,
+  });
+
+  final String message;
+  final DriverInlineNoticeTone tone;
+  final IconData? icon;
+
+  Color _bg() {
+    switch (tone) {
+      case DriverInlineNoticeTone.error:
+        return AppColors.error.withValues(alpha: 0.12);
+      case DriverInlineNoticeTone.info:
+        return AppColors.primary.withValues(alpha: 0.1);
+      case DriverInlineNoticeTone.success:
+        return AppColors.success.withValues(alpha: 0.12);
+    }
+  }
+
+  Color _fg() {
+    switch (tone) {
+      case DriverInlineNoticeTone.error:
+        return AppColors.error;
+      case DriverInlineNoticeTone.info:
+        return AppColors.primary;
+      case DriverInlineNoticeTone.success:
+        return AppColors.success;
+    }
+  }
+
+  IconData _defaultIcon() {
+    switch (tone) {
+      case DriverInlineNoticeTone.error:
+        return Icons.error_outline_rounded;
+      case DriverInlineNoticeTone.info:
+        return Icons.info_outline_rounded;
+      case DriverInlineNoticeTone.success:
+        return Icons.check_circle_outline_rounded;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = _fg();
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppFoundation.spacingMd,
+        vertical: 10,
+      ),
+      decoration: BoxDecoration(
+        color: _bg(),
+        borderRadius: BorderRadius.circular(AppFoundation.radiusSm),
+        border: Border.all(color: fg.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon ?? _defaultIcon(), size: 18, color: fg),
+          const SizedBox(width: AppFoundation.spacingSm),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: fg,
+                fontSize: 12.5,
+                height: 1.3,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class DriverInlineError extends StatelessWidget {
   const DriverInlineError({
     super.key,
@@ -15,30 +97,30 @@ class DriverInlineError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppFoundation.radiusSm),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: AppColors.error),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: AppColors.error,
-                fontSize: 12.5,
-                height: 1.3,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
+    return DriverInlineNotice(
+      message: message,
+      tone: DriverInlineNoticeTone.error,
+      icon: icon,
+    );
+  }
+}
+
+class DriverInlineInfo extends StatelessWidget {
+  const DriverInlineInfo({
+    super.key,
+    required this.message,
+    this.icon = Icons.info_outline_rounded,
+  });
+
+  final String message;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return DriverInlineNotice(
+      message: message,
+      tone: DriverInlineNoticeTone.info,
+      icon: icon,
     );
   }
 }
@@ -63,12 +145,12 @@ class DriverEmptyStateCard extends StatelessWidget {
       ),
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppFoundation.spacingXl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, color: AppColors.textSecondary, size: 22),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppFoundation.spacingSm),
               Text(
                 message,
                 textAlign: TextAlign.center,

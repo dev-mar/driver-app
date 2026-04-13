@@ -163,6 +163,7 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
   /// Cierra sesión: borra el token. Navegar a /login después con GoRouter.
   Future<void> logout() async {
     DriverRegistrationResumeGate.invalidate();
+    await DriverPushTokenService.instance.revokeAllOnServerIfPossible();
     await _storage.delete(key: 'driver_token');
     await _storage.delete(key: 'driver_refresh_token');
     await _storage.delete(key: DriverInternalToolsGate.storageKeyLoginPhone);

@@ -97,8 +97,8 @@
   "driverHomeVehicleRegistrationBanner": "Falta registrar tu vehículo. Sin vehículo no puedes recibir viajes.",
   "driverHomeVehicleRegistrationCta": "Completar datos del vehículo",
   "driverHomeCannotGoOnlineWithoutVehicle": "Registra tu vehículo para poder conectarte y recibir viajes.",
-  "driverFcmOpenedTripOfferHint": "Abriste una alerta de solicitud. Si no ves la oferta, activa el modo en línea; las ofertas llegan en tiempo real.",
-  "driverHomeMiniVehicleEmpty": "Sin vehículo registrado",
+  "driverFcmOpenedTripOfferHint": "Si acabamos de cargar la solicitud desde la alerta, revisa la lista abajo. Si no aparece, puede haber expirado o falló la conexión: vuelve a ponerte en línea.",
+  "driverHomeMiniVehicleEmpty": "Vehículo",
   "driverHomeMiniRating": "{rating} ★",
   "@driverHomeMiniRating": {
     "placeholders": { "rating": { "type": "String" } }
@@ -160,6 +160,8 @@
   "driverOnlineErrorRbacTechnical": "Hubo un problema al verificar permisos. Intenta de nuevo en unos segundos.",
 
   "driverHomeOnlineRequirementsHint": "Solo aplica para recibir viajes: el servidor debe verte en línea, con ubicación y poder enviarte avisos. Otras pantallas (como tu perfil) no lo requieren.",
+  "driverHomeOpenSystemLocationSettings": "Abrir ajustes de ubicación (GPS)",
+  "driverHomeOpenAppPermissionSettings": "Abrir permisos de la app",
   "driverTripInProgressTitle": "Viaje en curso",
   "driverTripStatusAccepted": "Ir a recoger",
   "driverTripStatusArrived": "En punto de recogida",
@@ -229,6 +231,17 @@
   "driverHomeBackgroundLocationBody": "Para que los pasajeros puedan encontrarte cuando la app no está a la vista, concede ubicación «Todo el tiempo» en el siguiente paso. Solo se usa mientras estás conectado como conductor. Puedes cambiarlo en los ajustes del sistema cuando quieras.",
   "driverHomeBackgroundLocationLater": "Ahora no",
   "driverHomeBackgroundLocationContinue": "Continuar",
+
+  "driverForegroundNotifyTitle": "Texi · Modo conductor",
+  "driverForegroundNotifyBodySearching": "Buscando viajes. El GPS sigue activo para ubicarte.",
+  "driverForegroundNotifyBodyTrip": "Viaje activo · compartiendo ubicación.",
+  "driverForegroundNotifyBodyOffers": "{count, plural, one{1 solicitud pendiente — abre Texi para responder} other{{count} solicitudes pendientes — abre Texi}}",
+  "@driverForegroundNotifyBodyOffers": {
+    "description": "Texto del servicio en primer plano con ofertas pendientes",
+    "placeholders": {
+      "count": { "type": "num" }
+    }
+  },
 
   "driverMapDriverPosition": "Tu posición",
   "driverMapPickupPoint": "Punto de recogida",

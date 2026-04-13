@@ -611,13 +611,13 @@ abstract class AppLocalizations {
   /// No description provided for @driverFcmOpenedTripOfferHint.
   ///
   /// In en, this message translates to:
-  /// **'You opened a trip request alert. If you don\'t see the offer, go online; offers arrive over the live connection.'**
+  /// **'We try to load the request from the alert into the list below. If it\'s missing, it may have expired or the connection failed—toggle online again.'**
   String get driverFcmOpenedTripOfferHint;
 
   /// No description provided for @driverHomeMiniVehicleEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Vehicle not registered yet'**
+  /// **'Vehicle'**
   String get driverHomeMiniVehicleEmpty;
 
   /// No description provided for @driverHomeMiniRating.
@@ -944,6 +944,18 @@ abstract class AppLocalizations {
   /// **'Only needed to receive trips: the server must see you online, with location on, and be able to notify you. Other screens (like your profile) don’t need this.'**
   String get driverHomeOnlineRequirementsHint;
 
+  /// No description provided for @driverHomeOpenSystemLocationSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open location (GPS) settings'**
+  String get driverHomeOpenSystemLocationSettings;
+
+  /// No description provided for @driverHomeOpenAppPermissionSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open app permission settings'**
+  String get driverHomeOpenAppPermissionSettings;
+
   /// No description provided for @driverTripInProgressTitle.
   ///
   /// In en, this message translates to:
@@ -1183,6 +1195,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue'**
   String get driverHomeBackgroundLocationContinue;
+
+  /// No description provided for @driverForegroundNotifyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Texi · Driver mode'**
+  String get driverForegroundNotifyTitle;
+
+  /// No description provided for @driverForegroundNotifyBodySearching.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for ride requests. GPS stays on for dispatch.'**
+  String get driverForegroundNotifyBodySearching;
+
+  /// No description provided for @driverForegroundNotifyBodyTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'On a trip · location shared with passengers.'**
+  String get driverForegroundNotifyBodyTrip;
+
+  /// Foreground service body when there are pending trip offers
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 pending request — open Texi to respond} other{{count} pending requests — open Texi}}'**
+  String driverForegroundNotifyBodyOffers(num count);
 
   /// No description provided for @driverMapDriverPosition.
   ///

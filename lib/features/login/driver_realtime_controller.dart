@@ -14,6 +14,7 @@ import '../../core/config/driver_backend_config.dart';
 import '../../core/config/driver_realtime_config.dart';
 import '../../core/app_lifecycle/app_lifecycle_state.dart';
 import '../../core/notifications/driver_push_token_service.dart';
+import '../../core/foreground/driver_foreground_session.dart';
 
 final driverRealtimeProvider =
     StateNotifierProvider<DriverRealtimeController, DriverRealtimeState>(
@@ -62,6 +63,7 @@ class DriverRealtimeState {
   /// Posición actual del conductor (actualizada con location:update) para el mapa.
   final double? driverLat;
   final double? driverLng;
+  final double? driverBearing;
   /// Desde `connection:ack.profile` (nombre para mini perfil en home).
   final String? driverDisplayName;
   /// Ej. "Toyota Corolla · ABC-123" desde `connection:ack.profile.vehicle`.
@@ -95,6 +97,7 @@ class DriverRealtimeState {
     this.tripErrorCode,
     this.driverLat,
     this.driverLng,
+    this.driverBearing,
     this.driverDisplayName,
     this.driverVehicleLabel,
     this.driverRating,
@@ -121,6 +124,7 @@ class DriverRealtimeState {
     String? tripErrorCode,
     Object? driverLat = _unset,
     Object? driverLng = _unset,
+    Object? driverBearing = _unset,
     Object? driverDisplayName = _unset,
     Object? driverVehicleLabel = _unset,
     Object? driverRating = _unset,
@@ -159,6 +163,9 @@ class DriverRealtimeState {
       tripErrorCode: tripErrorCode,
       driverLat: identical(driverLat, _unset) ? this.driverLat : driverLat as double?,
       driverLng: identical(driverLng, _unset) ? this.driverLng : driverLng as double?,
+      driverBearing: identical(driverBearing, _unset)
+          ? this.driverBearing
+          : driverBearing as double?,
       driverDisplayName: identical(driverDisplayName, _unset)
           ? this.driverDisplayName
           : driverDisplayName as String?,
@@ -197,6 +204,7 @@ class DriverRealtimeState {
         tripErrorCode: null,
         driverLat: null,
         driverLng: null,
+        driverBearing: null,
         driverDisplayName: null,
         driverVehicleLabel: null,
         driverRating: null,
@@ -370,11 +378,28 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     });
   }
 
+  /// Antes de desconectar por offline explícito: el backend excluye ofertas con `availability = available`.
+  /// Sin esto, `is_online` y `available` pueden persistir hasta la gracia de `disconnect`.
+  Future<void> _emitAvailabilityOnBreakBeforeDisconnect() async {
+    final s = _socket;
+    if (s == null || s.connected != true) return;
+    try {
+      await s
+          .emitWithAckAsync('driver:setAvailability', {
+            'availability': 'on_break',
+          })
+          .timeout(const Duration(milliseconds: 1200));
+    } catch (e) {
+      debugPrint('[DRIVER_RT] on_break antes de disconnect: $e');
+    }
+  }
+
   /// Emite al socket respetando [_locationEmitMinInterval] salvo [force].
   void _emitLocationToServer (
     double lat,
     double lng,
     double speed, {
+    double bearing = 0,
     bool force = false,
   }) {
     if (_socket?.connected != true) return;
@@ -388,7 +413,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     _socket!.emit('location:update', {
       'lat': lat,
       'lng': lng,
-      'bearing': 0,
+      'bearing': bearing,
       'speed': speed,
     });
   }
@@ -469,6 +494,14 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
   }
 
   bool _isAuthSocketErrorCode(String code) => code == 'AUTH';
+
+  /// Errores de prerrequisitos para entrar online: no deben disparar
+  /// reconexión automática en bucle porque causan parpadeo visual en Home.
+  bool _isOnlinePrerequisiteBlockingError(String code) {
+    return code == 'GPS_SERVICE_OFF' ||
+        code == 'NO_GPS' ||
+        code == 'NO_NOTIFICATIONS';
+  }
 
   Future<bool> _tryRefreshDriverSession() async {
     final refreshToken = await _storage.read(key: 'driver_refresh_token');
@@ -906,6 +939,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
               connecting: false,
               errorCode: code,
             );
+            unawaited(_syncDriverForegroundSession());
           }
         }
       });
@@ -920,6 +954,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
               connecting: false,
               errorCode: code,
             );
+            unawaited(_syncDriverForegroundSession());
           }
         }
       });
@@ -996,6 +1031,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
             processingIsAccept: true,
             offersErrorMessage: null,
           );
+          unawaited(_syncDriverForegroundSession());
         } catch (e) {
           debugPrint('[DRIVER_RT] Error parseando trip:offer: $e');
         }
@@ -1064,6 +1100,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
               processingOfferTripId: null,
             );
           }
+          unawaited(_syncDriverForegroundSession());
         } catch (e) {
           debugPrint('[DRIVER_RT] Error manejando trip:accepted: $e');
         }
@@ -1090,6 +1127,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
               processingOfferTripId: null,
             );
           }
+          unawaited(_syncDriverForegroundSession());
         } catch (e) {
           debugPrint('[DRIVER_RT] Error manejando trip:rejected: $e');
         }
@@ -1250,6 +1288,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
           } else {
             state = state.copyWith(processingTripAction: null);
           }
+          unawaited(_syncDriverForegroundSession());
         } catch (e) {
           debugPrint('[DRIVER_RT] Error manejando trip:completed: $e');
         }
@@ -1279,6 +1318,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
               processingTripAction: null,
             );
           }
+          unawaited(_syncDriverForegroundSession());
         } catch (e) {
           debugPrint('[DRIVER_RT] Error manejando trip:cancelled: $e');
         }
@@ -1436,6 +1476,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       debugPrint('[DRIVER_RT] Estado online=true (GPS en segundo plano).');
       unawaited(DriverPushTokenService.instance.syncTokenIfPossible());
       unawaited(_startGpsTracking());
+      unawaited(_syncDriverForegroundSession());
     } on _RealtimeException catch (e) {
       debugPrint('[DRIVER_RT] Error controlado: ${e.code}');
       if (_isAuthSocketErrorCode(e.code) && allowAuthRefreshRetry) {
@@ -1478,6 +1519,10 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
         connecting: false,
         errorCode: e.code,
       );
+      if (!preserveTrip && _isOnlinePrerequisiteBlockingError(e.code)) {
+        _availabilitySessionDesired = false;
+        _cancelAvailabilityReconnectLoop();
+      }
       if (preserveTrip) {
         _ensureTripReconnectLoop();
       } else if (_availabilitySessionDesired && !_userRequestedOffline) {
@@ -1506,6 +1551,28 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     }
   }
 
+  /// Notificación persistente + foreground service (Android).
+  ///
+  /// Debe seguir activo mientras el conductor mantenga la sesión de disponibilidad
+  /// (`_availabilitySessionDesired`), **incluso si el socket cayó en segundo plano**
+  /// (`state.online == false` temporal). Si usáramos solo `state.online`, cada
+  /// `_goOffline` por disconnect mataría el FGS y el icono desaparecería.
+  /// Se detiene con offline explícito, logout o bloqueo RBAC.
+  Future<void> _syncDriverForegroundSession() async {
+    final err = state.errorCode;
+    final rbacBlocked = err != null && err.startsWith('RBAC_');
+    final availabilitySessionActive = !_disposed &&
+        !_userRequestedOffline &&
+        _availabilitySessionDesired &&
+        !rbacBlocked;
+
+    await DriverForegroundSession.instance.sync(
+      availabilitySessionActive: availabilitySessionActive,
+      pendingOfferCount: state.pendingOffers.length,
+      hasActiveTrip: state.activeTrip != null,
+    );
+  }
+
   /// [preservePendingOffers]: si es true, no vacía la lista de solicitudes ni el
   /// procesamiento en curso. Usar en reconexiones automáticas (caída de socket,
   /// refresh de sesión) para que una oferta siga visible hasta aceptar/rechazar
@@ -1520,6 +1587,10 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     await _positionSub?.cancel();
     _positionSub = null;
     _lastLocationEmittedAt = null;
+
+    if (userInitiated) {
+      await _emitAvailabilityOnBreakBeforeDisconnect();
+    }
 
     try {
       _socket?.disconnect();
@@ -1550,7 +1621,9 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       tripErrorCode: preserve ? state.tripErrorCode : null,
       driverLat: preserve ? state.driverLat : null,
       driverLng: preserve ? state.driverLng : null,
+      driverBearing: preserve ? state.driverBearing : null,
     );
+    unawaited(_syncDriverForegroundSession());
   }
 
   /// GPS e inyección de `location:update` sin bloquear el paso a `online:true`
@@ -1568,12 +1641,14 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       state = state.copyWith(
         driverLat: initialPos.latitude,
         driverLng: initialPos.longitude,
+        driverBearing: initialPos.heading,
       );
       if (_socket?.connected == true) {
         _emitLocationToServer(
           initialPos.latitude,
           initialPos.longitude,
           initialPos.speed,
+          bearing: initialPos.heading,
           force: true,
         );
       }
@@ -1596,8 +1671,14 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       state = state.copyWith(
         driverLat: pos.latitude,
         driverLng: pos.longitude,
+        driverBearing: pos.heading,
       );
-      _emitLocationToServer(pos.latitude, pos.longitude, pos.speed);
+      _emitLocationToServer(
+        pos.latitude,
+        pos.longitude,
+        pos.speed,
+        bearing: pos.heading,
+      );
     }, onError: (Object e, StackTrace st) {
       debugPrint('[DRIVER_RT] positionStream error: $e');
     });
@@ -1797,6 +1878,66 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     _socket!.emit('trip:reject', {
       'tripId': tripId,
     });
+  }
+
+  double? _parseOfferDouble(String? s) {
+    if (s == null || s.isEmpty) return null;
+    return double.tryParse(s);
+  }
+
+  DriverTripOffer _tripOfferFromFcmPayload(Map<String, String> data) {
+    final tripId = data['tripId']?.trim() ?? '';
+    return DriverTripOffer(
+      tripId: tripId,
+      offeredPrice: _parseOfferDouble(data['offeredPrice']),
+      etaMinutes: _parseOfferDouble(data['etaMinutes']),
+      etaToDestinationMinutes: _parseOfferDouble(data['etaToDestinationMinutes']),
+      distanceToPickupKm: _parseOfferDouble(data['distanceToPickupKm']),
+      passengerName: (data['passengerName']?.trim().isNotEmpty == true)
+          ? data['passengerName']!.trim()
+          : null,
+      passengerRating: _parseOfferDouble(data['passengerRating']),
+      originAddress: data['originAddress']?.trim().isNotEmpty == true
+          ? data['originAddress']
+          : null,
+      destinationAddress: data['destinationAddress']?.trim().isNotEmpty == true
+          ? data['destinationAddress']
+          : null,
+      tripDistanceKm: _parseOfferDouble(data['tripDistanceKm']),
+    );
+  }
+
+  /// Abrir desde notificación FCM de oferta: fusiona la oferta e intenta [setOnline].
+  Future<void> onNotificationOpenedWithTripOffer(Map<String, String> data) async {
+    if (_disposed) return;
+    final tripId = data['tripId']?.trim() ?? '';
+    if (tripId.isEmpty) return;
+
+    final offer = _tripOfferFromFcmPayload(data);
+    final list = List<DriverTripOffer>.from(state.pendingOffers);
+    final ix = list.indexWhere((o) => o.tripId == tripId);
+    if (ix >= 0) {
+      list[ix] = offer;
+    } else {
+      list.add(offer);
+    }
+    state = state.copyWith(
+      pendingOffers: list,
+      offersErrorMessage: null,
+      offersErrorCode: null,
+    );
+    unawaited(_syncDriverForegroundSession());
+
+    if (_userRequestedOffline) {
+      return;
+    }
+    await setOnline(true);
+    touchReconnectIfWantedOnline();
+  }
+
+  /// Reaplica la notificación persistente (p. ej. al volver a primer plano).
+  void resyncForegroundService() {
+    unawaited(_syncDriverForegroundSession());
   }
 
   @override

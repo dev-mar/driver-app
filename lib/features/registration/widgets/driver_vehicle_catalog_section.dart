@@ -36,6 +36,7 @@ class DriverVehicleCatalogSection extends StatelessWidget {
     this.catalogTransportMode,
     this.catalogManufacturerId,
     this.catalogVehicleModelId,
+    required this.showTechnicalCatalogs,
     required this.onReloadCatalog,
     required this.onSelectVehicleType,
     required this.onSelectVehicleCategory,
@@ -43,8 +44,9 @@ class DriverVehicleCatalogSection extends StatelessWidget {
     required this.onSelectCompatServiceType,
     required this.onSetCatalogTransportMode,
     required this.onSetCatalogManufacturer,
-    required this.onSetCatalogVehicleModel,
+    required     this.onSetCatalogVehicleModel,
     this.onPickCatalogModel,
+    this.afterCatalogBrandModelFields = const [],
   });
 
   final AppLocalizations l10n;
@@ -60,6 +62,7 @@ class DriverVehicleCatalogSection extends StatelessWidget {
   final String? catalogTransportMode;
   final int? catalogManufacturerId;
   final int? catalogVehicleModelId;
+  final bool showTechnicalCatalogs;
 
   final Future<void> Function() onReloadCatalog;
   final void Function(int typeId) onSelectVehicleType;
@@ -73,6 +76,9 @@ class DriverVehicleCatalogSection extends StatelessWidget {
   final void Function(CatalogVehicleModelEntry model, String manufacturerName)?
       onPickCatalogModel;
 
+  /// Tras marca/modelo del catálogo: año, color, o campos manuales si aplica.
+  final List<Widget> afterCatalogBrandModelFields;
+
   @override
   Widget build(BuildContext context) {
     final cat = catalog;
@@ -85,8 +91,11 @@ class DriverVehicleCatalogSection extends StatelessWidget {
         : const <int>[];
 
     final mode = (catalogTransportMode ?? 'road_vehicle').toLowerCase();
-    final showExtended =
-        cat != null && !loading && errorMessage == null && cat.catalogExtensionsAvailable;
+    final showExtended = showTechnicalCatalogs &&
+        cat != null &&
+        !loading &&
+        errorMessage == null &&
+        cat.catalogExtensionsAvailable;
     final fallbackSource = (cat?.catalogExtensionsSource ?? '').toLowerCase() == 'fallback';
 
     return RegistrationSectionCard(
@@ -304,30 +313,28 @@ class DriverVehicleCatalogSection extends StatelessWidget {
             Text(
               l10n.driverRegFieldServiceTypes,
               style: const TextStyle(
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final sid in allowedServiceIds)
-                  FilterChip(
-                    label: Text(
-                      _vehicleCatalogServiceTypeLabel(cat, sid, l10n),
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                    selected: selectedEnabledServiceTypeIds.contains(sid),
-                    onSelected: (_) => onToggleEnabledServiceType(sid),
-                    selectedColor:
-                        AppColors.primary.withValues(alpha: 0.22),
-                    checkmarkColor: AppColors.onPrimary,
-                    labelStyle:
-                        const TextStyle(color: AppColors.textPrimary),
-                  ),
-              ],
+            SizedBox(
+              height: 38,
+              child: _HorizontalEdgeFade(
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: allowedServiceIds.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    final sid = allowedServiceIds[index];
+                    return _ServiceTypePill(
+                      label: _vehicleCatalogServiceTypeLabel(cat, sid, l10n),
+                      selected: selectedEnabledServiceTypeIds.contains(sid),
+                      onTap: () => onToggleEnabledServiceType(sid),
+                    );
+                  },
+                ),
+              ),
             ),
           ] else if (selectedVehicleCategoryId != null)
             Padding(
@@ -337,7 +344,11 @@ class DriverVehicleCatalogSection extends StatelessWidget {
               ),
             ),
         ],
-        if (showExtended) ...[
+        if (cat != null &&
+            cat.catalogExtensionsAvailable &&
+            !cat.compatibilityMode &&
+            !loading &&
+            errorMessage == null) ...[
           const SizedBox(height: 20),
           Text(
             l10n.driverRegCatalogBrandModelTitle,
@@ -368,61 +379,63 @@ class DriverVehicleCatalogSection extends StatelessWidget {
             ),
           const SizedBox(height: 12),
           ..._brandModelFields(cat, mode),
-          if (cat.emissionNorms.isNotEmpty ||
-              cat.axleConfigurations.isNotEmpty ||
-              cat.bodyTypes.isNotEmpty ||
-              cat.measurementUnits.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            ExpansionTile(
-              tilePadding: EdgeInsets.zero,
-              title: Text(
-                l10n.driverRegCatalogTechnicalTitle,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                ),
+          ...afterCatalogBrandModelFields,
+        ],
+        if (showExtended &&
+            (cat.emissionNorms.isNotEmpty ||
+                cat.axleConfigurations.isNotEmpty ||
+                cat.bodyTypes.isNotEmpty ||
+                cat.measurementUnits.isNotEmpty)) ...[
+          const SizedBox(height: 8),
+          ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            title: Text(
+              l10n.driverRegCatalogTechnicalTitle,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
               ),
-              children: [
-                if (cat.emissionNorms.isNotEmpty)
-                  _techBlock(
-                    l10n.driverRegCatalogEmissionNorms,
-                    cat.emissionNorms
-                        .map((e) => '${e.code}: ${e.label} (${e.region})')
-                        .join('\n'),
-                  ),
-                if (cat.axleConfigurations.isNotEmpty)
-                  _techBlock(
-                    l10n.driverRegCatalogAxles,
-                    cat.axleConfigurations
-                        .map((e) => '${e.code} — ${e.label}')
-                        .join('\n'),
-                  ),
-                if (cat.bodyTypes.isNotEmpty)
-                  _techBlock(
-                    l10n.driverRegCatalogBodyTypes,
-                    cat.bodyTypes
-                        .map((e) => '${e.code}: ${e.label}')
-                        .join('\n'),
-                  ),
-                if (cat.measurementUnits.isNotEmpty ||
-                    cat.measurementUnitConversions.isNotEmpty)
-                  _techBlock(
-                    l10n.driverRegCatalogUnits,
-                    [
-                      ...cat.measurementUnits.map(
-                        (u) =>
-                            '${u.code} (${u.unitType}) ${u.symbol}${u.isCanonical ? ' *' : ''}',
-                      ),
-                      if (cat.measurementUnitConversions.isNotEmpty) '',
-                      ...cat.measurementUnitConversions.map(
-                        (c) =>
-                            '1 ${c.fromCode ?? '?'} → ${c.multiplier} ${c.toCode ?? '?'}',
-                      ),
-                    ].where((s) => s.isNotEmpty).join('\n'),
-                  ),
-              ],
             ),
-          ],
+            children: [
+              if (cat.emissionNorms.isNotEmpty)
+                _techBlock(
+                  l10n.driverRegCatalogEmissionNorms,
+                  cat.emissionNorms
+                      .map((e) => '${e.code}: ${e.label} (${e.region})')
+                      .join('\n'),
+                ),
+              if (cat.axleConfigurations.isNotEmpty)
+                _techBlock(
+                  l10n.driverRegCatalogAxles,
+                  cat.axleConfigurations
+                      .map((e) => '${e.code} — ${e.label}')
+                      .join('\n'),
+                ),
+              if (cat.bodyTypes.isNotEmpty)
+                _techBlock(
+                  l10n.driverRegCatalogBodyTypes,
+                  cat.bodyTypes
+                      .map((e) => '${e.code}: ${e.label}')
+                      .join('\n'),
+                ),
+              if (cat.measurementUnits.isNotEmpty ||
+                  cat.measurementUnitConversions.isNotEmpty)
+                _techBlock(
+                  l10n.driverRegCatalogUnits,
+                  [
+                    ...cat.measurementUnits.map(
+                      (u) =>
+                          '${u.code} (${u.unitType}) ${u.symbol}${u.isCanonical ? ' *' : ''}',
+                    ),
+                    if (cat.measurementUnitConversions.isNotEmpty) '',
+                    ...cat.measurementUnitConversions.map(
+                      (c) =>
+                          '1 ${c.fromCode ?? '?'} → ${c.multiplier} ${c.toCode ?? '?'}',
+                    ),
+                  ].where((s) => s.isNotEmpty).join('\n'),
+                ),
+            ],
+          ),
         ],
       ],
     );
@@ -545,6 +558,116 @@ class DriverVehicleCatalogSection extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ServiceTypePill extends StatelessWidget {
+  const _ServiceTypePill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.24)
+              : AppColors.surface.withValues(alpha: 0.72),
+          border: Border.all(
+            color: selected
+                ? AppColors.primary.withValues(alpha: 0.55)
+                : AppColors.border.withValues(alpha: 0.55),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+              size: 16,
+              color: selected ? AppColors.primary : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 7),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HorizontalEdgeFade extends StatelessWidget {
+  const _HorizontalEdgeFade({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(child: child),
+        Positioned(
+          left: 0,
+          top: 0,
+          bottom: 0,
+          child: IgnorePointer(
+            child: Container(
+              width: 18,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    AppColors.surfaceCard.withValues(alpha: 0.94),
+                    AppColors.surfaceCard.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          right: 0,
+          top: 0,
+          bottom: 0,
+          child: IgnorePointer(
+            child: Container(
+              width: 18,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerRight,
+                  end: Alignment.centerLeft,
+                  colors: [
+                    AppColors.surfaceCard.withValues(alpha: 0.94),
+                    AppColors.surfaceCard.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

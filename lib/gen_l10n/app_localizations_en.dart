@@ -290,10 +290,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverFcmOpenedTripOfferHint =>
-      'You opened a trip request alert. If you don\'t see the offer, go online; offers arrive over the live connection.';
+      'We try to load the request from the alert into the list below. If it\'s missing, it may have expired or the connection failed—toggle online again.';
 
   @override
-  String get driverHomeMiniVehicleEmpty => 'Vehicle not registered yet';
+  String get driverHomeMiniVehicleEmpty => 'Vehicle';
 
   @override
   String driverHomeMiniRating(String rating) {
@@ -480,6 +480,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Only needed to receive trips: the server must see you online, with location on, and be able to notify you. Other screens (like your profile) don’t need this.';
 
   @override
+  String get driverHomeOpenSystemLocationSettings =>
+      'Open location (GPS) settings';
+
+  @override
+  String get driverHomeOpenAppPermissionSettings =>
+      'Open app permission settings';
+
+  @override
   String get driverTripInProgressTitle => 'Trip in progress';
 
   @override
@@ -616,6 +624,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverHomeBackgroundLocationContinue => 'Continue';
+
+  @override
+  String get driverForegroundNotifyTitle => 'Texi · Driver mode';
+
+  @override
+  String get driverForegroundNotifyBodySearching =>
+      'Waiting for ride requests. GPS stays on for dispatch.';
+
+  @override
+  String get driverForegroundNotifyBodyTrip =>
+      'On a trip · location shared with passengers.';
+
+  @override
+  String driverForegroundNotifyBodyOffers(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pending requests — open Texi',
+      one: '1 pending request — open Texi to respond',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get driverMapDriverPosition => 'Your position';

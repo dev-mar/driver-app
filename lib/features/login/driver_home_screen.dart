@@ -18,7 +18,10 @@ import '../../core/ui/driver_ui_states.dart';
 import '../../core/ui/texi_circular_avatar.dart';
 import '../../core/router/app_router.dart';
 import '../../core/session/driver_internal_tools_gate.dart';
-import '../../core/notifications/driver_fcm_navigation.dart';
+import '../../core/notifications/driver_fcm_navigation.dart'
+    show
+        driverFcmTripOfferOpenBump,
+        takePendingTripOfferFromNotification;
 import '../../core/config/locale_provider.dart';
 import '../../gen_l10n/app_localizations.dart';
 import '../session/driver_operational_profile.dart';
@@ -132,7 +135,14 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     if (bump <= _lastHandledFcmTripOfferBump) return;
     _lastHandledFcmTripOfferBump = bump;
     if (!mounted) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    final payload = takePendingTripOfferFromNotification();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      if (payload != null) {
+        await ref
+            .read(driverRealtimeProvider.notifier)
+            .onNotificationOpenedWithTripOffer(payload);
+      }
       if (!mounted) return;
       final messenger = ScaffoldMessenger.maybeOf(context);
       if (messenger == null) return;
@@ -378,6 +388,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     }
     if (state == AppLifecycleState.resumed) {
       _syncKeepScreenOnForDriverMode();
+      ref.read(driverRealtimeProvider.notifier).resyncForegroundService();
       unawaited(_maybePromptKeepActiveAfterBackground());
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -392,7 +403,9 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     if (!mounted || _keepActivePromptOpen) return;
     final l10n = AppLocalizations.of(context);
     final rt = ref.read(driverRealtimeProvider);
-    if (!rt.online) return;
+    // Con switch en “disponible” el socket puede estar caído en segundo plano
+    // (`online == false`); igual debemos ofrecer el diálogo tras >15 min.
+    if (!rt.availabilitySwitchVisualOn) return;
     if (rt.activeTrip != null || rt.tripPendingRating != null) return;
     final lastBackgroundAt = _lastBackgroundAt;
     if (lastBackgroundAt == null) return;
@@ -699,6 +712,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
           ? DriverActiveTripMapView(
               driverLat: realtime.driverLat,
               driverLng: realtime.driverLng,
+              driverBearing: realtime.driverBearing,
               trip: activeTrip,
               bottomCard: _RetractableTripCard(
                 trip: activeTrip,
@@ -1007,19 +1021,39 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                 const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
-                  child: Text(
-                    l10n.driverHomeOnlineRequirementsHint,
-                    style: TextStyle(
-                      fontSize: 12,
-                      height: 1.35,
-                      color: AppColors.textSecondary.withValues(alpha: 0.88),
-                      fontWeight: FontWeight.w500,
-                    ),
+                  child: DriverInlineInfo(
+                    message: l10n.driverHomeOnlineRequirementsHint,
                   ),
                 ),
+                if (realtime.errorCode == 'GPS_SERVICE_OFF') ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () async {
+                        await Geolocator.openLocationSettings();
+                      },
+                      icon: const Icon(Icons.location_searching_rounded),
+                      label: Text(l10n.driverHomeOpenSystemLocationSettings),
+                    ),
+                  ),
+                ],
+                if (realtime.errorCode == 'NO_GPS') ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () async {
+                        await Geolocator.openAppSettings();
+                      },
+                      icon: const Icon(Icons.app_settings_alt_outlined),
+                      label: Text(l10n.driverHomeOpenAppPermissionSettings),
+                    ),
+                  ),
+                ],
               ],
             ],
-            const SizedBox(height: 20),
+            const SizedBox(height: AppFoundation.spacingXl),
             if (pendingOffers.isNotEmpty) ...[
               Row(
                 children: [
@@ -1038,21 +1072,37 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                       size: 20,
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: AppFoundation.spacingMd),
                   Expanded(
-                    child: Text(
-                      l10n.driverHomeRequestsTitle,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w700,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.driverHomeRequestsTitle,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                        Text(
+                          l10n.driverHomeMiniStatusOnline,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: AppColors.textSecondary.withValues(alpha: 0.92),
+                            fontWeight: FontWeight.w600,
                           ),
+                        ),
+                      ],
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppFoundation.spacingSm,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceCard,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppFoundation.radiusSm),
                       border: Border.all(
                         color: AppColors.border.withValues(alpha: 0.7),
                       ),
@@ -1068,7 +1118,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppFoundation.spacingMd),
               Expanded(
                 child: ListView.separated(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -1225,8 +1275,10 @@ Widget _connectionPhaseChip({
       ? AppColors.primary.withValues(alpha: 0.18)
       : AppColors.surfaceCard.withValues(alpha: 0.72);
   final fg = active ? AppColors.primary : AppColors.textSecondary;
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  return AnimatedContainer(
+    duration: const Duration(milliseconds: 220),
+    curve: Curves.easeOutCubic,
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
     decoration: BoxDecoration(
       color: bg,
       borderRadius: BorderRadius.circular(999),
@@ -1244,7 +1296,7 @@ Widget _connectionPhaseChip({
         Text(
           label,
           style: TextStyle(
-            fontSize: 10.5,
+            fontSize: 10.8,
             fontWeight: FontWeight.w700,
             color: fg,
           ),
@@ -1610,9 +1662,28 @@ class _RetractableTripCard extends StatelessWidget {
     }
   }
 
+  Color _statusAccentColor(String status) {
+    switch (status) {
+      case 'accepted':
+        return const Color(0xFF2F7DFF);
+      case 'arrived':
+        return const Color(0xFFEF9F2F);
+      case 'started':
+      case 'in_trip':
+        return const Color(0xFF8A4DFF);
+      case 'completed':
+        return AppColors.success;
+      case 'cancelled':
+        return AppColors.error;
+      default:
+        return AppColors.primary;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final accent = _statusAccentColor(trip.status);
 
     // Un solo árbol con Column + AnimatedSize evita clipping/erratas de altura
     // al alternar expandido/colapsado (antes solo quedaban visibles los botones inferiores).
@@ -1683,7 +1754,7 @@ class _RetractableTripCard extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.directions_car_rounded,
-                        color: AppColors.primary,
+                        color: accent,
                         size: 24,
                       ),
                       const SizedBox(width: 12),
@@ -1698,9 +1769,27 @@ class _RetractableTripCard extends StatelessWidget {
                                   .textTheme
                                   .titleSmall
                                   ?.copyWith(
-                                    color: AppColors.primary,
+                                    color: accent,
                                     fontWeight: FontWeight.w600,
                                   ),
+                            ),
+                            const SizedBox(height: 6),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(999),
+                              child: LinearProgressIndicator(
+                                minHeight: 3,
+                                value: switch (trip.status) {
+                                  'accepted' => 0.33,
+                                  'arrived' => 0.66,
+                                  'started' || 'in_trip' => 0.9,
+                                  'completed' || 'cancelled' => 1.0,
+                                  _ => 0.2,
+                                },
+                                backgroundColor:
+                                    AppColors.border.withValues(alpha: 0.45),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(accent),
+                              ),
                             ),
                             if (trip.estimatedPrice != null)
                               Text(
@@ -1734,6 +1823,7 @@ class _AssistedTripNavButtons extends StatefulWidget {
   const _AssistedTripNavButtons({
     required this.showPickup,
     required this.showDestination,
+    required this.tripStatus,
     required this.l10n,
     required this.onNavigateToPickup,
     required this.onNavigateToDestination,
@@ -1741,6 +1831,7 @@ class _AssistedTripNavButtons extends StatefulWidget {
 
   final bool showPickup;
   final bool showDestination;
+  final String tripStatus;
   final AppLocalizations l10n;
   final VoidCallback onNavigateToPickup;
   final VoidCallback onNavigateToDestination;
@@ -1772,6 +1863,18 @@ class _AssistedTripNavButtonsState extends State<_AssistedTripNavButtons>
 
   @override
   Widget build(BuildContext context) {
+    final navToPickupFirst = _shouldNavigateToPickupFirst(widget.tripStatus);
+    final canUsePickup = widget.showPickup;
+    final canUseDestination = widget.showDestination;
+    final shouldUsePickup = navToPickupFirst ? canUsePickup : !canUseDestination;
+    final isPickup = shouldUsePickup;
+    final title = isPickup
+        ? widget.l10n.driverTripNavigatePickup
+        : widget.l10n.driverTripNavigateDestination;
+    final subtitle = isPickup ? widget.l10n.tripOrigin : widget.l10n.tripDestination;
+    final icon = isPickup ? Icons.near_me_rounded : Icons.turn_right_rounded;
+    final onTap = isPickup ? widget.onNavigateToPickup : widget.onNavigateToDestination;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1822,58 +1925,42 @@ class _AssistedTripNavButtonsState extends State<_AssistedTripNavButtons>
           ],
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            if (widget.showPickup) ...[
-              Expanded(
-                child: AnimatedBuilder(
-                  animation: _t,
-                  builder: (context, child) {
-                    return _assistedNavPill(
-                      context,
-                      glow: 0.28 + 0.55 * _t.value,
-                      iconScale: 1.0 + 0.09 * _t.value,
-                      isPickup: true,
-                      title: widget.l10n.driverTripNavigatePickup,
-                      subtitle: widget.l10n.tripOrigin,
-                      icon: Icons.near_me_rounded,
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        widget.onNavigateToPickup();
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-            if (widget.showPickup && widget.showDestination)
-              const SizedBox(width: 10),
-            if (widget.showDestination) ...[
-              Expanded(
-                child: AnimatedBuilder(
-                  animation: _t,
-                  builder: (context, child) {
-                    return _assistedNavPill(
-                      context,
-                      glow: 0.22 + 0.5 * (1 - _t.value),
-                      iconScale: 1.0 + 0.09 * (1 - _t.value),
-                      isPickup: false,
-                      title: widget.l10n.driverTripNavigateDestination,
-                      subtitle: widget.l10n.tripDestination,
-                      icon: Icons.turn_right_rounded,
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        widget.onNavigateToDestination();
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ],
+        AnimatedBuilder(
+          animation: _t,
+          builder: (context, child) {
+            final wave = isPickup ? _t.value : (1 - _t.value);
+            return _assistedNavPill(
+              context,
+              glow: 0.24 + 0.52 * wave,
+              iconScale: 1.0 + 0.09 * wave,
+              isPickup: isPickup,
+              title: title,
+              subtitle: subtitle,
+              icon: icon,
+              onTap: () {
+                HapticFeedback.lightImpact();
+                onTap();
+              },
+            );
+          },
         ),
       ],
     );
+  }
+
+  bool _shouldNavigateToPickupFirst(String status) {
+    switch (status) {
+      case 'accepted':
+      case 'arrived':
+        return true;
+      case 'started':
+      case 'in_trip':
+      case 'completed':
+      case 'cancelled':
+        return false;
+      default:
+        return true;
+    }
   }
 
   Widget _assistedNavPill(
@@ -2030,6 +2117,42 @@ class _ActiveTripCard extends StatelessWidget {
     }
   }
 
+  Color _statusAccentColor(String status) {
+    switch (status) {
+      case 'accepted':
+        return const Color(0xFF2F7DFF);
+      case 'arrived':
+        return const Color(0xFFEF9F2F);
+      case 'started':
+      case 'in_trip':
+        return const Color(0xFF8A4DFF);
+      case 'completed':
+        return AppColors.success;
+      case 'cancelled':
+        return AppColors.error;
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  double _statusProgress(String status) {
+    switch (status) {
+      case 'accepted':
+        return 0.33;
+      case 'arrived':
+        return 0.66;
+      case 'started':
+      case 'in_trip':
+        return 0.9;
+      case 'completed':
+        return 1;
+      case 'cancelled':
+        return 1;
+      default:
+        return 0.2;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -2047,6 +2170,8 @@ class _ActiveTripCard extends StatelessWidget {
     final hasMetrics =
         trip.tripDistanceKm != null || trip.etaToDestinationMinutes != null;
     final hasRouteDetail = hasPassenger || hasMetrics || hasOriginLine || hasDestLine;
+    final accent = _statusAccentColor(trip.status);
+    final progress = _statusProgress(trip.status);
 
     Widget section({
       required Widget child,
@@ -2090,7 +2215,7 @@ class _ActiveTripCard extends StatelessWidget {
               children: [
                 Icon(
                   Icons.directions_car_rounded,
-                  color: AppColors.primary,
+                  color: accent,
                   size: 28,
                 ),
                 const SizedBox(width: 12),
@@ -2098,12 +2223,36 @@ class _ActiveTripCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        _statusLabel(l10n, trip.status),
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w800,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _statusLabel(l10n, trip.status),
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: accent,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                             ),
+                          ),
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: accent,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          minHeight: 4,
+                          value: progress,
+                          backgroundColor: AppColors.border.withValues(alpha: 0.45),
+                          valueColor: AlwaysStoppedAnimation<Color>(accent),
+                        ),
                       ),
                       if (trip.estimatedPrice != null) ...[
                         const SizedBox(height: 4),
@@ -2269,6 +2418,7 @@ class _ActiveTripCard extends StatelessWidget {
                     trip.pickupLat != null && trip.pickupLng != null,
                 showDestination: trip.destinationLat != null &&
                     trip.destinationLng != null,
+                tripStatus: trip.status,
                 l10n: l10n,
                 onNavigateToPickup: onNavigateToPickup,
                 onNavigateToDestination: onNavigateToDestination,
@@ -2277,13 +2427,7 @@ class _ActiveTripCard extends StatelessWidget {
           ],
           if (errorMessage != null && errorMessage!.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text(
-              errorMessage!,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.error,
-              ),
-            ),
+            DriverInlineError(message: errorMessage!),
           ],
           if (trip.status == 'accepted' && canAct) ...[
             const SizedBox(height: 12),
@@ -2469,7 +2613,16 @@ class _TripOfferCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                 decoration: BoxDecoration(
-                  color: AppColors.surface.withValues(alpha: 0.45),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.surface.withValues(alpha: 0.34),
+                      AppColors.surfaceCard.withValues(alpha: 0.24),
+                      AppColors.primary.withValues(alpha: 0.06),
+                    ],
+                    stops: const [0.0, 0.72, 1.0],
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2492,23 +2645,34 @@ class _TripOfferCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceCard.withValues(alpha: 0.95),
-                            borderRadius: BorderRadius.circular(10),
+                            color: AppColors.primary.withValues(alpha: 0.16),
+                            borderRadius: BorderRadius.circular(999),
                             border: Border.all(
-                              color: AppColors.border.withValues(alpha: 0.6),
+                              color: AppColors.primary.withValues(alpha: 0.42),
                               width: 1,
                             ),
                           ),
-                          child: Text(
-                            l10n.driverTripOfferBadgeNew,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF9FB2CB),
-                              letterSpacing: 0.2,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.bolt_rounded,
+                                size: 13,
+                                color: AppColors.primary.withValues(alpha: 0.95),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                l10n.driverTripOfferBadgeNew,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primary,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -2605,17 +2769,7 @@ class _TripOfferCard extends StatelessWidget {
                       const SizedBox(height: 12),
                     ],
                     if (errorMessage != null && errorMessage!.isNotEmpty) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
-                        decoration: BoxDecoration(
-                          color: AppColors.error.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          errorMessage!,
-                          style: const TextStyle(fontSize: 11, color: AppColors.error),
-                        ),
-                      ),
+                      DriverInlineError(message: errorMessage!),
                       const SizedBox(height: 8),
                     ],
                     Row(
@@ -2641,12 +2795,19 @@ class _TripOfferCard extends StatelessWidget {
                                       color: AppColors.error,
                                     ),
                                   )
-                                : Text(
-                                    l10n.driverTripReject,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.close_rounded, size: 16),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        l10n.driverTripReject,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                           ),
                         ),
@@ -2674,12 +2835,19 @@ class _TripOfferCard extends StatelessWidget {
                                       color: AppColors.onPrimary,
                                     ),
                                   )
-                                : Text(
-                                    l10n.driverTripAccept,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.check_circle_outline_rounded, size: 16),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        l10n.driverTripAccept,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                           ),
                         ),

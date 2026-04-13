@@ -1,8 +1,10 @@
 import 'dart:async' show unawaited;
+import 'dart:io' show Platform;
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -11,6 +13,7 @@ import 'core/theme/app_theme.dart';
 import 'core/config/locale_provider.dart';
 import 'core/app_lifecycle/app_lifecycle_state.dart';
 
+import 'core/foreground/driver_foreground_session.dart';
 import 'core/notifications/driver_notification_service.dart';
 import 'core/notifications/driver_fcm.dart';
 import 'core/notifications/driver_fcm_navigation.dart';
@@ -19,12 +22,16 @@ import 'gen_l10n/app_localizations.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  FlutterForegroundTask.initCommunicationPort();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(
     driverFirebaseMessagingBackgroundHandler,
   );
   await DriverNotificationService.instance.initialize();
   await setupDriverFirebaseMessaging();
+  if (Platform.isAndroid) {
+    await DriverForegroundSession.instance.ensureInitializedAndroid();
+  }
   runApp(const ProviderScope(child: TexiDriverApp()));
 }
 

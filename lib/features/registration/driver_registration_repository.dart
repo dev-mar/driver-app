@@ -217,7 +217,7 @@ class DriverRegistrationRepository {
     final body = e.response?.data;
     if (code == 413) {
       final s = body is String ? body.toLowerCase() : '';
-      // Infra actual: tope principal en Express body JSON (API_V1_JSON_LIMIT). Solo si el cuerpo
+      // Infra actual: tope principal en Express body JSON (API_V2_JSON_LIMIT). Solo si el cuerpo
       // es HTML/texto típico de proxy/CDN mencionamos capa intermedia (no nginx por defecto).
       final hintProxy = s.contains('cloudflare') ||
               s.contains('nginx') ||
@@ -226,7 +226,7 @@ class DriverRegistrationRepository {
           : '';
       return 'Las fotos o el envío superan el límite permitido (HTTP 413). '
           'Probá imágenes más livianas. En nuestro backend el JSON suele ir limitado por '
-          'API_V1_JSON_LIMIT (Express); con subida por S3 (URL firmada) el tope es otro.$hintProxy';
+          'API_V2_JSON_LIMIT (Express); con subida por S3 (URL firmada) el tope es otro.$hintProxy';
     }
     final fromJson = _extractErrorMessage(body);
     if (fromJson != 'Error del servidor') return fromJson;

@@ -97,8 +97,8 @@
   "driverHomeVehicleRegistrationBanner": "You still need to register your vehicle. Without a vehicle you cannot receive trips.",
   "driverHomeVehicleRegistrationCta": "Complete vehicle registration",
   "driverHomeCannotGoOnlineWithoutVehicle": "Register your vehicle before going online to receive trips.",
-  "driverFcmOpenedTripOfferHint": "You opened a trip request alert. If you don't see the offer, go online; offers arrive over the live connection.",
-  "driverHomeMiniVehicleEmpty": "Vehicle not registered yet",
+  "driverFcmOpenedTripOfferHint": "We try to load the request from the alert into the list below. If it's missing, it may have expired or the connection failed—toggle online again.",
+  "driverHomeMiniVehicleEmpty": "Vehicle",
   "driverHomeMiniRating": "{rating} ★",
   "@driverHomeMiniRating": {
     "placeholders": { "rating": { "type": "String" } }
@@ -160,6 +160,8 @@
   "driverOnlineErrorRbacTechnical": "We couldn’t verify permissions. Please try again in a few seconds.",
 
   "driverHomeOnlineRequirementsHint": "Only needed to receive trips: the server must see you online, with location on, and be able to notify you. Other screens (like your profile) don’t need this.",
+  "driverHomeOpenSystemLocationSettings": "Open location (GPS) settings",
+  "driverHomeOpenAppPermissionSettings": "Open app permission settings",
 
   "driverTripInProgressTitle": "Trip in progress",
   "driverTripStatusAccepted": "Go to pickup",
@@ -230,6 +232,17 @@
   "driverHomeBackgroundLocationBody": "So passengers can find you while the app is not open, allow \"Always\" (or \"Allow all the time\") location on the next step. It is only used while you are available as a driver. You can change this in system settings at any time.",
   "driverHomeBackgroundLocationLater": "Not now",
   "driverHomeBackgroundLocationContinue": "Continue",
+
+  "driverForegroundNotifyTitle": "Texi · Driver mode",
+  "driverForegroundNotifyBodySearching": "Waiting for ride requests. GPS stays on for dispatch.",
+  "driverForegroundNotifyBodyTrip": "On a trip · location shared with passengers.",
+  "driverForegroundNotifyBodyOffers": "{count, plural, one{1 pending request — open Texi to respond} other{{count} pending requests — open Texi}}",
+  "@driverForegroundNotifyBodyOffers": {
+    "description": "Foreground service body when there are pending trip offers",
+    "placeholders": {
+      "count": { "type": "num" }
+    }
+  },
 
   "driverMapDriverPosition": "Your position",
   "driverMapPickupPoint": "Pickup point",

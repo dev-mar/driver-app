@@ -7,7 +7,7 @@ import '../../gen_l10n/app_localizations.dart';
 
 // ---------------------------------------------------------------------------
 // Registro conductor — varias imágenes Base64 en el mismo JSON (documentos,
-// vehículo). Backend: API_V1_JSON_LIMIT en Express (~32mb típico).
+// vehículo). Backend: API_V2_JSON_LIMIT en Express (~32mb típico).
 //
 // - [document]: carnet identidad / licencia (legibilidad).
 // - [facePortrait]: selfie face_image; mismo criterio que pasajero (payload ya

@@ -53,7 +53,7 @@ class DirectionsService {
     final origin = '$originLat,$originLng';
     final destination = '$destinationLat,$destinationLng';
     final url =
-        '$_baseUrl?origin=$origin&destination=$destination&key=${DriverAppConfig.googleMapsApiKey}';
+        '$_baseUrl?origin=$origin&destination=$destination&mode=driving&key=${DriverAppConfig.googleMapsApiKey}';
     try {
       final response = await _dio.get<Map<String, dynamic>>(url);
       final data = response.data;

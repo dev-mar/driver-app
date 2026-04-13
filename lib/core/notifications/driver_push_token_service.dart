@@ -45,5 +45,19 @@ class DriverPushTokenService {
       // No bloquear el flujo principal si FCM no está listo.
     }
   }
+
+  /// Logout: deja de enviar FCM a este dispositivo/cuenta hasta el próximo login + sync.
+  Future<void> revokeAllOnServerIfPossible() async {
+    try {
+      final bearer = await _storage.read(key: 'driver_token');
+      if (bearer == null || bearer.isEmpty) return;
+      await _dio.delete<Map<String, dynamic>>(
+        '/api/v2/driver/push-token',
+        options: Options(headers: {'Authorization': 'Bearer $bearer'}),
+      );
+    } catch (_) {
+      // Cierre de sesión no debe fallar por red.
+    }
+  }
 }
 

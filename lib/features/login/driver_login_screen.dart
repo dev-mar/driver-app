@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_assets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_foundation.dart';
 import '../../core/theme/app_motion.dart';
 import '../../core/router/app_router.dart';
 import '../../core/session/driver_internal_tools_gate.dart';
@@ -29,6 +33,10 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
   final _passwordController = TextEditingController();
 
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _showValidationErrors = false;
+  int _loadingTick = 0;
+  Timer? _loadingTimer;
   String? _errorMessage;
 
   late final AnimationController _entrance;
@@ -58,6 +66,7 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
   @override
   void dispose() {
     _entrance.dispose();
+    _loadingTimer?.cancel();
     _countryCodeController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
@@ -68,22 +77,26 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
     if (_isLoading) return;
     final l10n = AppLocalizations.of(context);
 
+    final isValid = _formKey.currentState?.validate() ?? false;
+    if (!isValid) {
+      setState(() => _showValidationErrors = true);
+      return;
+    }
+
     setState(() {
       _errorMessage = null;
       _isLoading = true;
+      _loadingTick = 0;
+    });
+    _loadingTimer?.cancel();
+    _loadingTimer = Timer.periodic(const Duration(milliseconds: 900), (_) {
+      if (!mounted || !_isLoading) return;
+      setState(() => _loadingTick++);
     });
 
     final phone = _phoneController.text.trim();
     final password = _passwordController.text.trim();
     final countryCode = _countryCodeController.text.trim();
-
-    if (phone.isEmpty || password.isEmpty) {
-      setState(() {
-        _errorMessage = l10n.driverLoginPhoneAndPasswordRequired;
-        _isLoading = false;
-      });
-      return;
-    }
 
     final fullPhone =
         countryCode.replaceAll(RegExp(r'[^\d+]'), '') + phone.replaceAll(RegExp(r'[^\d]'), '');
@@ -94,7 +107,11 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
         );
 
     if (!mounted) return;
-    setState(() => _isLoading = false);
+    _loadingTimer?.cancel();
+    setState(() {
+      _isLoading = false;
+      _loadingTick = 0;
+    });
 
     if (success) {
       ref.invalidate(driverOperationalProfileProvider);
@@ -138,6 +155,11 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final registerCta = l10n.driverLoginRegisterCta;
+    final loadingMessage = switch (_loadingTick % 3) {
+      0 => '${l10n.commonLoading}...',
+      1 => 'Validando credenciales...',
+      _ => 'Conectando tu perfil...'
+    };
 
     return Scaffold(
       body: Stack(
@@ -163,18 +185,21 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: AppFoundation.spacing2xl),
                 child: FadeTransition(
                   opacity: _entranceFade,
                   child: SlideTransition(
                     position: _entranceSlide,
                     child: Form(
                       key: _formKey,
+                      autovalidateMode: _showValidationErrors
+                          ? AutovalidateMode.onUserInteraction
+                          : AutovalidateMode.disabled,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppFoundation.spacingLg),
                           // Logo superior
                           Center(
                         child: Image.asset(
@@ -184,7 +209,7 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                           fit: BoxFit.contain,
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: AppFoundation.spacing2xl),
                       Text(
                         l10n.driverLoginWelcome,
                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -192,7 +217,7 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                             ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppFoundation.spacingSm),
                       Text(
                         l10n.driverLoginSubtitle,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -216,7 +241,7 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                               readOnly: true,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: AppFoundation.spacingMd),
                           Expanded(
                             child: TextFormField(
                               controller: _phoneController,
@@ -226,20 +251,46 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                               ),
                               keyboardType: TextInputType.phone,
                               autofillHints: const [AutofillHints.telephoneNumber],
+                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                              validator: (v) {
+                                final d = (v ?? '').replaceAll(RegExp(r'\D'), '');
+                                if (d.isEmpty) return l10n.driverLoginPhoneAndPasswordRequired;
+                                if (d.length < 6) return l10n.driverRegValidationIncompleteNumber;
+                                return null;
+                              },
                               onFieldSubmitted: (_) => _submit(),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppFoundation.spacingLg),
                       TextFormField(
                         controller: _passwordController,
-                        decoration: InputDecoration(labelText: l10n.driverLoginPassword),
-                        obscureText: true,
+                        decoration: InputDecoration(
+                          labelText: l10n.driverLoginPassword,
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              setState(() => _obscurePassword = !_obscurePassword);
+                            },
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                            ),
+                          ),
+                        ),
+                        obscureText: _obscurePassword,
+                        validator: (v) {
+                          if (v == null || v.isEmpty) {
+                            return l10n.driverLoginPhoneAndPasswordRequired;
+                          }
+                          if (v.length < 8) return l10n.driverRegValidationMin8Chars;
+                          return null;
+                        },
                         onFieldSubmitted: (_) => _submit(),
                       ),
                       if (_errorMessage != null) ...[
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppFoundation.spacingLg),
                         DriverInlineError(
                           message: _errorMessage!,
                         ),
@@ -256,7 +307,14 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                                   width: 24,
                                   child: CircularProgressIndicator(strokeWidth: 2),
                                 )
-                              : Text(l10n.driverLoginButton),
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(l10n.driverLoginButton),
+                                    const SizedBox(width: AppFoundation.spacingSm),
+                                    const Icon(Icons.arrow_forward_rounded, size: 18),
+                                  ],
+                                ),
                         ),
                       ),
                       AnimatedSwitcher(
@@ -266,7 +324,7 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                         child: _isLoading
                             ? Padding(
                                 key: const ValueKey('login-loading-status'),
-                                padding: const EdgeInsets.only(top: 12),
+                                padding: const EdgeInsets.only(top: AppFoundation.spacingMd),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 12,
@@ -274,7 +332,7 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                                   ),
                                   decoration: BoxDecoration(
                                     color: AppColors.surface.withValues(alpha: 0.72),
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppFoundation.radiusSm),
                                     border: Border.all(
                                       color: AppColors.primary.withValues(alpha: 0.4),
                                     ),
@@ -286,10 +344,10 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                                         height: 16,
                                         child: CircularProgressIndicator(strokeWidth: 2),
                                       ),
-                                      const SizedBox(width: 10),
+                                      const SizedBox(width: AppFoundation.spacingMd),
                                       Expanded(
                                         child: Text(
-                                          l10n.commonLoading,
+                                          loadingMessage,
                                           style: const TextStyle(
                                             color: AppColors.textPrimary,
                                             fontWeight: FontWeight.w600,
@@ -302,10 +360,10 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                               )
                             : const SizedBox.shrink(key: ValueKey('login-loading-empty')),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppFoundation.spacingXl),
                       DecoratedBox(
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(AppFoundation.radiusLg),
                           boxShadow: [
                             BoxShadow(
                               color: AppColors.primary.withValues(alpha: 0.22),
@@ -316,7 +374,7 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                         ),
                         child: Container(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(AppFoundation.radiusLg),
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -329,7 +387,7 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                           padding: const EdgeInsets.all(1.5),
                           child: Material(
                             color: AppColors.surface.withValues(alpha: 0.96),
-                            borderRadius: BorderRadius.circular(18.5),
+                            borderRadius: BorderRadius.circular(AppFoundation.radiusMd + 2.5),
                             clipBehavior: Clip.antiAlias,
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
@@ -392,7 +450,7 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                                       minimumSize: const Size.fromHeight(52),
                                       elevation: 0,
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
+                                        borderRadius: BorderRadius.circular(AppFoundation.radiusSm + 2),
                                       ),
                                     ),
                                     child: Row(
@@ -405,7 +463,7 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                                             fontSize: 15,
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
+                                        const SizedBox(width: AppFoundation.spacingSm),
                                         const Icon(Icons.arrow_forward_rounded, size: 20),
                                       ],
                                     ),

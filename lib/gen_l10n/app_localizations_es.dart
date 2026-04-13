@@ -291,10 +291,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverFcmOpenedTripOfferHint =>
-      'Abriste una alerta de solicitud. Si no ves la oferta, activa el modo en línea; las ofertas llegan en tiempo real.';
+      'Si acabamos de cargar la solicitud desde la alerta, revisa la lista abajo. Si no aparece, puede haber expirado o falló la conexión: vuelve a ponerte en línea.';
 
   @override
-  String get driverHomeMiniVehicleEmpty => 'Sin vehículo registrado';
+  String get driverHomeMiniVehicleEmpty => 'Vehículo';
 
   @override
   String driverHomeMiniRating(String rating) {
@@ -484,6 +484,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solo aplica para recibir viajes: el servidor debe verte en línea, con ubicación y poder enviarte avisos. Otras pantallas (como tu perfil) no lo requieren.';
 
   @override
+  String get driverHomeOpenSystemLocationSettings =>
+      'Abrir ajustes de ubicación (GPS)';
+
+  @override
+  String get driverHomeOpenAppPermissionSettings => 'Abrir permisos de la app';
+
+  @override
   String get driverTripInProgressTitle => 'Viaje en curso';
 
   @override
@@ -622,6 +629,28 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverHomeBackgroundLocationContinue => 'Continuar';
+
+  @override
+  String get driverForegroundNotifyTitle => 'Texi · Modo conductor';
+
+  @override
+  String get driverForegroundNotifyBodySearching =>
+      'Buscando viajes. El GPS sigue activo para ubicarte.';
+
+  @override
+  String get driverForegroundNotifyBodyTrip =>
+      'Viaje activo · compartiendo ubicación.';
+
+  @override
+  String driverForegroundNotifyBodyOffers(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count solicitudes pendientes — abre Texi',
+      one: '1 solicitud pendiente — abre Texi para responder',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get driverMapDriverPosition => 'Tu posición';

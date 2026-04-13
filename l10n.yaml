@@ -2,3 +2,5 @@ arb-dir: lib/l10n
 template-arb-file: app_en.arb
 output-dir: lib/gen_l10n
 nullable-getter: false
+# Lista mensajes faltantes en locales vs template (revisar con `dart run tool/verify_l10n.dart`).
+untranslated-messages-file: lib/l10n/untranslated_report.json

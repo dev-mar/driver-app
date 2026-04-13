@@ -7,9 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
+import '../../core/session/driver_internal_tools_gate.dart';
 import '../../core/session/driver_registration_resume_gate.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_foundation.dart';
 import '../../core/theme/app_motion.dart';
+import '../../core/ui/driver_ui_states.dart';
 import '../../gen_l10n/app_localizations.dart';
 import '../login/driver_login_controller.dart';
 import '../login/driver_realtime_controller.dart';
@@ -101,6 +104,8 @@ class _DriverRegistrationFlowScreenState
   String? _carLeftB64;
   String? _carRightB64;
   bool _suppressDraftSave = false;
+  bool _showStepValidationErrors = false;
+  int _validationStepScope = 0;
   final Map<String, String?> _draftImagePaths = <String, String?>{};
 
   Future<void> _persistDraft() async {
@@ -379,6 +384,39 @@ class _DriverRegistrationFlowScreenState
     }
   }
 
+  Color _colorFromName(String color) {
+    switch (color) {
+      case 'Negro':
+        return const Color(0xFF1F2329);
+      case 'Blanco':
+        return const Color(0xFFF5F7FA);
+      case 'Gris':
+        return const Color(0xFF8C94A1);
+      case 'Plata':
+        return const Color(0xFFC5CCD6);
+      case 'Rojo':
+        return const Color(0xFFD84B4B);
+      case 'Azul':
+        return const Color(0xFF4A75D9);
+      case 'Verde':
+        return const Color(0xFF35A36E);
+      case 'Amarillo':
+        return const Color(0xFFE9BF3B);
+      case 'Naranja':
+        return const Color(0xFFE28A3C);
+      case 'Violeta':
+        return const Color(0xFF8C62E3);
+      case 'Marrón':
+        return const Color(0xFF8A5B41);
+      case 'Beige':
+        return const Color(0xFFD6C09B);
+      case 'Dorado':
+        return const Color(0xFFC8A246);
+      default:
+        return AppColors.primary;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -498,6 +536,15 @@ class _DriverRegistrationFlowScreenState
         filled: true,
         fillColor: AppColors.inputFill,
         labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+        floatingLabelStyle: const TextStyle(
+          color: AppColors.primary,
+          fontWeight: FontWeight.w700,
+          fontSize: 13.5,
+        ),
+        errorStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
         hintStyle: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.85)),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -511,8 +558,23 @@ class _DriverRegistrationFlowScreenState
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
         ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.error.withValues(alpha: 0.82), width: 1.15),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.6),
+        ),
       ),
     );
+  }
+
+  void _onInvalidStepValidation() {
+    if (!_showStepValidationErrors) {
+      setState(() => _showStepValidationErrors = true);
+    }
+    HapticFeedback.mediumImpact();
   }
 
   Future<void> _onPrimaryAction() async {
@@ -524,7 +586,10 @@ class _DriverRegistrationFlowScreenState
 
     switch (flow.step) {
       case 0:
-        if (!_formPersonal.currentState!.validate()) return;
+        if (!_formPersonal.currentState!.validate()) {
+          _onInvalidStepValidation();
+          return;
+        }
         if (!flow.isBoliviaSelected) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -566,7 +631,10 @@ class _DriverRegistrationFlowScreenState
         unawaited(_persistDraft());
         return;
       case 1:
-        if (!_formId.currentState!.validate()) return;
+        if (!_formId.currentState!.validate()) {
+          _onInvalidStepValidation();
+          return;
+        }
         if (_idFrontB64 == null ||
             _idBackB64 == null ||
             _faceB64 == null ||
@@ -592,7 +660,10 @@ class _DriverRegistrationFlowScreenState
         unawaited(_persistDraft());
         return;
       case 2:
-        if (!_formLicense.currentState!.validate()) return;
+        if (!_formLicense.currentState!.validate()) {
+          _onInvalidStepValidation();
+          return;
+        }
         if (_licenseCategory == null ||
             _licFrontB64 == null ||
             _licBackB64 == null ||
@@ -627,7 +698,10 @@ class _DriverRegistrationFlowScreenState
         unawaited(_persistDraft());
         return;
       case 4:
-        if (!_formVehicle.currentState!.validate()) return;
+        if (!_formVehicle.currentState!.validate()) {
+          _onInvalidStepValidation();
+          return;
+        }
         if (flow.vehicleCatalogLoading ||
             flow.vehicleCatalogError != null ||
             flow.vehicleCatalog == null) {
@@ -780,6 +854,10 @@ class _DriverRegistrationFlowScreenState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final flow = ref.watch(driverRegistrationFlowControllerProvider);
+    if (_validationStepScope != flow.step) {
+      _validationStepScope = flow.step;
+      _showStepValidationErrors = false;
+    }
     final notifier = ref.read(driverRegistrationFlowControllerProvider.notifier);
     final steps = _visibleStepLabels(l10n);
     final visIdx = _visibleStepIndex(flow);
@@ -840,20 +918,33 @@ class _DriverRegistrationFlowScreenState
                 ],
               ),
             ),
-            if (flow.globalError != null) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  _localizedFlowError(flow.globalError!, l10n),
-                  style: const TextStyle(
-                    color: AppColors.error,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+            AnimatedSwitcher(
+              duration: AppMotion.stepSwitcher,
+              switchInCurve: AppMotion.emphasized,
+              switchOutCurve: AppMotion.standard,
+              transitionBuilder: (child, anim) {
+                return FadeTransition(
+                  opacity: anim,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, -0.08),
+                      end: Offset.zero,
+                    ).animate(anim),
+                    child: child,
                   ),
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
+                );
+              },
+              child: flow.globalError == null
+                  ? const SizedBox.shrink(key: ValueKey('no-global-error'))
+                  : Padding(
+                      key: ValueKey<String>(flow.globalError!),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: DriverInlineError(
+                        message: _localizedFlowError(flow.globalError!, l10n),
+                      ),
+                    ),
+            ),
+            const SizedBox(height: 8),
             Expanded(
               child: AnimatedSwitcher(
                 duration: AppMotion.stepSwitcher,
@@ -964,6 +1055,9 @@ class _DriverRegistrationFlowScreenState
       data: _registrationInputTheme(context),
       child: Form(
         key: _formPersonal,
+        autovalidateMode: _showStepValidationErrors
+            ? AutovalidateMode.onUserInteraction
+            : AutovalidateMode.disabled,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -1084,34 +1178,33 @@ class _DriverRegistrationFlowScreenState
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: AppFoundation.spacingLg),
             RegistrationSectionCard(
               title: l10n.driverRegSectionPersonalData,
               icon: Icons.person_outline_rounded,
               children: [
-                TextFormField(
-                  controller: _firstNameCtrl,
-                  decoration: InputDecoration(labelText: l10n.driverRegFieldFirstName),
-                  textCapitalization: TextCapitalization.words,
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: _lastNameCtrl,
-                  decoration: InputDecoration(labelText: l10n.driverRegFieldLastName),
-                  textCapitalization: TextCapitalization.words,
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: _emailCtrl,
-                  decoration: InputDecoration(
-                    labelText: l10n.driverRegFieldEmail,
-                    hintText: l10n.driverRegHintOptional,
-                  ),
-                  keyboardType: TextInputType.emailAddress,
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _firstNameCtrl,
+                        decoration: InputDecoration(labelText: l10n.driverRegFieldFirstName),
+                        textCapitalization: TextCapitalization.words,
+                        validator: (v) =>
+                            v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _lastNameCtrl,
+                        decoration: InputDecoration(labelText: l10n.driverRegFieldLastName),
+                        textCapitalization: TextCapitalization.words,
+                        validator: (v) =>
+                            v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
@@ -1146,9 +1239,18 @@ class _DriverRegistrationFlowScreenState
                   },
                   validator: (v) => v == null ? l10n.driverRegValidationSelectOption : null,
                 ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: _emailCtrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.driverRegFieldEmail,
+                    hintText: l10n.driverRegHintOptional,
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: AppFoundation.spacingLg),
             RegistrationSectionCard(
               title: l10n.driverRegSectionContact,
               icon: Icons.phone_android_rounded,
@@ -1236,13 +1338,16 @@ class _DriverRegistrationFlowScreenState
                   validator: (v) =>
                       v == null || v.length < 8 ? l10n.driverRegValidationMin8Chars : null,
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: AppFoundation.spacingMd),
                 TextFormField(
                   controller: _passwordConfirmCtrl,
                   obscureText: true,
                   decoration: InputDecoration(labelText: l10n.driverRegFieldConfirmPassword),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? l10n.driverRegValidationRequired : null,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return l10n.driverRegValidationRequired;
+                    if (v != _passwordCtrl.text) return l10n.driverRegSnackPasswordsMismatch;
+                    return null;
+                  },
                 ),
               ],
             ),
@@ -1258,6 +1363,9 @@ class _DriverRegistrationFlowScreenState
       data: _registrationInputTheme(context),
       child: Form(
         key: _formId,
+        autovalidateMode: _showStepValidationErrors
+            ? AutovalidateMode.onUserInteraction
+            : AutovalidateMode.disabled,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -1275,7 +1383,7 @@ class _DriverRegistrationFlowScreenState
                   validator: (v) =>
                       v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: AppFoundation.spacingMd),
                 TextFormField(
                   controller: _docExpireCtrl,
                   readOnly: true,
@@ -1351,6 +1459,9 @@ class _DriverRegistrationFlowScreenState
       data: _registrationInputTheme(context),
       child: Form(
         key: _formLicense,
+        autovalidateMode: _showStepValidationErrors
+            ? AutovalidateMode.onUserInteraction
+            : AutovalidateMode.disabled,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -1494,16 +1605,103 @@ class _DriverRegistrationFlowScreenState
     );
   }
 
+  /// Con catálogo extendido, marca/modelo (lista + texto si hace falta), año y color en una sola sección.
+  bool _useIntegratedCatalogVehicleFields(DriverRegistrationFlowState flow) {
+    final c = flow.vehicleCatalog;
+    return c != null && c.catalogExtensionsAvailable && !c.compatibilityMode;
+  }
+
+  List<Widget> _vehicleCatalogAfterBrandModelFields(
+    AppLocalizations l10n,
+    DriverRegistrationFlowState flow,
+  ) {
+    return [
+      if (flow.catalogVehicleModelId == null) ...[
+        const SizedBox(height: 14),
+        TextFormField(
+          controller: _vehicleBrandCtrl,
+          decoration: InputDecoration(
+            labelText: l10n.driverRegFieldBrand,
+            hintText: l10n.driverRegHintBrandExample,
+          ),
+          validator: (v) =>
+              v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _vehicleModelCtrl,
+          decoration: InputDecoration(
+            labelText: l10n.driverRegFieldModel,
+            hintText: l10n.driverRegHintModelExample,
+          ),
+          validator: (v) =>
+              v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
+        ),
+        const SizedBox(height: 10),
+      ] else
+        const SizedBox(height: 14),
+      TextFormField(
+        controller: _vehicleYearCtrl,
+        decoration: InputDecoration(labelText: l10n.driverRegFieldYear),
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        validator: (v) =>
+            v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
+      ),
+      const SizedBox(height: 10),
+      TextFormField(
+        controller: _vehicleColorCtrl,
+        decoration: InputDecoration(
+          labelText: l10n.driverRegFieldColor,
+          hintText: l10n.driverRegHintTypeOrPickColor,
+        ),
+        validator: (v) =>
+            v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
+      ),
+      const SizedBox(height: AppFoundation.spacingSm),
+      SizedBox(
+        height: 38,
+        child: _HorizontalEdgeFade(
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _carColorSuggestions.length,
+            separatorBuilder: (_, _) => const SizedBox(width: AppFoundation.spacingSm),
+            itemBuilder: (context, index) {
+              final c = _carColorSuggestions[index];
+              return _ColorChoicePill(
+                label: _localizedColor(context, c),
+                color: _colorFromName(c),
+                selected: _vehicleColorCtrl.text.trim() == c,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  _vehicleColorCtrl.text = c;
+                  setState(() {});
+                  unawaited(_persistDraft());
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    ];
+  }
+
   Widget _buildVehicleStep(
     DriverRegistrationFlowState flow,
     DriverRegistrationFlowController notifier,
   ) {
     final l10n = AppLocalizations.of(context);
+    final showTechnicalCatalogs =
+        ref.watch(driverInternalToolsVisibleProvider).valueOrNull == true;
+    final integratedCatalog = _useIntegratedCatalogVehicleFields(flow);
 
     return Theme(
       data: _registrationInputTheme(context),
       child: Form(
         key: _formVehicle,
+        autovalidateMode: _showStepValidationErrors
+            ? AutovalidateMode.onUserInteraction
+            : AutovalidateMode.disabled,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -1521,6 +1719,7 @@ class _DriverRegistrationFlowScreenState
               catalogTransportMode: flow.catalogTransportMode,
               catalogManufacturerId: flow.catalogManufacturerId,
               catalogVehicleModelId: flow.catalogVehicleModelId,
+              showTechnicalCatalogs: showTechnicalCatalogs,
               onReloadCatalog: notifier.loadVehicleCatalog,
               onSelectVehicleType: notifier.selectVehicleCatalogType,
               onSelectVehicleCategory: notifier.selectVehicleCatalogCategory,
@@ -1537,23 +1736,29 @@ class _DriverRegistrationFlowScreenState
                   if (y != null) _vehicleYearCtrl.text = '$y';
                 });
               },
+              afterCatalogBrandModelFields: integratedCatalog
+                  ? _vehicleCatalogAfterBrandModelFields(l10n, flow)
+                  : const [],
             ),
-            const SizedBox(height: 14),
-            RegistrationSectionCard(
-              title: l10n.driverRegSectionVehicleData,
-              icon: Icons.label_outline_rounded,
-              children: [
-                if (flow.catalogVehicleModelId == null) ...[
-                  TextFormField(
-                    controller: _vehicleBrandCtrl,
-                    decoration: InputDecoration(
-                      labelText: l10n.driverRegFieldBrand,
-                      hintText: l10n.driverRegHintBrandExample,
+            if (!integratedCatalog) ...[
+              const SizedBox(height: 14),
+              RegistrationSectionCard(
+                title: l10n.driverRegSectionVehicleData,
+                icon: Icons.directions_car_filled_rounded,
+                subtitle: l10n.driverRegCatalogBrandModelTitle,
+                children: [
+                  if (flow.catalogVehicleModelId == null) ...[
+                    TextFormField(
+                      controller: _vehicleBrandCtrl,
+                      decoration: InputDecoration(
+                        labelText: l10n.driverRegFieldBrand,
+                        hintText: l10n.driverRegHintBrandExample,
+                      ),
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                     ),
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
-                  ),
-                  const SizedBox(height: 10),
+                    const SizedBox(height: 10),
+                  ],
                   TextFormField(
                     controller: _vehicleModelCtrl,
                     decoration: InputDecoration(
@@ -1564,54 +1769,62 @@ class _DriverRegistrationFlowScreenState
                         v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                   ),
                   const SizedBox(height: 10),
-                ],
-                TextFormField(
-                  controller: _vehicleYearCtrl,
-                  decoration: InputDecoration(labelText: l10n.driverRegFieldYear),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: _vehicleColorCtrl,
-                  decoration: InputDecoration(
-                    labelText: l10n.driverRegFieldColor,
-                    hintText: l10n.driverRegHintTypeOrPickColor,
+                  TextFormField(
+                    controller: _vehicleYearCtrl,
+                    decoration: InputDecoration(labelText: l10n.driverRegFieldYear),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                   ),
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: _carColorSuggestions
-                      .map(
-                        (c) => FilterChip(
-                          label: Text(_localizedColor(context, c), style: const TextStyle(fontSize: 12)),
-                          selected: _vehicleColorCtrl.text.trim() == c,
-                          onSelected: (selected) {
-                            if (selected) _vehicleColorCtrl.text = c;
-                            setState(() {});
-                            unawaited(_persistDraft());
-                          },
-                          selectedColor: AppColors.primary.withValues(alpha: 0.22),
-                          checkmarkColor: AppColors.onPrimary,
-                          labelStyle: const TextStyle(color: AppColors.textPrimary),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _vehicleColorCtrl,
+                    decoration: InputDecoration(
+                      labelText: l10n.driverRegFieldColor,
+                      hintText: l10n.driverRegHintTypeOrPickColor,
+                    ),
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
+                  ),
+                  const SizedBox(height: AppFoundation.spacingSm),
+                  SizedBox(
+                    height: 38,
+                    child: _HorizontalEdgeFade(
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _carColorSuggestions.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: AppFoundation.spacingSm),
+                        itemBuilder: (context, index) {
+                          final c = _carColorSuggestions[index];
+                          return _ColorChoicePill(
+                            label: _localizedColor(context, c),
+                            color: _colorFromName(c),
+                            selected: _vehicleColorCtrl.text.trim() == c,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              _vehicleColorCtrl.text = c;
+                              setState(() {});
+                              unawaited(_persistDraft());
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: AppFoundation.spacingLg),
             RegistrationSectionCard(
               title: l10n.driverRegSectionPlateVin,
               icon: Icons.pin_outlined,
               subtitle: l10n.driverRegSubtitlePlateUppercase,
               children: [
+                RegistrationSoftInfoRow(
+                  text: l10n.driverRegHelperVehicleDocumentReference,
+                ),
+                const SizedBox(height: AppFoundation.spacingMd),
                 TextFormField(
                   controller: _vehiclePlateCtrl,
                   textCapitalization: TextCapitalization.characters,
@@ -1624,7 +1837,7 @@ class _DriverRegistrationFlowScreenState
                   validator: (v) =>
                       v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: AppFoundation.spacingMd),
                 TextFormField(
                   controller: _vehicleVinCtrl,
                   textCapitalization: TextCapitalization.characters,
@@ -1639,7 +1852,7 @@ class _DriverRegistrationFlowScreenState
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: AppFoundation.spacingLg),
             RegistrationSectionCard(
               title: l10n.driverRegSectionInsuranceOwnership,
               icon: Icons.description_outlined,
@@ -1812,7 +2025,19 @@ class _RegistrationBottomBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            12,
+            16,
+            (() {
+              final systemBottom = MediaQuery.viewPaddingOf(context).bottom;
+              final minComfortBottom = 20.0;
+              final resolved = systemBottom + 12;
+              return resolved > minComfortBottom
+                  ? resolved
+                  : minComfortBottom;
+            })(),
+          ),
           child: Row(
             children: [
               Expanded(
@@ -2037,6 +2262,125 @@ class _StepHeroCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ColorChoicePill extends StatelessWidget {
+  const _ColorChoicePill({
+    required this.label,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.2)
+              : AppColors.surfaceCard.withValues(alpha: 0.7),
+          border: Border.all(
+            color: selected
+                ? AppColors.primary.withValues(alpha: 0.55)
+                : AppColors.border.withValues(alpha: 0.6),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  width: 1,
+                ),
+              ),
+            ),
+            const SizedBox(width: 7),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HorizontalEdgeFade extends StatelessWidget {
+  const _HorizontalEdgeFade({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(child: child),
+        Positioned(
+          left: 0,
+          top: 0,
+          bottom: 0,
+          child: IgnorePointer(
+            child: Container(
+              width: 18,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    AppColors.surfaceCard.withValues(alpha: 0.94),
+                    AppColors.surfaceCard.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          right: 0,
+          top: 0,
+          bottom: 0,
+          child: IgnorePointer(
+            child: Container(
+              width: 18,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerRight,
+                  end: Alignment.centerLeft,
+                  colors: [
+                    AppColors.surfaceCard.withValues(alpha: 0.94),
+                    AppColors.surfaceCard.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
