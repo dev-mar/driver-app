@@ -293,6 +293,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'We try to load the request from the alert into the list below. If it\'s missing, it may have expired or the connection failed—toggle online again.';
 
   @override
+  String get driverFcmOpenedTripOfferOfflineHint =>
+      'You\'re offline. Turn on availability to receive requests from alerts.';
+
+  @override
   String get driverHomeMiniVehicleEmpty => 'Vehicle';
 
   @override
@@ -302,6 +306,86 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverLogout => 'Sign out';
+
+  @override
+  String get driverTripHistoryMenu => 'Trip history';
+
+  @override
+  String get driverTripHistoryTitle => 'Trip history';
+
+  @override
+  String get driverTripHistoryFilterAll => 'All';
+
+  @override
+  String get driverTripHistoryFilterCompleted => 'Completed';
+
+  @override
+  String get driverTripHistoryFilterCancelled => 'Cancelled';
+
+  @override
+  String get driverTripHistoryFilterInProgress => 'In progress';
+
+  @override
+  String get driverTripHistoryDateAll => 'All time';
+
+  @override
+  String get driverTripHistoryDateToday => 'Today';
+
+  @override
+  String get driverTripHistoryDate7d => 'Last 7 days';
+
+  @override
+  String get driverTripHistoryDate30d => 'Last 30 days';
+
+  @override
+  String get driverTripHistoryStatusLabel => 'Status';
+
+  @override
+  String get driverTripHistoryStatusCompleted => 'Completed';
+
+  @override
+  String get driverTripHistoryStatusCancelled => 'Cancelled';
+
+  @override
+  String get driverTripHistoryStatusInProgress => 'In progress';
+
+  @override
+  String get driverTripHistoryDateCustom => 'Custom';
+
+  @override
+  String get driverTripHistoryActiveFilters => 'Active filters';
+
+  @override
+  String get driverTripHistoryCustomRangeLabel => 'Selected range';
+
+  @override
+  String get driverTripHistorySectionToday => 'Today';
+
+  @override
+  String get driverTripHistorySectionYesterday => 'Yesterday';
+
+  @override
+  String get driverTripHistorySectionOlder => 'Older';
+
+  @override
+  String get driverTripHistoryEmpty => 'No trips yet for this filter.';
+
+  @override
+  String get driverTripHistoryLoadError =>
+      'Could not load trip history. Please try again.';
+
+  @override
+  String get driverTripHistoryNoSession =>
+      'Your session expired. Please sign in again.';
+
+  @override
+  String get driverTripHistoryPrevPage => 'Previous';
+
+  @override
+  String get driverTripHistoryNextPage => 'Next';
+
+  @override
+  String get driverTripHistoryPricePending => 'No amount';
 
   @override
   String get driverHomeMenuAddVehicle => 'Add another vehicle';
@@ -702,6 +786,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverTripRatingYourRating => 'Your rating';
+
+  @override
+  String get driverTripRatingFeedbackPromptLow =>
+      'What affected the trip? (multiple)';
+
+  @override
+  String get driverTripRatingFeedbackPromptHigh =>
+      'What stood out about the passenger? (multiple)';
 
   @override
   String driverTripRatingRouteHint(String origin, String destination) {

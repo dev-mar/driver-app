@@ -1,11 +1,11 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core/notifications/driver_push_token_service.dart';
 import '../../core/config/driver_backend_config.dart';
+import '../../core/device/driver_device_telemetry.dart';
 import '../../core/session/driver_internal_tools_gate.dart';
+import '../../core/session/driver_map_preferences_store.dart';
 import '../../core/session/driver_registration_resume_gate.dart';
 
 final driverLoginControllerProvider =
@@ -52,15 +52,13 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
     state = DriverLoginState();
 
     try {
+      final telemetry = await DriverDeviceTelemetry.toApiPayload();
       final response = await _dio.post(
         '/api/v2/auth/login',
         data: {
-          'brand': 'Texi Driver App',
-          'ip': '0.0.0.0',
-          'model': _deviceModel(),
-          'os': Platform.operatingSystem,
           'password': password,
           'user_name': fullPhone,
+          ...telemetry,
           if (driverRegistrationInProgress)
             'driver_registration_in_progress': true,
         },
@@ -164,6 +162,7 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
   Future<void> logout() async {
     DriverRegistrationResumeGate.invalidate();
     await DriverPushTokenService.instance.revokeAllOnServerIfPossible();
+    await DriverMapPreferencesStore.clearMapPreferencesForCurrentSession();
     await _storage.delete(key: 'driver_token');
     await _storage.delete(key: 'driver_refresh_token');
     await _storage.delete(key: DriverInternalToolsGate.storageKeyLoginPhone);
@@ -173,14 +172,6 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
   bool _fail({required String code, String? message}) {
     state = DriverLoginState(errorMessage: message, errorCode: code);
     return false;
-  }
-
-  String _deviceModel() {
-    try {
-      return Platform.localHostname;
-    } catch (_) {
-      return 'Unknown';
-    }
   }
 }
 

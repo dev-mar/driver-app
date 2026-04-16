@@ -614,6 +614,12 @@ abstract class AppLocalizations {
   /// **'We try to load the request from the alert into the list below. If it\'s missing, it may have expired or the connection failed—toggle online again.'**
   String get driverFcmOpenedTripOfferHint;
 
+  /// No description provided for @driverFcmOpenedTripOfferOfflineHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re offline. Turn on availability to receive requests from alerts.'**
+  String get driverFcmOpenedTripOfferOfflineHint;
+
   /// No description provided for @driverHomeMiniVehicleEmpty.
   ///
   /// In en, this message translates to:
@@ -631,6 +637,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign out'**
   String get driverLogout;
+
+  /// No description provided for @driverTripHistoryMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip history'**
+  String get driverTripHistoryMenu;
+
+  /// No description provided for @driverTripHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip history'**
+  String get driverTripHistoryTitle;
+
+  /// No description provided for @driverTripHistoryFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get driverTripHistoryFilterAll;
+
+  /// No description provided for @driverTripHistoryFilterCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get driverTripHistoryFilterCompleted;
+
+  /// No description provided for @driverTripHistoryFilterCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get driverTripHistoryFilterCancelled;
+
+  /// No description provided for @driverTripHistoryFilterInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get driverTripHistoryFilterInProgress;
+
+  /// No description provided for @driverTripHistoryDateAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get driverTripHistoryDateAll;
+
+  /// No description provided for @driverTripHistoryDateToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get driverTripHistoryDateToday;
+
+  /// No description provided for @driverTripHistoryDate7d.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get driverTripHistoryDate7d;
+
+  /// No description provided for @driverTripHistoryDate30d.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get driverTripHistoryDate30d;
+
+  /// No description provided for @driverTripHistoryStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get driverTripHistoryStatusLabel;
+
+  /// No description provided for @driverTripHistoryStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get driverTripHistoryStatusCompleted;
+
+  /// No description provided for @driverTripHistoryStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get driverTripHistoryStatusCancelled;
+
+  /// No description provided for @driverTripHistoryStatusInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get driverTripHistoryStatusInProgress;
+
+  /// No description provided for @driverTripHistoryDateCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get driverTripHistoryDateCustom;
+
+  /// No description provided for @driverTripHistoryActiveFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Active filters'**
+  String get driverTripHistoryActiveFilters;
+
+  /// No description provided for @driverTripHistoryCustomRangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected range'**
+  String get driverTripHistoryCustomRangeLabel;
+
+  /// No description provided for @driverTripHistorySectionToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get driverTripHistorySectionToday;
+
+  /// No description provided for @driverTripHistorySectionYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get driverTripHistorySectionYesterday;
+
+  /// No description provided for @driverTripHistorySectionOlder.
+  ///
+  /// In en, this message translates to:
+  /// **'Older'**
+  String get driverTripHistorySectionOlder;
+
+  /// No description provided for @driverTripHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No trips yet for this filter.'**
+  String get driverTripHistoryEmpty;
+
+  /// No description provided for @driverTripHistoryLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load trip history. Please try again.'**
+  String get driverTripHistoryLoadError;
+
+  /// No description provided for @driverTripHistoryNoSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session expired. Please sign in again.'**
+  String get driverTripHistoryNoSession;
+
+  /// No description provided for @driverTripHistoryPrevPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get driverTripHistoryPrevPage;
+
+  /// No description provided for @driverTripHistoryNextPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get driverTripHistoryNextPage;
+
+  /// No description provided for @driverTripHistoryPricePending.
+  ///
+  /// In en, this message translates to:
+  /// **'No amount'**
+  String get driverTripHistoryPricePending;
 
   /// No description provided for @driverHomeMenuAddVehicle.
   ///
@@ -1321,6 +1483,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your rating'**
   String get driverTripRatingYourRating;
+
+  /// No description provided for @driverTripRatingFeedbackPromptLow.
+  ///
+  /// In en, this message translates to:
+  /// **'What affected the trip? (multiple)'**
+  String get driverTripRatingFeedbackPromptLow;
+
+  /// No description provided for @driverTripRatingFeedbackPromptHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'What stood out about the passenger? (multiple)'**
+  String get driverTripRatingFeedbackPromptHigh;
 
   /// No description provided for @driverTripRatingRouteHint.
   ///

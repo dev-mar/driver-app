@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../core/config/driver_backend_config.dart';
+import '../../core/device/driver_device_telemetry.dart';
 import '../../core/notifications/driver_push_token_service.dart';
 import 'driver_registration_models.dart';
 
@@ -250,9 +251,14 @@ class DriverRegistrationRepository {
 
   Future<({String uuid, bool tokenSaved})> submitPersonalInfo(Map<String, dynamic> body) async {
     try {
+      final telemetry = await DriverDeviceTelemetry.toApiPayload();
+      final payload = Map<String, dynamic>.from(body);
+      telemetry.forEach((key, value) {
+        payload.putIfAbsent(key, () => value);
+      });
       final response = await _usersDio.post<Map<String, dynamic>>(
         '/api/v2/driver/registration/personal-info',
-        data: body,
+        data: payload,
       );
       final data = response.data;
       if (data == null) throw DriverRegistrationException('Respuesta vacía');

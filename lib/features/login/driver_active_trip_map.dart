@@ -1,15 +1,17 @@
 import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/session/driver_map_preferences_store.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_foundation.dart';
 import '../../core/network/directions_service.dart';
 import '../../gen_l10n/app_localizations.dart';
+import 'driver_trip_marker.dart';
 import 'driver_realtime_controller.dart';
 
 /// Vista tipo InDriver/Lyft: mapa a pantalla completa con conductor, origen, destino y ruta.
@@ -36,6 +38,7 @@ class DriverActiveTripMapView extends StatefulWidget {
 }
 
 class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
+  static const bool _routeDebugEnabled = false;
   final DirectionsService _directions = DirectionsService();
   GoogleMapController? _mapController;
   LatLng? _deviceSeedLatLng;
@@ -46,9 +49,44 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
   String? _lastRouteSignature;
   DateTime? _lastFitAt;
   bool _showFollowHint = true;
+  bool _lightweightMapMode = false;
+  bool _showTollReferences = true;
+  bool _showSignalReferences = true;
+  double _referenceConfidenceThreshold = 0.85;
+  Timer? _prefsPersistDebounce;
+  String _prefsNamespace = 'global';
 
   List<LatLng>? _routeToPickup;
   List<LatLng>? _routePickupToDest;
+  List<RouteReferencePoint> _routeReferences = const [];
+  BitmapDescriptor? _pickupOnTripIcon;
+  BitmapDescriptor? _destinationOnTripIcon;
+  BitmapDescriptor? _tollReferenceIcon;
+  BitmapDescriptor? _signalReferenceIcon;
+  BitmapDescriptor? _landmarkReferenceIcon;
+
+  /// Alineado con el mapa nocturno del pasajero durante el viaje.
+  static const String _nightMapStyle = '''
+[
+  { "elementType": "geometry", "stylers": [{ "color": "#111111" }] },
+  { "elementType": "labels.text.fill", "stylers": [{ "color": "#8A8A8A" }] },
+  { "elementType": "labels.text.stroke", "stylers": [{ "color": "#111111" }] },
+  { "featureType": "poi", "stylers": [{ "visibility": "off" }] },
+  { "featureType": "transit", "stylers": [{ "visibility": "off" }] },
+  { "featureType": "administrative.land_parcel", "stylers": [{ "visibility": "off" }] },
+  { "featureType": "road", "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
+  { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#232323" }] },
+  { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#0C1B2A" }] }
+]
+''';
+
+  static const List<double> _referenceConfidenceLevels = [0.75, 0.85, 0.92];
+  static const String _prefMapModeLightweight = 'driver.map.lightweight_mode';
+  static const String _prefShowTolls = 'driver.map.show_toll_refs';
+  static const String _prefShowSignals = 'driver.map.show_signal_refs';
+  static const String _prefReferenceConfidence =
+      'driver.map.reference_confidence';
+  static const int _maxVisibleReferenceMarkers = 20;
 
   LatLng? get _driverLatLng {
     if (widget.driverLat != null && widget.driverLng != null) {
@@ -93,7 +131,8 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
         oldWidget.trip.pickupLat != widget.trip.pickupLat ||
         oldWidget.trip.pickupLng != widget.trip.pickupLng ||
         oldWidget.trip.destinationLat != widget.trip.destinationLat ||
-        oldWidget.trip.destinationLng != widget.trip.destinationLng) {
+        oldWidget.trip.destinationLng != widget.trip.destinationLng ||
+        oldWidget.trip.routeOverviewEncoded != widget.trip.routeOverviewEncoded) {
       _scheduleRouteRefresh();
     } else if (oldWidget.driverBearing != widget.driverBearing &&
         _mapReady &&
@@ -106,6 +145,8 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
   @override
   void initState() {
     super.initState();
+    _bootstrapMapPreferences();
+    _loadTripMarkerIcons();
     _resolveDeviceSeedLocation();
     // El punto azul del mapa no expone coordenadas al widget; sin esto a veces no hay
     // ancla para Directions hasta que el padre inyecte driverLat/Lng.
@@ -139,6 +180,7 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
   void dispose() {
     _routingPositionSub?.cancel();
     _routeFetchDebounce?.cancel();
+    _prefsPersistDebounce?.cancel();
     super.dispose();
   }
 
@@ -167,6 +209,78 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
       if (!mounted) return;
       _fetchRoutesAndFit();
     });
+  }
+
+  Future<void> _restoreMapPreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
+      setState(() {
+        _lightweightMapMode =
+            prefs.getBool(_prefsKey(_prefMapModeLightweight)) ?? _lightweightMapMode;
+        _showTollReferences =
+            prefs.getBool(_prefsKey(_prefShowTolls)) ?? _showTollReferences;
+        _showSignalReferences =
+            prefs.getBool(_prefsKey(_prefShowSignals)) ?? _showSignalReferences;
+        final confidence = prefs.getDouble(_prefsKey(_prefReferenceConfidence)) ??
+            _referenceConfidenceThreshold;
+        _referenceConfidenceThreshold = _normalizeConfidence(confidence);
+        _followNavigationCamera = true;
+      });
+    } catch (_) {
+      // Si falla storage local, mantenemos defaults en memoria.
+    }
+  }
+
+  Future<void> _persistMapPreferences({bool immediate = false}) async {
+    _prefsPersistDebounce?.cancel();
+    if (!immediate) {
+      _prefsPersistDebounce = Timer(const Duration(milliseconds: 220), () {
+        _persistMapPreferences(immediate: true);
+      });
+      return;
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(
+        _prefsKey(_prefMapModeLightweight),
+        _lightweightMapMode,
+      );
+      await prefs.setBool(_prefsKey(_prefShowTolls), _showTollReferences);
+      await prefs.setBool(_prefsKey(_prefShowSignals), _showSignalReferences);
+      await prefs.setDouble(
+        _prefsKey(_prefReferenceConfidence),
+        _referenceConfidenceThreshold,
+      );
+    } catch (_) {
+      // Persistencia best-effort: no bloquea UX de navegación.
+    }
+  }
+
+  Future<void> _bootstrapMapPreferences() async {
+    await _resolvePreferencesNamespace();
+    await _restoreMapPreferences();
+  }
+
+  String _prefsKey(String baseKey) =>
+      DriverMapPreferencesStore.keyFor(baseKey, _prefsNamespace);
+
+  Future<void> _resolvePreferencesNamespace() async {
+    _prefsNamespace =
+        await DriverMapPreferencesStore.resolveNamespaceFromCurrentSession();
+  }
+
+  double _normalizeConfidence(double value) {
+    for (final allowed in _referenceConfidenceLevels) {
+      if ((allowed - value).abs() < 0.01) return allowed;
+    }
+    return _referenceConfidenceLevels[1];
+  }
+
+  void _updateMapPreferences(VoidCallback updater) {
+    if (!mounted) return;
+    setState(updater);
+    _persistMapPreferences();
   }
 
   Future<void> _resolveDeviceSeedLocation() async {
@@ -209,11 +323,82 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
   bool get _hasTripAnchors =>
       _driverLatLng != null || _pickupLatLng != null || _destinationLatLng != null;
 
+  String _coordLabel(LatLng? p) =>
+      p == null ? 'null' : '${p.latitude.toStringAsFixed(5)},${p.longitude.toStringAsFixed(5)}';
+
+  void _routeDebug(String message) {
+    if (!_routeDebugEnabled) return;
+    debugPrint('[ROUTE_DEBUG] $message');
+  }
+
+  Future<RouteSnapshot?> _safeRouteSnapshot({
+    required double originLat,
+    required double originLng,
+    required double destinationLat,
+    required double destinationLng,
+    required String tag,
+  }) async {
+    try {
+      return await _directions
+          .getRouteSnapshot(
+            originLat: originLat,
+            originLng: originLng,
+            destinationLat: destinationLat,
+            destinationLng: destinationLng,
+          )
+          .timeout(const Duration(seconds: 4), onTimeout: () => null);
+    } catch (e) {
+      _routeDebug('fetch:$tag error=$e');
+      return null;
+    }
+  }
+
+  Future<void> _loadTripMarkerIcons() async {
+    try {
+      final pickupIcon = await buildDriverWaypointMapPinIcon(
+        logicalSize: 54,
+        fill: const Color(0xFFFFC107),
+      );
+      final destinationIcon = await buildDriverWaypointMapPinIcon(
+        logicalSize: 54,
+        fill: const Color(0xFFE53935),
+      );
+      final tollIcon = await buildDriverRouteReferenceIcon(
+        icon: Icons.toll_rounded,
+        background: const Color(0xFF1976D2),
+      );
+      final signalIcon = await buildDriverRouteReferenceIcon(
+        icon: Icons.traffic_rounded,
+        background: const Color(0xFF00897B),
+      );
+      final landmarkIcon = await buildDriverRouteReferenceIcon(
+        icon: Icons.place_rounded,
+        background: const Color(0xFF5E35B1),
+      );
+      if (!mounted) return;
+      setState(() {
+        _pickupOnTripIcon = pickupIcon;
+        _destinationOnTripIcon = destinationIcon;
+        _tollReferenceIcon = tollIcon;
+        _signalReferenceIcon = signalIcon;
+        _landmarkReferenceIcon = landmarkIcon;
+      });
+    } catch (e) {
+      _routeDebug('markers:icon-load error=$e');
+    }
+  }
+
   Future<void> _fetchRoutesAndFit() async {
     final driver = _effectiveDriverForRouting;
     final pickup = _pickupLatLng;
     final dest = _destinationLatLng;
     final status = widget.trip.status;
+    final encoded = widget.trip.routeOverviewEncoded?.trim() ?? '';
+    _routeDebug(
+      'fetch:start tripId=${widget.trip.tripId} status=$status '
+      'driver=${_coordLabel(driver)} pickup=${_coordLabel(pickup)} dest=${_coordLabel(dest)} '
+      'encodedLen=${encoded.length} encodedHash=${encoded.hashCode}',
+    );
     final signature = [
       widget.trip.tripId,
       status,
@@ -227,68 +412,97 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
       pickup?.longitude.toStringAsFixed(5),
       dest?.latitude.toStringAsFixed(5),
       dest?.longitude.toStringAsFixed(5),
+      encoded,
     ].join('|');
 
     if (_lastRouteSignature == signature) {
+      _routeDebug('fetch:skip same-signature');
       _fitBounds(smoothOnly: true);
       return;
     }
     _lastRouteSignature = signature;
 
-    if (driver == null) {
-      if (mounted) {
-        setState(() {
-          _routeToPickup = null;
-          _routePickupToDest = null;
-        });
-      }
-      // Sin ancla aún: no fijar firma para poder recalcular en cuanto llegue GPS/stream.
-      _lastRouteSignature = null;
-      return;
-    }
-
     List<LatLng>? toPickup;
-    List<LatLng>? pickupToDest;
-
-    if (pickup != null) {
-      toPickup = await _directions.getRoutePoints(
-        originLat: driver.latitude,
-        originLng: driver.longitude,
-        destinationLat: pickup.latitude,
-        destinationLng: pickup.longitude,
-      );
-      // Fallback: si Directions falla pero tenemos ambos puntos, dibujar línea recta.
-      toPickup ??= [driver, pickup];
-    }
+    List<LatLng>? pickupToDest = _routePickupToDest;
+    final references = <RouteReferencePoint>[];
 
     if (dest != null) {
       final originForDest = pickup ?? driver;
-      pickupToDest = await _directions.getRoutePoints(
+      if (encoded.isNotEmpty) {
+        try {
+          final decoded = decodePolyline(encoded);
+          _routeDebug('fetch:encoded decode points=${decoded.length}');
+          if (decoded.length >= 2) {
+            pickupToDest = decoded;
+          }
+        } catch (e) {
+          _routeDebug('fetch:encoded decode error=$e');
+          // Polyline inválida: seguir con Directions como antes.
+        }
+      } else {
+        _routeDebug('fetch:encoded missing -> fallback directions');
+      }
+      if (pickupToDest == null && originForDest != null) {
+      final toDestinationSnapshot = await _safeRouteSnapshot(
         originLat: originForDest.latitude,
         originLng: originForDest.longitude,
         destinationLat: dest.latitude,
         destinationLng: dest.longitude,
+        tag: 'origin->dest',
       );
-      // Fallback si falla Directions.
-      pickupToDest ??= [originForDest, dest];
+        pickupToDest = toDestinationSnapshot?.polyline;
+        _routeDebug(
+          'fetch:origin->dest fallback points=${pickupToDest?.length ?? 0} '
+          'refs=${toDestinationSnapshot?.references.length ?? 0}',
+        );
+        if (toDestinationSnapshot != null) {
+          references.addAll(toDestinationSnapshot.references);
+        }
+      } else if (pickupToDest == null) {
+        _routeDebug('fetch:origin->dest skipped missing originForDest');
+      }
+    } else {
+      _routeDebug('fetch:dest missing');
+    }
+
+    if (pickup != null && driver != null) {
+      final toPickupSnapshot = await _safeRouteSnapshot(
+        originLat: driver.latitude,
+        originLng: driver.longitude,
+        destinationLat: pickup.latitude,
+        destinationLng: pickup.longitude,
+        tag: 'driver->pickup',
+      );
+      toPickup = toPickupSnapshot?.polyline;
+      _routeDebug(
+        'fetch:driver->pickup points=${toPickup?.length ?? 0} '
+        'refs=${toPickupSnapshot?.references.length ?? 0}',
+      );
+      if (toPickupSnapshot != null) {
+        references.addAll(toPickupSnapshot.references);
+      }
+      if (toPickup == null) {
+        // Fallback resiliente cuando Directions no esta disponible (p.ej. key faltante).
+        toPickup = <LatLng>[driver, pickup];
+        _routeDebug('fetch:driver->pickup fallback straight-line points=2');
+      }
+    } else {
+      _routeDebug(
+        'fetch:driver->pickup skipped driver=${driver != null} pickup=${pickup != null}',
+      );
     }
 
     if (!mounted) return;
 
     setState(() {
-      // Antes de iniciar viaje, nos importa sobre todo la ruta hacia el pickup.
-      if (status == 'accepted' || status == 'arrived') {
-        _routeToPickup = toPickup;
-        _routePickupToDest = pickupToDest;
-      } else if (status == 'started') {
-        // En viaje, priorizar ruta hacia el destino, pero podemos mantener la anterior.
-        _routeToPickup = toPickup;
-        _routePickupToDest = pickupToDest;
-      } else {
-        _routeToPickup = toPickup;
-        _routePickupToDest = pickupToDest;
-      }
+      _routeToPickup = toPickup;
+      _routePickupToDest = pickupToDest;
+      _routeReferences = _dedupeReferencePoints(references);
     });
+    _routeDebug(
+      'fetch:end routeToPickup=${_routeToPickup?.length ?? 0} '
+      'routeToDest=${_routePickupToDest?.length ?? 0} refs=${_routeReferences.length}',
+    );
 
     _fitBounds();
   }
@@ -431,30 +645,17 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
   Set<Marker> _buildMarkers() {
     final l10n = AppLocalizations.of(context);
     final markers = <Marker>{};
-    final driver = _driverLatLng;
     final pickup = _pickupLatLng;
     final dest = _destinationLatLng;
 
-    if (driver != null) {
-      markers.add(
-        Marker(
-          markerId: const MarkerId('driver'),
-          position: driver,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-          flat: true,
-          anchor: const Offset(0.5, 0.5),
-          rotation: widget.driverBearing ?? 0,
-          zIndexInt: 30,
-          infoWindow: InfoWindow(title: l10n.driverMapDriverPosition),
-        ),
-      );
-    }
     if (pickup != null) {
       markers.add(
         Marker(
           markerId: const MarkerId('pickup'),
           position: pickup,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+          icon:
+              _pickupOnTripIcon ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
           zIndexInt: 20,
           infoWindow: InfoWindow(title: l10n.driverMapPickupPoint),
         ),
@@ -465,44 +666,113 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
         Marker(
           markerId: const MarkerId('destination'),
           position: dest,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
+          icon:
+              _destinationOnTripIcon ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
           zIndexInt: 10,
           infoWindow: InfoWindow(title: l10n.driverMapDestinationPoint),
+        ),
+      );
+    }
+    for (final ref in _visibleRouteReferences) {
+      final icon = switch (ref.type) {
+        RouteReferenceType.toll =>
+          _tollReferenceIcon ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        RouteReferenceType.trafficSignal =>
+          _signalReferenceIcon ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
+        RouteReferenceType.landmark =>
+          _landmarkReferenceIcon ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+      };
+      markers.add(
+        Marker(
+          markerId: MarkerId(
+            'ref_${ref.type.name}_${ref.position.latitude.toStringAsFixed(5)}_${ref.position.longitude.toStringAsFixed(5)}',
+          ),
+          position: ref.position,
+          icon: icon,
+          alpha: 0.9,
+          zIndexInt: 5,
+          infoWindow: InfoWindow(title: ref.title, snippet: ref.snippet),
         ),
       );
     }
     return markers;
   }
 
+  List<RouteReferencePoint> _dedupeReferencePoints(
+    List<RouteReferencePoint> refs,
+  ) {
+    final map = <String, RouteReferencePoint>{};
+    for (final item in refs) {
+      final key =
+          '${item.type.name}:${item.position.latitude.toStringAsFixed(4)}:${item.position.longitude.toStringAsFixed(4)}';
+      final current = map[key];
+      if (current == null || item.confidence > current.confidence) {
+        map[key] = item;
+      }
+    }
+    return map.values.toList(growable: false);
+  }
+
+  List<RouteReferencePoint> get _visibleRouteReferences {
+    if (!_showTollReferences && !_showSignalReferences) {
+      return const [];
+    }
+    final filtered = _routeReferences.where((ref) {
+      if (ref.confidence < _referenceConfidenceThreshold) return false;
+      if (ref.type == RouteReferenceType.toll) return _showTollReferences;
+      if (ref.type == RouteReferenceType.trafficSignal) {
+        return _showSignalReferences;
+      }
+      return true;
+    }).toList(growable: false);
+    filtered.sort((a, b) => b.confidence.compareTo(a.confidence));
+    if (filtered.length <= _maxVisibleReferenceMarkers) return filtered;
+    return filtered.sublist(0, _maxVisibleReferenceMarkers);
+  }
+
   Set<Polyline> _buildPolylines() {
     final polylines = <Polyline>{};
+    final routeToPickup = (_routeToPickup != null && _routeToPickup!.length >= 2)
+        ? _routeToPickup!
+        : null;
+    final routeToDestination =
+        (_routePickupToDest != null && _routePickupToDest!.length >= 2)
+            ? _routePickupToDest!
+            : null;
 
-    if (_routeToPickup != null && _routeToPickup!.length >= 2) {
+    if (routeToPickup != null && routeToPickup.length >= 2) {
       polylines.add(
         Polyline(
           polylineId: const PolylineId('route_to_pickup'),
-          points: _routeToPickup!,
-          color: AppColors.primary,
-          width: 8,
+          points: routeToPickup,
+          color: const Color(0xFFFFC966),
+          width: 7,
           geodesic: true,
           zIndex: 2,
         ),
       );
     }
 
-    if (_routePickupToDest != null && _routePickupToDest!.length >= 2) {
+    if (routeToDestination != null && routeToDestination.length >= 2) {
       polylines.add(
         Polyline(
           polylineId: const PolylineId('route_pickup_to_dest'),
-          points: _routePickupToDest!,
-          color: Colors.deepPurpleAccent,
-          width: 8,
+          points: routeToDestination,
+          color: const Color(0xFF7EB6FF),
+          width: 7,
           geodesic: true,
           zIndex: 1,
         ),
       );
     }
-
+    _routeDebug(
+      'render:polylines count=${polylines.length} '
+      'toPickup=${routeToPickup?.length ?? 0} toDest=${routeToDestination?.length ?? 0}',
+    );
     return polylines;
   }
 
@@ -526,16 +796,17 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
             _scheduleRouteRefresh(immediate: true);
           },
           myLocationEnabled: true,
-          myLocationButtonEnabled: true,
+          myLocationButtonEnabled: false,
           liteModeEnabled: false,
           markers: _buildMarkers(),
           polylines: _buildPolylines(),
           compassEnabled: false,
           buildingsEnabled: false,
           indoorViewEnabled: false,
-          trafficEnabled: false,
+          trafficEnabled: !_lightweightMapMode,
           mapToolbarEnabled: false,
           zoomControlsEnabled: false,
+          style: _nightMapStyle,
         ),
         Positioned(
           top: 16,
@@ -551,7 +822,7 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
                 customBorder: const CircleBorder(),
                 onTap: () {
                   HapticFeedback.selectionClick();
-                  setState(() {
+                  _updateMapPreferences(() {
                     _followNavigationCamera = !_followNavigationCamera;
                     _showFollowHint = true;
                   });
@@ -604,10 +875,44 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
         ),
         Positioned(
           top: 16,
-          left: 16,
+          left: 12,
+          right: 76,
           child: SafeArea(
             bottom: false,
-            child: const _MapLegendMini(),
+            child: _MapControlsPanel(
+              lightweightMapMode: _lightweightMapMode,
+              showTollReferences: _showTollReferences,
+              showSignalReferences: _showSignalReferences,
+              referenceConfidenceThreshold: _referenceConfidenceThreshold,
+              onToggleLightweightMap: () {
+                HapticFeedback.selectionClick();
+                _updateMapPreferences(
+                  () => _lightweightMapMode = !_lightweightMapMode,
+                );
+              },
+              onToggleTolls: () {
+                HapticFeedback.selectionClick();
+                _updateMapPreferences(
+                  () => _showTollReferences = !_showTollReferences,
+                );
+              },
+              onToggleSignals: () {
+                HapticFeedback.selectionClick();
+                _updateMapPreferences(
+                  () => _showSignalReferences = !_showSignalReferences,
+                );
+              },
+              onCycleConfidence: () {
+                HapticFeedback.selectionClick();
+                final currentIndex = _referenceConfidenceLevels.indexOf(
+                  _referenceConfidenceThreshold,
+                );
+                final nextIndex = (currentIndex + 1) % _referenceConfidenceLevels.length;
+                _updateMapPreferences(() {
+                  _referenceConfidenceThreshold = _referenceConfidenceLevels[nextIndex];
+                });
+              },
+            ),
           ),
         ),
         Positioned(
@@ -674,58 +979,137 @@ class _MapHintChip extends StatelessWidget {
   }
 }
 
-class _MapLegendMini extends StatelessWidget {
-  const _MapLegendMini();
+class _MapControlsPanel extends StatelessWidget {
+  const _MapControlsPanel({
+    required this.lightweightMapMode,
+    required this.showTollReferences,
+    required this.showSignalReferences,
+    required this.referenceConfidenceThreshold,
+    required this.onToggleLightweightMap,
+    required this.onToggleTolls,
+    required this.onToggleSignals,
+    required this.onCycleConfidence,
+  });
+
+  final bool lightweightMapMode;
+  final bool showTollReferences;
+  final bool showSignalReferences;
+  final double referenceConfidenceThreshold;
+  final VoidCallback onToggleLightweightMap;
+  final VoidCallback onToggleTolls;
+  final VoidCallback onToggleSignals;
+  final VoidCallback onCycleConfidence;
 
   @override
   Widget build(BuildContext context) {
+    final chips = <Widget>[
+      _MapControlChip(
+        icon: lightweightMapMode ? Icons.layers_clear : Icons.layers,
+        label: lightweightMapMode ? 'Ligero' : 'Detallado',
+        active: !lightweightMapMode,
+        onTap: onToggleLightweightMap,
+      ),
+      _MapControlChip(
+        icon: Icons.toll_rounded,
+        label: 'Peajes',
+        active: showTollReferences,
+        onTap: onToggleTolls,
+      ),
+      _MapControlChip(
+        icon: Icons.traffic_rounded,
+        label: 'Semaforos',
+        active: showSignalReferences,
+        onTap: onToggleSignals,
+      ),
+      _MapControlChip(
+        icon: Icons.filter_alt_rounded,
+        label: 'Conf ${(referenceConfidenceThreshold * 100).round()}%',
+        active: true,
+        onTap: onCycleConfidence,
+        showCheck: false,
+      ),
+    ];
     return Material(
-      color: AppColors.surfaceCard.withValues(alpha: 0.86),
-      borderRadius: BorderRadius.circular(12),
+      color: AppColors.surfaceCard.withValues(alpha: 0.9),
+      borderRadius: BorderRadius.circular(13),
       elevation: 6,
       shadowColor: Colors.black.withValues(alpha: 0.18),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            _LegendDot(color: Colors.green, label: 'Yo'),
-            SizedBox(width: 8),
-            _LegendDot(color: Colors.orange, label: 'Origen'),
-            SizedBox(width: 8),
-            _LegendDot(color: Colors.deepPurpleAccent, label: 'Destino'),
-          ],
+      child: SizedBox(
+        height: 44,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+          physics: const BouncingScrollPhysics(),
+          itemCount: chips.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 6),
+          itemBuilder: (context, i) => chips[i],
         ),
       ),
     );
   }
 }
 
-class _LegendDot extends StatelessWidget {
-  const _LegendDot({required this.color, required this.label});
-  final Color color;
+class _MapControlChip extends StatelessWidget {
+  const _MapControlChip({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+    this.showCheck = true,
+  });
+
+  final IconData icon;
   final String label;
+  final bool active;
+  final VoidCallback onTap;
+  final bool showCheck;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10.5,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textSecondary,
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          color: active
+              ? AppColors.primary.withValues(alpha: 0.16)
+              : AppColors.surface.withValues(alpha: 0.42),
+          border: Border.all(
+            color: active
+                ? AppColors.primary.withValues(alpha: 0.4)
+                : AppColors.textSecondary.withValues(alpha: 0.2),
           ),
         ),
-      ],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: active ? AppColors.primary : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: active ? AppColors.textPrimary : AppColors.textSecondary,
+              ),
+            ),
+            if (active && showCheck) ...[
+              const SizedBox(width: 4),
+              const Icon(
+                Icons.check_circle_rounded,
+                size: 13,
+                color: AppColors.primary,
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

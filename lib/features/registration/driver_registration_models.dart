@@ -34,6 +34,26 @@ List<T> _parseCatalogList<T>(
   return out;
 }
 
+/// Valores de `metadata.catalog_categoria` del seed (`build-vehicle-catalog-v2.cjs`).
+const String kVehicleCatalogCategoriaLivianos =
+    'Vehículos Livianos / SUVs / Pickups / Lujo';
+const String kVehicleCatalogCategoriaCarga = 'Carga Pesada / Logística';
+const String kVehicleCatalogCategoriaMoto = 'Motocicletas y Trimóviles';
+
+/// Mapea `fleet.vehicle_types.code` → bucket del catálogo jerárquico (tres familias).
+String? catalogCategoriaBucketForVehicleType(VehicleCatalogVehicleType vt) {
+  final code = vt.code.toLowerCase().trim();
+  if (code == 'two_wheeler' || code == 'motorcycle') {
+    return kVehicleCatalogCategoriaMoto;
+  }
+  if (code == 'commercial_vehicle' ||
+      code.contains('cargo') ||
+      code.contains('freight')) {
+    return kVehicleCatalogCategoriaCarga;
+  }
+  return kVehicleCatalogCategoriaLivianos;
+}
+
 class GeoCountry {
   const GeoCountry({
     required this.id,
@@ -550,16 +570,88 @@ class VehicleCatalog {
   final List<CatalogUnitConversion> measurementUnitConversions;
 
   /// Modelos filtrados por modo de transporte del catálogo extendido.
+  /// Si el backend no envía `segment_transport_mode` (filas legacy), se asume
+  /// `road_vehicle` para no ocultar marcas/modelos en registro de auto.
   List<CatalogVehicleModelEntry> modelsForTransportMode(String mode) {
     final m = mode.toLowerCase();
-    return vehicleModels
-        .where((e) => (e.segmentTransportMode ?? '').toLowerCase() == m)
-        .toList(growable: false);
+    return vehicleModels.where((e) {
+      final raw = e.segmentTransportMode;
+      final tm = raw != null && raw.trim().isNotEmpty
+          ? raw.toLowerCase()
+          : 'road_vehicle';
+      return tm == m;
+    }).toList(growable: false);
   }
 
   List<CatalogManufacturer> manufacturersForTransportMode(String mode) {
     final modelIds = modelsForTransportMode(mode).map((e) => e.manufacturerId).toSet();
     return manufacturers.where((x) => modelIds.contains(x.id)).toList(growable: false);
+  }
+
+  String? catalogCategoriaBucketForVehicleTypeId(int? vehicleTypeId) {
+    if (vehicleTypeId == null) return null;
+    for (final t in vehicleTypes) {
+      if (t.id == vehicleTypeId) {
+        return catalogCategoriaBucketForVehicleType(t);
+      }
+    }
+    return null;
+  }
+
+  bool _modelMatchesCatalogCategoriaBucket(
+    CatalogVehicleModelEntry e,
+    String? bucket,
+  ) {
+    if (bucket == null) return true;
+    final raw = e.metadata['catalog_categoria']?.toString().trim();
+    if (raw == null || raw.isEmpty) {
+      return bucket == kVehicleCatalogCategoriaLivianos;
+    }
+    return raw == bucket;
+  }
+
+  bool _manufacturerMatchesCatalogCategoriaBucket(
+    CatalogManufacturer m,
+    String? bucket,
+  ) {
+    if (bucket == null) return true;
+    final raw = m.metadata['catalog_categoria']?.toString().trim();
+    if (raw == null || raw.isEmpty) {
+      return bucket == kVehicleCatalogCategoriaLivianos;
+    }
+    return raw == bucket;
+  }
+
+  /// Marca/modelo acotados al tipo de vehículo (tres familias del JSON) + `segment_transport_mode`.
+  List<CatalogVehicleModelEntry> modelsForRegistrationFilters({
+    required int? vehicleTypeId,
+    required String transportMode,
+  }) {
+    final bucket = catalogCategoriaBucketForVehicleTypeId(vehicleTypeId);
+    final m = transportMode.toLowerCase();
+    return vehicleModels.where((e) {
+      final raw = e.segmentTransportMode;
+      final tm = raw != null && raw.trim().isNotEmpty
+          ? raw.toLowerCase()
+          : 'road_vehicle';
+      if (tm != m) return false;
+      return _modelMatchesCatalogCategoriaBucket(e, bucket);
+    }).toList(growable: false);
+  }
+
+  List<CatalogManufacturer> manufacturersForRegistrationFilters({
+    required int? vehicleTypeId,
+    required String transportMode,
+  }) {
+    final bucket = catalogCategoriaBucketForVehicleTypeId(vehicleTypeId);
+    final mids = modelsForRegistrationFilters(
+      vehicleTypeId: vehicleTypeId,
+      transportMode: transportMode,
+    ).map((e) => e.manufacturerId).toSet();
+    return manufacturers.where((x) {
+      if (!mids.contains(x.id)) return false;
+      return _manufacturerMatchesCatalogCategoriaBucket(x, bucket);
+    }).toList(growable: false);
   }
 
   List<VehicleCatalogCategory> categoriesForType(int vehicleTypeId) {

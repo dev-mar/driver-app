@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
@@ -13,15 +14,14 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_foundation.dart';
+import '../../core/utils/money_formatter.dart';
 import '../../core/theme/app_motion.dart';
 import '../../core/ui/driver_ui_states.dart';
 import '../../core/ui/texi_circular_avatar.dart';
 import '../../core/router/app_router.dart';
 import '../../core/session/driver_internal_tools_gate.dart';
 import '../../core/notifications/driver_fcm_navigation.dart'
-    show
-        driverFcmTripOfferOpenBump,
-        takePendingTripOfferFromNotification;
+    show driverFcmTripOfferOpenBump, takePendingTripOfferFromNotification;
 import '../../core/config/locale_provider.dart';
 import '../../gen_l10n/app_localizations.dart';
 import '../session/driver_operational_profile.dart';
@@ -110,9 +110,10 @@ class DriverHomeScreen extends ConsumerStatefulWidget {
 
 class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
-
+  static const bool _verboseUiLogs = false;
   String? _lastRatedTripId;
   bool _isRatingSheetOpen = false;
+  bool _tripChatSheetDisplayed = false;
   final LocalAuthentication _localAuth = LocalAuthentication();
   DateTime? _lastBackgroundAt;
   bool _keepActivePromptOpen = false;
@@ -130,6 +131,11 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
   String? _activeTripCardExpansionTripId;
   bool _activeTripCardExpanded = true;
 
+  void _logUiVerbose(String message) {
+    if (!_verboseUiLogs) return;
+    debugPrint('[DriverHome] $message');
+  }
+
   void _onFcmTripOfferOpenBump() {
     final bump = driverFcmTripOfferOpenBump.value;
     if (bump <= _lastHandledFcmTripOfferBump) return;
@@ -138,17 +144,27 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     final payload = takePendingTripOfferFromNotification();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+      bool? appliedFromNotification;
       if (payload != null) {
-        await ref
+        appliedFromNotification = await ref
             .read(driverRealtimeProvider.notifier)
             .onNotificationOpenedWithTripOffer(payload);
       }
       if (!mounted) return;
       final messenger = ScaffoldMessenger.maybeOf(context);
       if (messenger == null) return;
+      final l10n = AppLocalizations.of(context);
+      final String snackText;
+      if (payload == null) {
+        snackText = l10n.driverFcmOpenedTripOfferHint;
+      } else if (appliedFromNotification == true) {
+        snackText = l10n.driverFcmOpenedTripOfferHint;
+      } else {
+        snackText = l10n.driverFcmOpenedTripOfferOfflineHint;
+      }
       messenger.showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context).driverFcmOpenedTripOfferHint),
+          content: Text(snackText),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -171,10 +187,13 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
       parent: _homeListEntrance,
       curve: AppMotion.standard,
     );
-    _homeListSlide = Tween<Offset>(
-      begin: Offset(0, AppMotion.slideDySubtle),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _homeListEntrance, curve: AppMotion.standard));
+    _homeListSlide =
+        Tween<Offset>(
+          begin: Offset(0, AppMotion.slideDySubtle),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(parent: _homeListEntrance, curve: AppMotion.standard),
+        );
   }
 
   @override
@@ -205,7 +224,8 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
 
   void _syncHomeListEntrance(bool shouldShowMap) {
     if (!shouldShowMap) {
-      final animate = _prevShowMapForEntrance == null || _prevShowMapForEntrance == true;
+      final animate =
+          _prevShowMapForEntrance == null || _prevShowMapForEntrance == true;
       if (animate) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _homeListEntrance.forward(from: 0);
@@ -315,14 +335,20 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.shield_outlined, color: AppColors.textPrimary, size: 22),
+              const Icon(
+                Icons.shield_outlined,
+                color: AppColors.textPrimary,
+                size: 22,
+              ),
               const SizedBox(width: 12),
               Expanded(child: Text(authErrorText)),
             ],
           ),
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           backgroundColor: AppColors.error.withValues(alpha: 0.95),
         ),
       );
@@ -374,7 +400,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
       if (go != true || !context.mounted) return;
       await Geolocator.requestPermission();
     } catch (e, st) {
-      debugPrint('[DriverHome] background location disclosure: $e $st');
+      _logUiVerbose('background location disclosure: $e $st');
     }
   }
 
@@ -392,7 +418,9 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
       unawaited(_maybePromptKeepActiveAfterBackground());
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        ref.read(driverRealtimeProvider.notifier).touchReconnectIfWantedOnline();
+        ref
+            .read(driverRealtimeProvider.notifier)
+            .touchReconnectIfWantedOnline();
       });
       return;
     }
@@ -487,9 +515,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     if (!ok && mounted) {
       final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.driverTripSnackbarNavigationFailed(label)),
-        ),
+        SnackBar(content: Text(l10n.driverTripSnackbarNavigationFailed(label))),
       );
     }
   }
@@ -510,16 +536,28 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
         realtime.ignoreActiveTripRestoreUntilMs;
     final nowMs = DateTime.now().millisecondsSinceEpoch;
 
+    ref.listen<DriverRealtimeState>(driverRealtimeProvider, (previous, next) {
+      final prevOk = driverTripChatPhaseActive(previous?.activeTrip?.status);
+      final nextOk = driverTripChatPhaseActive(next.activeTrip?.status);
+      if (prevOk && !nextOk && _tripChatSheetDisplayed && mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          Navigator.of(context, rootNavigator: true).maybePop();
+        });
+      }
+    });
+
     // Si estamos en fase de calificación (`tripPendingRating`) o dentro de la
     // ventana de "ignore" post-calificación, forzamos que no se muestre el
     // mapa aunque el backend restaure accidentalmente un `activeTrip` tardío.
-    final bool shouldIgnoreActiveTripRestore = ignoreActiveTripRestoreTripId !=
-            null &&
+    final bool shouldIgnoreActiveTripRestore =
+        ignoreActiveTripRestoreTripId != null &&
         ignoreActiveTripRestoreUntilMs != null &&
         nowMs <= ignoreActiveTripRestoreUntilMs &&
         activeTrip?.tripId == ignoreActiveTripRestoreTripId;
 
-    final bool shouldShowMap = activeTrip != null &&
+    final bool shouldShowMap =
+        activeTrip != null &&
         (tripPendingRating == null ||
             tripPendingRating.tripId != activeTrip.tripId) &&
         !shouldIgnoreActiveTripRestore;
@@ -538,13 +576,17 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
 
     // Si el socket/ciclo cayó mientras calificas, reintentamos activar "online"
     // automáticamente para que el switch quede activo sin intervención manual.
-    final bool shouldAttemptAutoReconnect = activeTrip != null ||
+    final bool shouldAttemptAutoReconnect =
+        activeTrip != null ||
         tripPendingRating != null ||
         shouldIgnoreActiveTripRestore;
 
     final blockOnlineForTrips = ref
         .watch(driverOperationalProfileProvider)
-        .maybeWhen(data: (p) => p.needsVehicleRegistration, orElse: () => false);
+        .maybeWhen(
+          data: (p) => p.needsVehicleRegistration,
+          orElse: () => false,
+        );
 
     if (shouldAttemptAutoReconnect &&
         !online &&
@@ -552,12 +594,15 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
         !blockOnlineForTrips) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        ref.read(driverRealtimeProvider.notifier).touchReconnectIfHasActiveWork();
+        ref
+            .read(driverRealtimeProvider.notifier)
+            .touchReconnectIfHasActiveWork();
       });
     }
 
-    final wantsAvailReconnect =
-        ref.read(driverRealtimeProvider.notifier).wantsAvailabilitySessionReconnect;
+    final wantsAvailReconnect = ref
+        .read(driverRealtimeProvider.notifier)
+        .wantsAvailabilitySessionReconnect;
     if (wantsAvailReconnect &&
         !online &&
         !connecting &&
@@ -566,7 +611,9 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
         tripPendingRating == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        ref.read(driverRealtimeProvider.notifier).touchReconnectIfWantedOnline();
+        ref
+            .read(driverRealtimeProvider.notifier)
+            .touchReconnectIfWantedOnline();
       });
     }
 
@@ -642,24 +689,24 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     final String connectionLabel = connecting
         ? l10n.driverHomeMiniConnecting
         : online
-            ? l10n.driverHomeMiniStatusOnline
-            : isRestoring
-                ? l10n.driverHomeMiniStatusRestoringConnection
-                : l10n.driverHomeMiniStatusOffline;
+        ? l10n.driverHomeMiniStatusOnline
+        : isRestoring
+        ? l10n.driverHomeMiniStatusRestoringConnection
+        : l10n.driverHomeMiniStatusOffline;
     final IconData connectionIcon = connecting
         ? Icons.sync_rounded
         : online
-            ? Icons.verified_rounded
-            : isRestoring
-                ? Icons.autorenew_rounded
-                : Icons.pause_circle_outline_rounded;
+        ? Icons.verified_rounded
+        : isRestoring
+        ? Icons.autorenew_rounded
+        : Icons.pause_circle_outline_rounded;
     final Color connectionColor = connecting
         ? AppColors.primary
         : online
-            ? AppColors.success
-            : isRestoring
-                ? AppColors.primary
-                : AppColors.textSecondary;
+        ? AppColors.success
+        : isRestoring
+        ? AppColors.primary
+        : AppColors.textSecondary;
 
     final showInternalTools =
         ref.watch(driverInternalToolsVisibleProvider).valueOrNull == true;
@@ -670,13 +717,10 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
           shouldShowMap ? l10n.driverTripInProgressTitle : l10n.driverHomeTitle,
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.language_rounded),
-            onPressed: () => _showLanguageMenu(context),
-          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded),
             onSelected: (value) {
+              if (value == 'language') _showLanguageMenu(context);
               if (value == 'profile') context.goNamed(AppRouter.profile);
               if (value == 'registered_images') {
                 context.pushNamed(AppRouter.registeredImages);
@@ -687,12 +731,23 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                   extra: {'addVehicleOnly': true},
                 );
               }
+              if (value == 'trip_history') {
+                context.pushNamed(AppRouter.tripHistory);
+              }
               if (value == 'logout') _logout(context);
             },
             itemBuilder: (context) => [
               PopupMenuItem(
+                value: 'language',
+                child: Text(l10n.settingsLanguage),
+              ),
+              PopupMenuItem(
                 value: 'profile',
                 child: Text(l10n.driverProfileMenu),
+              ),
+              PopupMenuItem(
+                value: 'trip_history',
+                child: Text(l10n.driverTripHistoryMenu),
               ),
               PopupMenuItem(
                 value: 'add_vehicle',
@@ -717,20 +772,25 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
               bottomCard: _RetractableTripCard(
                 trip: activeTrip,
                 expanded: _activeTripCardExpanded,
-                onExpandedChanged: (v) => setState(() => _activeTripCardExpanded = v),
+                onExpandedChanged: (v) =>
+                    setState(() => _activeTripCardExpanded = v),
                 processingAction: realtime.processingTripAction,
                 errorMessage: tripErrorMessage,
-                onMarkArrived: () => ref
-                    .read(driverRealtimeProvider.notifier)
-                    .markArrived(),
-                onStartTrip: () => ref
-                    .read(driverRealtimeProvider.notifier)
-                    .startTrip(),
-                onCompleteTrip: () => ref
-                    .read(driverRealtimeProvider.notifier)
-                    .completeTrip(),
+                onMarkArrived: () =>
+                    ref.read(driverRealtimeProvider.notifier).markArrived(),
+                onStartTrip: () =>
+                    ref.read(driverRealtimeProvider.notifier).startTrip(),
+                onCompleteTrip: () =>
+                    ref.read(driverRealtimeProvider.notifier).completeTrip(),
+                onArrivalReminder: () =>
+                    ref.read(driverRealtimeProvider.notifier).sendArrivalReminder(),
+                arrivalReminderCooldownUntilMs:
+                    realtime.arrivalReminderCooldownUntilMs,
                 onNavigateToPickup: () {
-                  if (activeTrip.pickupLat == null || activeTrip.pickupLng == null) return;
+                  if (activeTrip.pickupLat == null ||
+                      activeTrip.pickupLng == null) {
+                    return;
+                  }
                   unawaited(
                     _openNavigation(
                       lat: activeTrip.pickupLat!,
@@ -754,13 +814,13 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                 },
                 onReactivate: () {
                   unawaited(() async {
-                    final notifier =
-                        ref.read(driverRealtimeProvider.notifier);
+                    final notifier = ref.read(driverRealtimeProvider.notifier);
                     notifier.clearActiveTrip();
                     if (!await _vehicleGateAllowsOnline()) return;
                     await notifier.setOnline(true);
                   }());
                 },
+                onOpenChat: () => _openTripChatSheet(tripId: activeTrip.tripId),
               ),
             )
           : FadeTransition(
@@ -769,426 +829,547 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                 position: _homeListSlide,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-            if (blockOnlineForTrips) ...[
-              Material(
-                color: AppColors.primary.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(AppFoundation.radiusLg),
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.directions_car_outlined,
-                              color: AppColors.primary, size: 22),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              l10n.driverHomeVehicleRegistrationBanner,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                                height: 1.25,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      FilledButton(
-                        onPressed: () {
-                          ref.invalidate(driverOperationalProfileProvider);
-                          context.goNamed(AppRouter.register, extra: true);
-                        },
-                        child: Text(l10n.driverHomeVehicleRegistrationCta),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-            ],
-            // Mini perfil: nombre, vehículo y valoración desde connection:ack + estado
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceCard.withValues(alpha: 0.92),
-                borderRadius: BorderRadius.circular(AppFoundation.radiusLg),
-                border: Border.all(
-                  color: AppColors.border.withValues(alpha: 0.5),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildMiniProfileAvatar(realtime),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          (realtime.driverDisplayName != null &&
-                                  realtime.driverDisplayName!.trim().isNotEmpty)
-                              ? realtime.driverDisplayName!.trim()
-                              : l10n.driverProfileDefaultName,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.35,
-                            color: AppColors.textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          (realtime.driverVehicleLabel != null &&
-                                  realtime.driverVehicleLabel!.trim().isNotEmpty)
-                              ? realtime.driverVehicleLabel!.trim()
-                              : l10n.driverHomeMiniVehicleEmpty,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            height: 1.25,
-                            color: AppColors.textSecondary.withValues(alpha: 0.96),
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (realtime.driverRating != null) ...[
-                          const SizedBox(height: 6),
-                          Row(
+                  child: CustomScrollView(
+                    slivers: [
+                      if (blockOnlineForTrips)
+                        SliverToBoxAdapter(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Icon(
-                                Icons.star_rounded,
-                                size: 17,
-                                color: AppColors.primary.withValues(alpha: 0.95),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                l10n.driverHomeMiniRating(
-                                  realtime.driverRating!.toStringAsFixed(1),
+                              Material(
+                                color: AppColors.primary.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(
+                                  AppFoundation.radiusLg,
                                 ),
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                        const SizedBox(height: 8),
-                        AnimatedSwitcher(
-                          duration: AppMotion.stepSwitcher,
-                          switchInCurve: AppMotion.emphasized,
-                          switchOutCurve: AppMotion.standard,
-                          transitionBuilder: (child, animation) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(0, 0.16),
-                                  end: Offset.zero,
-                                ).animate(animation),
-                                child: child,
-                              ),
-                            );
-                          },
-                          child: Row(
-                            key: ValueKey<String>('conn-$connectionLabel'),
-                            children: [
-                              TweenAnimationBuilder<double>(
-                                duration: const Duration(milliseconds: 900),
-                                tween: Tween<double>(begin: 0.88, end: 1),
-                                builder: (context, value, child) =>
-                                    Transform.scale(scale: value, child: child),
-                                child: Icon(connectionIcon, size: 14, color: connectionColor),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  connectionLabel,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textSecondary.withValues(alpha: 0.97),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(14),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.directions_car_outlined,
+                                            color: AppColors.primary,
+                                            size: 22,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              l10n.driverHomeVehicleRegistrationBanner,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 14,
+                                                height: 1.25,
+                                                color: AppColors.textPrimary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      FilledButton(
+                                        onPressed: () {
+                                          ref.invalidate(
+                                            driverOperationalProfileProvider,
+                                          );
+                                          context.goNamed(
+                                            AppRouter.register,
+                                            extra: true,
+                                          );
+                                        },
+                                        child: Text(
+                                          l10n.driverHomeVehicleRegistrationCta,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
+                              const SizedBox(height: 14),
                             ],
                           ),
                         ),
-                        if (connecting || isRestoring) ...[
-                          const SizedBox(height: 8),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(999),
-                            child: const LinearProgressIndicator(minHeight: 3),
+                      // Mini perfil: nombre, vehículo y valoración desde connection:ack + estado
+                      SliverToBoxAdapter(
+                        child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceCard.withValues(alpha: 0.92),
+                          borderRadius: BorderRadius.circular(
+                            AppFoundation.radiusLg,
                           ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: [
-                              _connectionPhaseChip(
-                                icon: Icons.sync_rounded,
-                                label: l10n.driverHomeMiniConnecting,
-                                active: connecting,
-                              ),
-                              _connectionPhaseChip(
-                                icon: Icons.autorenew_rounded,
-                                label: l10n.driverHomeMiniStatusRestoringConnection,
-                                active: isRestoring,
-                              ),
-                              _connectionPhaseChip(
-                                icon: Icons.verified_rounded,
-                                label: l10n.driverHomeMiniStatusOnline,
-                                active: online,
-                              ),
-                            ],
+                          border: Border.all(
+                            color: AppColors.border.withValues(alpha: 0.5),
                           ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Switch.adaptive(
-                        value: switchVisualOn,
-                        activeThumbColor: AppColors.onPrimary,
-                        activeTrackColor: AppColors.primary,
-                        onChanged: connecting
-                            ? null
-                            : (value) async {
-                                if (value && !online) {
-                                  if (!await _vehicleGateAllowsOnline()) return;
-                                  if (!context.mounted) return;
-                                  final rtNow = ref.read(driverRealtimeProvider);
-                                  final skipLocalAuth = rtNow.activeTrip != null ||
-                                      rtNow.tripPendingRating != null;
-                                  if (!skipLocalAuth) {
-                                    final ok =
-                                        await _authenticateBeforeGoingOnline(
-                                      context,
-                                    );
-                                    if (!ok) return;
-                                  }
-                                }
-                                if (!context.mounted) return;
-                                await ref
-                                    .read(driverRealtimeProvider.notifier)
-                                    .setOnline(value);
-                                if (value && context.mounted) {
-                                  final s = ref.read(driverRealtimeProvider);
-                                  if (s.online &&
-                                      (s.errorCode == null || s.errorCode!.isEmpty)) {
-                                    unawaited(
-                                      _maybeSuggestBackgroundLocationAfterOnline(
-                                        context,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildMiniProfileAvatar(realtime),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    (realtime.driverDisplayName != null &&
+                                            realtime.driverDisplayName!
+                                                .trim()
+                                                .isNotEmpty)
+                                        ? realtime.driverDisplayName!.trim()
+                                        : l10n.driverProfileDefaultName,
+                                    style: const TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.35,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    (realtime.driverVehicleLabel != null &&
+                                            realtime.driverVehicleLabel!
+                                                .trim()
+                                                .isNotEmpty)
+                                        ? realtime.driverVehicleLabel!.trim()
+                                        : l10n.driverHomeMiniVehicleEmpty,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.25,
+                                      color: AppColors.textSecondary.withValues(
+                                        alpha: 0.96,
                                       ),
-                                    );
-                                  }
-                                }
-                              },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            if (errorMessage != null) ...[
-              const SizedBox(height: 12),
-              DriverInlineError(
-                message: errorMessage,
-              ),
-              if (realtime.errorCode != null &&
-                  _kDriverOnlinePermissionHintCodes
-                      .contains(realtime.errorCode)) ...[
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
-                  child: DriverInlineInfo(
-                    message: l10n.driverHomeOnlineRequirementsHint,
-                  ),
-                ),
-                if (realtime.errorCode == 'GPS_SERVICE_OFF') ...[
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () async {
-                        await Geolocator.openLocationSettings();
-                      },
-                      icon: const Icon(Icons.location_searching_rounded),
-                      label: Text(l10n.driverHomeOpenSystemLocationSettings),
-                    ),
-                  ),
-                ],
-                if (realtime.errorCode == 'NO_GPS') ...[
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () async {
-                        await Geolocator.openAppSettings();
-                      },
-                      icon: const Icon(Icons.app_settings_alt_outlined),
-                      label: Text(l10n.driverHomeOpenAppPermissionSettings),
-                    ),
-                  ),
-                ],
-              ],
-            ],
-            const SizedBox(height: AppFoundation.spacingXl),
-            if (pendingOffers.isNotEmpty) ...[
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceCard.withValues(alpha: 0.95),
-                      borderRadius: BorderRadius.circular(AppFoundation.radiusSm),
-                      border: Border.all(
-                        color: AppColors.border.withValues(alpha: 0.6),
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.notifications_active_rounded,
-                      color: const Color(0xFF9FB2CB),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: AppFoundation.spacingMd),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.driverHomeRequestsTitle,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w700,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (realtime.driverRating != null) ...[
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.star_rounded,
+                                          size: 17,
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.95,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          l10n.driverHomeMiniRating(
+                                            realtime.driverRating!
+                                                .toStringAsFixed(1),
+                                          ),
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                  const SizedBox(height: 8),
+                                  AnimatedSwitcher(
+                                    duration: AppMotion.stepSwitcher,
+                                    switchInCurve: AppMotion.emphasized,
+                                    switchOutCurve: AppMotion.standard,
+                                    transitionBuilder: (child, animation) {
+                                      return FadeTransition(
+                                        opacity: animation,
+                                        child: SlideTransition(
+                                          position: Tween<Offset>(
+                                            begin: const Offset(0, 0.16),
+                                            end: Offset.zero,
+                                          ).animate(animation),
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                    child: Row(
+                                      key: ValueKey<String>(
+                                        'conn-$connectionLabel',
+                                      ),
+                                      children: [
+                                        TweenAnimationBuilder<double>(
+                                          duration: const Duration(
+                                            milliseconds: 900,
+                                          ),
+                                          tween: Tween<double>(
+                                            begin: 0.88,
+                                            end: 1,
+                                          ),
+                                          builder: (context, value, child) =>
+                                              Transform.scale(
+                                                scale: value,
+                                                child: child,
+                                              ),
+                                          child: Icon(
+                                            connectionIcon,
+                                            size: 14,
+                                            color: connectionColor,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            connectionLabel,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.textSecondary
+                                                  .withValues(alpha: 0.97),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (connecting || isRestoring) ...[
+                                    const SizedBox(height: 8),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(999),
+                                      child: const LinearProgressIndicator(
+                                        minHeight: 3,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 6,
+                                      children: [
+                                        _connectionPhaseChip(
+                                          icon: Icons.sync_rounded,
+                                          label: l10n.driverHomeMiniConnecting,
+                                          active: connecting,
+                                        ),
+                                        _connectionPhaseChip(
+                                          icon: Icons.autorenew_rounded,
+                                          label: l10n
+                                              .driverHomeMiniStatusRestoringConnection,
+                                          active: isRestoring,
+                                        ),
+                                        _connectionPhaseChip(
+                                          icon: Icons.verified_rounded,
+                                          label:
+                                              l10n.driverHomeMiniStatusOnline,
+                                          active: online,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
                               ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Switch.adaptive(
+                                  value: switchVisualOn,
+                                  activeThumbColor: AppColors.onPrimary,
+                                  activeTrackColor: AppColors.primary,
+                                  onChanged: connecting
+                                      ? null
+                                      : (value) async {
+                                          if (value && !online) {
+                                            if (!await _vehicleGateAllowsOnline()) {
+                                              return;
+                                            }
+                                            if (!context.mounted) return;
+                                            final rtNow = ref.read(
+                                              driverRealtimeProvider,
+                                            );
+                                            final skipLocalAuth =
+                                                rtNow.activeTrip != null ||
+                                                rtNow.tripPendingRating != null;
+                                            if (!skipLocalAuth) {
+                                              final ok =
+                                                  await _authenticateBeforeGoingOnline(
+                                                    context,
+                                                  );
+                                              if (!ok) return;
+                                            }
+                                          }
+                                          if (!context.mounted) return;
+                                          await ref
+                                              .read(
+                                                driverRealtimeProvider.notifier,
+                                              )
+                                              .setOnline(value);
+                                          if (value && context.mounted) {
+                                            final s = ref.read(
+                                              driverRealtimeProvider,
+                                            );
+                                            if (s.online &&
+                                                (s.errorCode == null ||
+                                                    s.errorCode!.isEmpty)) {
+                                              unawaited(
+                                                _maybeSuggestBackgroundLocationAfterOnline(
+                                                  context,
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        },
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                        Text(
-                          l10n.driverHomeMiniStatusOnline,
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: AppColors.textSecondary.withValues(alpha: 0.92),
-                            fontWeight: FontWeight.w600,
+                      ),
+                      ),
+                      if (errorMessage != null)
+                        SliverToBoxAdapter(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                        const SizedBox(height: 12),
+                        DriverInlineError(message: errorMessage),
+                        if (realtime.errorCode != null &&
+                            _kDriverOnlinePermissionHintCodes.contains(
+                              realtime.errorCode,
+                            )) ...[
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
+                            child: DriverInlineInfo(
+                              message: l10n.driverHomeOnlineRequirementsHint,
+                            ),
+                          ),
+                          if (realtime.errorCode == 'GPS_SERVICE_OFF') ...[
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: () async {
+                                  await Geolocator.openLocationSettings();
+                                },
+                                icon: const Icon(
+                                  Icons.location_searching_rounded,
+                                ),
+                                label: Text(
+                                  l10n.driverHomeOpenSystemLocationSettings,
+                                ),
+                              ),
+                            ),
+                          ],
+                          if (realtime.errorCode == 'NO_GPS') ...[
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: () async {
+                                  await Geolocator.openAppSettings();
+                                },
+                                icon: const Icon(
+                                  Icons.app_settings_alt_outlined,
+                                ),
+                                label: Text(
+                                  l10n.driverHomeOpenAppPermissionSettings,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                            ],
+                          ),
+                        ),
+                      SliverToBoxAdapter(
+                        child: const SizedBox(height: AppFoundation.spacingXl),
+                      ),
+                      if (pendingOffers.isNotEmpty) ...[
+                        SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceCard.withValues(
+                                  alpha: 0.95,
+                                ),
+                                borderRadius: BorderRadius.circular(
+                                  AppFoundation.radiusSm,
+                                ),
+                                border: Border.all(
+                                  color: AppColors.border.withValues(
+                                    alpha: 0.6,
+                                  ),
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.notifications_active_rounded,
+                                color: const Color(0xFF9FB2CB),
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: AppFoundation.spacingMd),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    l10n.driverHomeRequestsTitle,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: AppColors.textPrimary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                  Text(
+                                    l10n.driverHomeMiniStatusOnline,
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      color: AppColors.textSecondary.withValues(
+                                        alpha: 0.92,
+                                      ),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppFoundation.spacingSm,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceCard,
+                                borderRadius: BorderRadius.circular(
+                                  AppFoundation.radiusSm,
+                                ),
+                                border: Border.all(
+                                  color: AppColors.border.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                '${pendingOffers.length}',
+                                style: TextStyle(
+                                  color: AppColors.textPrimary.withValues(
+                                    alpha: 0.92,
+                                  ),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                              const SizedBox(height: AppFoundation.spacingMd),
+                            ],
+                          ),
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                              final offer = pendingOffers[index];
+                              final perOfferCode =
+                                  realtime.offersErrorCodeByTripId[offer.tripId];
+                              String? offerErrorMessage =
+                                  realtime.offersErrorMessageByTripId[offer.tripId];
+                              switch (perOfferCode) {
+                                case 'NO_CONNECTION':
+                                  offerErrorMessage =
+                                      l10n.driverOfferErrorNoConnection;
+                                  break;
+                                case 'OFFER_EXPIRED':
+                                  offerErrorMessage =
+                                      l10n.driverOfferErrorExpired;
+                                  break;
+                                case 'TRIP_ALREADY_PROCESSED':
+                                case 'TRIP_NOT_AVAILABLE':
+                                case 'TRIP_TAKEN':
+                                case 'OFFER_ALREADY_TAKEN':
+                                  offerErrorMessage =
+                                      l10n.driverOfferErrorTaken;
+                                  break;
+                                case 'RBAC_FORBIDDEN':
+                                  offerErrorMessage =
+                                      l10n.driverOnlineErrorRbacForbidden;
+                                  break;
+                                case 'RBAC_NO_IDENTITY':
+                                case 'RBAC_NO_AUTH':
+                                  offerErrorMessage =
+                                      l10n.driverOnlineErrorRbacSession;
+                                  break;
+                                case 'RBAC_RESOLVE':
+                                case 'RBAC_ERROR':
+                                case 'RBAC_CONFIG':
+                                  offerErrorMessage =
+                                      l10n.driverOnlineErrorRbacTechnical;
+                                  break;
+                              }
+                              return Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: index < pendingOffers.length - 1
+                                      ? 8
+                                      : 0,
+                                ),
+                                child: _TripOfferCard(
+                                  l10n: l10n,
+                                  offer: offer,
+                                  isProcessing:
+                                      realtime.processingOfferTripId ==
+                                      offer.tripId,
+                                  isProcessingAccept:
+                                      realtime.processingOfferTripId ==
+                                          offer.tripId &&
+                                      realtime.processingIsAccept,
+                                  errorMessage: offerErrorMessage,
+                                  onAccept: () => ref
+                                      .read(driverRealtimeProvider.notifier)
+                                      .acceptOffer(offer.tripId),
+                                  onReject: () => ref
+                                      .read(driverRealtimeProvider.notifier)
+                                      .rejectOffer(offer.tripId),
+                                ),
+                              );
+                            },
+                            childCount: pendingOffers.length,
+                          ),
+                        ),
+                        ),
+                      ] else ...[
+                        SliverToBoxAdapter(
+                          child: Text(
+                          l10n.driverHomeRequestsTitle,
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(color: AppColors.textPrimary),
+                        ),
+                        ),
+                        SliverToBoxAdapter(child: const SizedBox(height: 8)),
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: DriverEmptyStateCard(
+                            message: l10n.driverHomeRequestsEmpty,
+                            icon: Icons.hourglass_empty_rounded,
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppFoundation.spacingSm,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceCard,
-                      borderRadius: BorderRadius.circular(AppFoundation.radiusSm),
-                      border: Border.all(
-                        color: AppColors.border.withValues(alpha: 0.7),
-                      ),
-                    ),
-                    child: Text(
-                      '${pendingOffers.length}',
-                      style: TextStyle(
-                        color: AppColors.textPrimary.withValues(alpha: 0.92),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppFoundation.spacingMd),
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  itemCount: pendingOffers.length,
-                  separatorBuilder: (context, _) =>
-                      const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final offer = pendingOffers[index];
-                    String? offerErrorMessage = realtime.offersErrorMessage;
-                    switch (realtime.offersErrorCode) {
-                      case 'NO_CONNECTION':
-                        offerErrorMessage = l10n.driverOfferErrorNoConnection;
-                        break;
-                      case 'OFFER_EXPIRED':
-                        offerErrorMessage = l10n.driverOfferErrorExpired;
-                        break;
-                      case 'TRIP_ALREADY_PROCESSED':
-                      case 'TRIP_NOT_AVAILABLE':
-                      case 'TRIP_TAKEN':
-                      case 'OFFER_ALREADY_TAKEN':
-                        offerErrorMessage = l10n.driverOfferErrorTaken;
-                        break;
-                      case 'RBAC_FORBIDDEN':
-                        offerErrorMessage = l10n.driverOnlineErrorRbacForbidden;
-                        break;
-                      case 'RBAC_NO_IDENTITY':
-                      case 'RBAC_NO_AUTH':
-                        offerErrorMessage = l10n.driverOnlineErrorRbacSession;
-                        break;
-                      case 'RBAC_RESOLVE':
-                      case 'RBAC_ERROR':
-                      case 'RBAC_CONFIG':
-                        offerErrorMessage = l10n.driverOnlineErrorRbacTechnical;
-                        break;
-                    }
-                    return _TripOfferCard(
-                      l10n: l10n,
-                      offer: offer,
-                      isProcessing:
-                          realtime.processingOfferTripId == offer.tripId,
-                      isProcessingAccept:
-                          realtime.processingOfferTripId == offer.tripId &&
-                              realtime.processingIsAccept,
-                      errorMessage: offerErrorMessage,
-                      onAccept: () => ref
-                          .read(driverRealtimeProvider.notifier)
-                          .acceptOffer(offer.tripId),
-                      onReject: () => ref
-                          .read(driverRealtimeProvider.notifier)
-                          .rejectOffer(offer.tripId),
-                    );
-                  },
-                ),
-              ),
-            ] else ...[
-              Text(
-                l10n.driverHomeRequestsTitle,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: DriverEmptyStateCard(
-                  message: l10n.driverHomeRequestsEmpty,
-                  icon: Icons.hourglass_empty_rounded,
-                ),
-              ),
-            ],
-          ],
+                    ],
                   ),
                 ),
               ),
@@ -1206,7 +1387,17 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
       ),
       builder: (ctx) => _RatingSheetContent(
         trip: trip,
-        onSubmitted: () {
+        loadFeedbackCatalog: (stars) => ref
+            .read(driverRealtimeProvider.notifier)
+            .fetchDriverRatingFeedbackCatalog(stars: stars),
+        onSubmitted: (stars, feedbackCodes) {
+          unawaited(
+            ref.read(driverRealtimeProvider.notifier).submitTripRating(
+                  tripId: trip.tripId,
+                  stars: stars,
+                  feedbackCodes: feedbackCodes,
+                ),
+          );
           Navigator.of(ctx).pop();
           _isRatingSheetOpen = false;
           ref.read(driverRealtimeProvider.notifier).clearTripPendingRating();
@@ -1222,6 +1413,325 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
       _isRatingSheetOpen = false;
       ref.read(driverRealtimeProvider.notifier).clearTripPendingRating();
     });
+  }
+
+  Future<void> _openTripChatSheet({required String tripId}) async {
+    if (!driverTripChatPhaseActive(
+      ref.read(driverRealtimeProvider).activeTrip?.status,
+    )) {
+      return;
+    }
+    final controller = ref.read(driverRealtimeProvider.notifier);
+    final textController = TextEditingController();
+    const quickTemplates = <Map<String, String>>[
+      {'code': 'I_AM_AT_PICKUP', 'label': 'Ya llegué al punto'},
+      {'code': 'CANNOT_FIND_PASSENGER', 'label': 'No logro ubicarte'},
+      {'code': 'PLEASE_CONFIRM_LOCATION', 'label': 'Confirma tu ubicación'},
+    ];
+    String formatTime(DateTime? dt) {
+      if (dt == null) return 'Ahora';
+      final hh = dt.hour.toString().padLeft(2, '0');
+      final mm = dt.minute.toString().padLeft(2, '0');
+      return '$hh:$mm';
+    }
+    _tripChatSheetDisplayed = true;
+    try {
+      await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        final mq = MediaQuery.of(ctx);
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: mq.viewInsets.bottom,
+            left: 10,
+            right: 10,
+            top: 8,
+          ),
+          child: FractionallySizedBox(
+            heightFactor: 0.82,
+            child: Consumer(
+              builder: (context, ref, _) {
+                final rt = ref.watch(driverRealtimeProvider);
+                return Material(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(22),
+                  clipBehavior: Clip.antiAlias,
+                  child: SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        14,
+                        10,
+                        14,
+                        12 + mq.viewPadding.bottom,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.16),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.chat_bubble_rounded,
+                                  color: AppColors.primary,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              const Expanded(
+                                child: Text(
+                                  'Chat del viaje',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 17,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: (rt.online || rt.connecting)
+                                      ? AppColors.success.withValues(alpha: 0.12)
+                                      : AppColors.error.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  (rt.online || rt.connecting)
+                                      ? 'En línea'
+                                      : 'Sin conexión',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: (rt.online || rt.connecting)
+                                        ? AppColors.success
+                                        : AppColors.error,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () => Navigator.of(ctx).pop(),
+                                icon: const Icon(Icons.close_rounded),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            'Conversación activa con el pasajero en tiempo real.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary.withValues(alpha: 0.95),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            height: 38,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: quickTemplates.length,
+                              separatorBuilder: (_, _) => const SizedBox(width: 8),
+                              itemBuilder: (context, index) {
+                                final it = quickTemplates[index];
+                                return OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    visualDensity: VisualDensity.compact,
+                                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                                  ),
+                                  onPressed: () {
+                                    textController.text = it['label']!;
+                                    textController.selection = TextSelection.collapsed(
+                                      offset: textController.text.length,
+                                    );
+                                  },
+                                  child: Text(
+                                    it['label']!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          if (rt.tripChatErrorCode != null) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: AppColors.error.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                (rt.tripChatErrorCode == '42P01' ||
+                                        rt.tripChatErrorCode ==
+                                            'TRIP_CHAT_STORAGE_UNAVAILABLE')
+                                    ? 'Chat no disponible: falta configuración en el servidor. Contactá soporte.'
+                                    : rt.tripChatErrorCode == 'TRIP_CHAT_NOT_AVAILABLE'
+                                        ? 'El chat solo está disponible antes de iniciar el viaje.'
+                                        : 'No se pudo enviar/recibir chat (${rt.tripChatErrorCode!}). Revisa la conexión.',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.error,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 10),
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.background,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: AppColors.border.withValues(alpha: 0.45),
+                                ),
+                              ),
+                              child: rt.chatMessages.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        'Aún no hay mensajes.\nEnvía uno para iniciar la conversación.',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 12.5,
+                                          color: AppColors.textSecondary.withValues(alpha: 0.9),
+                                        ),
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      padding: const EdgeInsets.all(10),
+                                      itemCount: rt.chatMessages.length,
+                                      itemBuilder: (context, index) {
+                                        final msg = rt.chatMessages[index];
+                                        final mine = msg.senderRole == 'driver';
+                                        return Align(
+                                          alignment: mine
+                                              ? Alignment.centerRight
+                                              : Alignment.centerLeft,
+                                          child: Container(
+                                            constraints: const BoxConstraints(maxWidth: 280),
+                                            margin: const EdgeInsets.only(bottom: 8),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 9,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: mine
+                                                  ? AppColors.primary.withValues(alpha: 0.2)
+                                                  : AppColors.surface,
+                                              borderRadius: BorderRadius.only(
+                                                topLeft: const Radius.circular(14),
+                                                topRight: const Radius.circular(14),
+                                                bottomLeft: Radius.circular(mine ? 14 : 4),
+                                                bottomRight: Radius.circular(mine ? 4 : 14),
+                                              ),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  msg.messageText,
+                                                  style: const TextStyle(height: 1.25),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  '${mine ? 'Tú' : 'Pasajero'} · ${formatTime(msg.createdAt)}',
+                                                  style: TextStyle(
+                                                    fontSize: 10.5,
+                                                    color: AppColors.textSecondary.withValues(
+                                                      alpha: 0.85,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Material(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(14),
+                            child: Container(
+                              padding: const EdgeInsets.fromLTRB(8, 6, 6, 6),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: AppColors.border.withValues(alpha: 0.55),
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: textController,
+                                      minLines: 1,
+                                      maxLines: 4,
+                                      decoration: const InputDecoration(
+                                        hintText: 'Escribe un mensaje',
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 10,
+                                        ),
+                                        isDense: true,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  SizedBox(
+                                    height: 40,
+                                    child: FilledButton(
+                                      onPressed: () {
+                                        final t = textController.text.trim();
+                                        if (t.isEmpty) return;
+                                        controller.sendTripChatText(
+                                          tripId: tripId,
+                                          text: t,
+                                        );
+                                        textController.clear();
+                                      },
+                                      style: FilledButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                                        minimumSize: const Size(44, 40),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(11),
+                                        ),
+                                      ),
+                                      child: const Icon(Icons.send_rounded, size: 20),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+    } finally {
+      _tripChatSheetDisplayed = false;
+      textController.dispose();
+    }
   }
 
   void _showLanguageMenu(BuildContext context) {
@@ -1308,13 +1818,16 @@ Widget _connectionPhaseChip({
 
 /// Contenido del sheet de calificación (premium): pasajero + estrellas.
 class _RatingSheetContent extends StatefulWidget {
-  final VoidCallback onSubmitted;
+  final void Function(int stars, List<String> feedbackCodes) onSubmitted;
   final VoidCallback onSkipped;
   final DriverActiveTrip? trip;
+  final Future<List<DriverRatingFeedbackItem>> Function(int stars)
+      loadFeedbackCatalog;
 
   const _RatingSheetContent({
     required this.onSubmitted,
     required this.onSkipped,
+    required this.loadFeedbackCatalog,
     this.trip,
   });
 
@@ -1324,10 +1837,129 @@ class _RatingSheetContent extends StatefulWidget {
 
 class _RatingSheetContentState extends State<_RatingSheetContent>
     with SingleTickerProviderStateMixin {
-  int _rating = 0;
+  int _rating = 5;
+  bool _loadingCatalog = true;
+  List<DriverRatingFeedbackItem> _feedbackLow = const [];
+  List<DriverRatingFeedbackItem> _feedbackHigh = const [];
+  final Set<String> _selectedFeedbackCodes = <String>{};
   late final AnimationController _entrance;
   late final Animation<double> _fade;
   late final Animation<Offset> _slide;
+
+  List<DriverRatingFeedbackItem> get _displayedOptions =>
+      _rating <= 3 ? _feedbackLow : _feedbackHigh;
+
+  Future<void> _preloadFeedbackCatalogs() async {
+    setState(() => _loadingCatalog = true);
+    try {
+      final results = await Future.wait([
+        widget.loadFeedbackCatalog(3),
+        widget.loadFeedbackCatalog(5),
+      ]);
+      if (!mounted) return;
+      final lowRaw = results[0];
+      final highRaw = results[1];
+      setState(() {
+        _feedbackLow = (lowRaw.isEmpty ? _fallbackFeedback(2) : lowRaw)
+            .take(5)
+            .toList(growable: false);
+        _feedbackHigh = (highRaw.isEmpty ? _fallbackFeedback(5) : highRaw)
+            .take(5)
+            .toList(growable: false);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _feedbackLow = _fallbackFeedback(2).take(5).toList(growable: false);
+        _feedbackHigh = _fallbackFeedback(5).take(5).toList(growable: false);
+      });
+    } finally {
+      if (mounted) setState(() => _loadingCatalog = false);
+    }
+  }
+
+  void _setRating(int stars) {
+    HapticFeedback.selectionClick();
+    final prevBucket = _rating <= 3;
+    final nextBucket = stars <= 3;
+    setState(() {
+      _rating = stars;
+      if (prevBucket != nextBucket) {
+        _selectedFeedbackCodes.removeWhere(
+          (code) => !_displayedOptions.any((item) => item.code == code),
+        );
+      }
+    });
+  }
+
+  List<DriverRatingFeedbackItem> _fallbackFeedback(int stars) {
+    if (stars <= 3) {
+      return const [
+        DriverRatingFeedbackItem(
+          code: 'fallback_delay',
+          label: 'Demasiado tiempo de espera',
+          minStars: 1,
+          maxStars: 3,
+        ),
+        DriverRatingFeedbackItem(
+          code: 'fallback_location',
+          label: 'Dificultad para encontrarnos',
+          minStars: 1,
+          maxStars: 3,
+        ),
+        DriverRatingFeedbackItem(
+          code: 'fallback_respect',
+          label: 'Falta de respeto',
+          minStars: 1,
+          maxStars: 3,
+        ),
+        DriverRatingFeedbackItem(
+          code: 'fallback_payment',
+          label: 'Problema con el pago',
+          minStars: 1,
+          maxStars: 3,
+        ),
+        DriverRatingFeedbackItem(
+          code: 'fallback_other',
+          label: 'Otro inconveniente',
+          minStars: 1,
+          maxStars: 3,
+        ),
+      ];
+    }
+    return const [
+      DriverRatingFeedbackItem(
+        code: 'fallback_punctual',
+        label: 'Puntual y listo para salir',
+        minStars: 4,
+        maxStars: 5,
+      ),
+      DriverRatingFeedbackItem(
+        code: 'fallback_respectful',
+        label: 'Trato respetuoso',
+        minStars: 4,
+        maxStars: 5,
+      ),
+      DriverRatingFeedbackItem(
+        code: 'fallback_clear_pickup',
+        label: 'Recogida clara y rápida',
+        minStars: 4,
+        maxStars: 5,
+      ),
+      DriverRatingFeedbackItem(
+        code: 'fallback_recommended',
+        label: 'Pasajero recomendado',
+        minStars: 4,
+        maxStars: 5,
+      ),
+      DriverRatingFeedbackItem(
+        code: 'fallback_excellent',
+        label: 'Excelente experiencia',
+        minStars: 4,
+        maxStars: 5,
+      ),
+    ];
+  }
 
   @override
   void initState() {
@@ -1342,6 +1974,9 @@ class _RatingSheetContentState extends State<_RatingSheetContent>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _entrance, curve: AppMotion.standard));
     _entrance.forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_preloadFeedbackCatalogs());
+    });
   }
 
   @override
@@ -1421,7 +2056,9 @@ class _RatingSheetContentState extends State<_RatingSheetContent>
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.35),
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.35,
+                                    ),
                                     blurRadius: 12,
                                     offset: const Offset(0, 4),
                                   ),
@@ -1465,73 +2102,51 @@ class _RatingSheetContentState extends State<_RatingSheetContent>
                           style: TextStyle(
                             fontSize: 14,
                             height: 1.4,
-                            color: AppColors.textSecondary.withValues(alpha: 0.96),
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.96,
+                            ),
                           ),
                         ),
                         if (trip != null) ...[
                           const SizedBox(height: 20),
-                          Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              color: AppColors.background,
-                              border: Border.all(
-                                color: AppColors.border.withValues(alpha: 0.65),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 26,
-                                  backgroundColor:
-                                      AppColors.primary.withValues(alpha: 0.2),
-                                  child: const Icon(
-                                    Icons.person_rounded,
-                                    color: AppColors.primary,
-                                    size: 28,
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            alignment: WrapAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(999),
+                                  color: AppColors.background,
+                                  border: Border.all(
+                                    color: AppColors.border.withValues(alpha: 0.62),
                                   ),
                                 ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        passengerName,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w800,
-                                          color: AppColors.textPrimary,
-                                        ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.person_rounded,
+                                      size: 17,
+                                      color: AppColors.primary.withValues(alpha: 0.92),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      passengerName,
+                                      style: const TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textPrimary,
                                       ),
-                                      if (trip.passengerRating != null) ...[
-                                        const SizedBox(height: 6),
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.star_rounded,
-                                              size: 18,
-                                              color: AppColors.primary
-                                                  .withValues(alpha: 0.95),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              trip.passengerRating!
-                                                  .toStringAsFixed(1),
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w700,
-                                                color: AppColors.textPrimary,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ],
                         const SizedBox(height: 24),
@@ -1550,12 +2165,7 @@ class _RatingSheetContentState extends State<_RatingSheetContent>
                           children: List.generate(5, (index) {
                             final filled = _rating >= index + 1;
                             return IconButton(
-                              onPressed: () {
-                                HapticFeedback.selectionClick();
-                                setState(() {
-                                  _rating = index + 1;
-                                });
-                              },
+                              onPressed: () => _setRating(index + 1),
                               icon: Icon(
                                 filled
                                     ? Icons.star_rounded
@@ -1568,13 +2178,55 @@ class _RatingSheetContentState extends State<_RatingSheetContent>
                             );
                           }),
                         ),
+                        if (_rating > 0) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            _rating <= 3
+                                ? l10n.driverTripRatingFeedbackPromptLow
+                                : l10n.driverTripRatingFeedbackPromptHigh,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          if (_loadingCatalog)
+                            const Center(child: CircularProgressIndicator(strokeWidth: 2))
+                          else if (_displayedOptions.isNotEmpty)
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: _displayedOptions.map((item) {
+                                final selected = _selectedFeedbackCodes.contains(item.code);
+                                return FilterChip(
+                                  selected: selected,
+                                  onSelected: (value) {
+                                    setState(() {
+                                      if (value) {
+                                        _selectedFeedbackCodes.add(item.code);
+                                      } else {
+                                        _selectedFeedbackCodes.remove(item.code);
+                                      }
+                                    });
+                                  },
+                                  label: Text(item.label),
+                                );
+                              }).toList(growable: false),
+                            ),
+                        ],
                         const SizedBox(height: 12),
                         FilledButton(
-                          onPressed: _rating == 0
+                          onPressed: _rating == 0 || _loadingCatalog
                               ? null
                               : () {
                                   HapticFeedback.lightImpact();
-                                  widget.onSubmitted();
+                                  widget.onSubmitted(
+                                    _rating,
+                                    _selectedFeedbackCodes.toList(growable: false),
+                                  );
                                 },
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1626,9 +2278,12 @@ class _RetractableTripCard extends StatelessWidget {
   final VoidCallback onMarkArrived;
   final VoidCallback onStartTrip;
   final VoidCallback onCompleteTrip;
+  final VoidCallback onArrivalReminder;
+  final int? arrivalReminderCooldownUntilMs;
   final VoidCallback onNavigateToPickup;
   final VoidCallback onNavigateToDestination;
   final VoidCallback onReactivate;
+  final VoidCallback onOpenChat;
 
   const _RetractableTripCard({
     required this.trip,
@@ -1639,9 +2294,12 @@ class _RetractableTripCard extends StatelessWidget {
     required this.onMarkArrived,
     required this.onStartTrip,
     required this.onCompleteTrip,
+    required this.onArrivalReminder,
+    required this.arrivalReminderCooldownUntilMs,
     required this.onNavigateToPickup,
     required this.onNavigateToDestination,
     required this.onReactivate,
+    required this.onOpenChat,
   });
 
   String _statusLabel(AppLocalizations l10n, String status) {
@@ -1701,8 +2359,9 @@ class _RetractableTripCard extends StatelessWidget {
               color: Colors.transparent,
               child: InkWell(
                 onTap: () => onExpandedChanged(false),
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
                   child: Row(
@@ -1736,9 +2395,12 @@ class _RetractableTripCard extends StatelessWidget {
               onMarkArrived: onMarkArrived,
               onStartTrip: onStartTrip,
               onCompleteTrip: onCompleteTrip,
+              onArrivalReminder: onArrivalReminder,
+              arrivalReminderCooldownUntilMs: arrivalReminderCooldownUntilMs,
               onNavigateToPickup: onNavigateToPickup,
               onNavigateToDestination: onNavigateToDestination,
               onReactivate: onReactivate,
+              onOpenChat: onOpenChat,
             ),
           ] else
             Material(
@@ -1748,8 +2410,10 @@ class _RetractableTripCard extends StatelessWidget {
                 onTap: () => onExpandedChanged(true),
                 borderRadius: BorderRadius.circular(AppFoundation.radiusMd),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   child: Row(
                     children: [
                       Icon(
@@ -1765,9 +2429,7 @@ class _RetractableTripCard extends StatelessWidget {
                           children: [
                             Text(
                               _statusLabel(l10n, trip.status),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleSmall
+                              style: Theme.of(context).textTheme.titleSmall
                                   ?.copyWith(
                                     color: accent,
                                     fontWeight: FontWeight.w600,
@@ -1785,15 +2447,20 @@ class _RetractableTripCard extends StatelessWidget {
                                   'completed' || 'cancelled' => 1.0,
                                   _ => 0.2,
                                 },
-                                backgroundColor:
-                                    AppColors.border.withValues(alpha: 0.45),
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(accent),
+                                backgroundColor: AppColors.border.withValues(
+                                  alpha: 0.45,
+                                ),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  accent,
+                                ),
                               ),
                             ),
                             if (trip.estimatedPrice != null)
                               Text(
-                                '\$${trip.estimatedPrice!.toStringAsFixed(2)}',
+                                formatMoney(
+                                  trip.estimatedPrice,
+                                  currencyCode: trip.currencyCode,
+                                ),
                                 style: const TextStyle(
                                   fontSize: 13,
                                   color: AppColors.textSecondary,
@@ -1837,7 +2504,8 @@ class _AssistedTripNavButtons extends StatefulWidget {
   final VoidCallback onNavigateToDestination;
 
   @override
-  State<_AssistedTripNavButtons> createState() => _AssistedTripNavButtonsState();
+  State<_AssistedTripNavButtons> createState() =>
+      _AssistedTripNavButtonsState();
 }
 
 class _AssistedTripNavButtonsState extends State<_AssistedTripNavButtons>
@@ -1866,66 +2534,22 @@ class _AssistedTripNavButtonsState extends State<_AssistedTripNavButtons>
     final navToPickupFirst = _shouldNavigateToPickupFirst(widget.tripStatus);
     final canUsePickup = widget.showPickup;
     final canUseDestination = widget.showDestination;
-    final shouldUsePickup = navToPickupFirst ? canUsePickup : !canUseDestination;
+    final shouldUsePickup = navToPickupFirst
+        ? canUsePickup
+        : !canUseDestination;
     final isPickup = shouldUsePickup;
     final title = isPickup
         ? widget.l10n.driverTripNavigatePickup
         : widget.l10n.driverTripNavigateDestination;
-    final subtitle = isPickup ? widget.l10n.tripOrigin : widget.l10n.tripDestination;
+    final subtitle = isPickup
+        ? widget.l10n.tripOrigin
+        : widget.l10n.tripDestination;
     final icon = isPickup ? Icons.near_me_rounded : Icons.turn_right_rounded;
-    final onTap = isPickup ? widget.onNavigateToPickup : widget.onNavigateToDestination;
+    final onTap = isPickup
+        ? widget.onNavigateToPickup
+        : widget.onNavigateToDestination;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Padding(
-                padding: EdgeInsets.all(8),
-                child: Icon(
-                  Icons.maps_ugc_rounded,
-                  size: 20,
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.l10n.driverTripNavAssistedTitle,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    widget.l10n.driverTripNavAssistedSubtitle,
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      height: 1.25,
-                      color:
-                          AppColors.textSecondary.withValues(alpha: 0.95),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        AnimatedBuilder(
+    return AnimatedBuilder(
           animation: _t,
           builder: (context, child) {
             final wave = isPickup ? _t.value : (1 - _t.value);
@@ -1943,9 +2567,7 @@ class _AssistedTripNavButtonsState extends State<_AssistedTripNavButtons>
               },
             );
           },
-        ),
-      ],
-    );
+        );
   }
 
   bool _shouldNavigateToPickupFirst(String status) {
@@ -1973,8 +2595,9 @@ class _AssistedTripNavButtonsState extends State<_AssistedTripNavButtons>
     required IconData icon,
     required VoidCallback onTap,
   }) {
-    final borderColor =
-        AppColors.primary.withValues(alpha: isPickup ? glow * 0.55 : glow * 0.7);
+    final borderColor = AppColors.primary.withValues(
+      alpha: isPickup ? glow * 0.55 : glow * 0.7,
+    );
     final bg = isPickup
         ? AppColors.primary.withValues(alpha: 0.12 + 0.06 * glow)
         : AppColors.primary.withValues(alpha: 0.88 + 0.06 * glow);
@@ -1998,7 +2621,9 @@ class _AssistedTripNavButtonsState extends State<_AssistedTripNavButtons>
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: isPickup ? 0.08 : 0.2),
+                color: AppColors.primary.withValues(
+                  alpha: isPickup ? 0.08 : 0.2,
+                ),
                 blurRadius: 10 + 6 * glow,
                 offset: const Offset(0, 4),
               ),
@@ -2013,10 +2638,9 @@ class _AssistedTripNavButtonsState extends State<_AssistedTripNavButtons>
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: (isPickup
-                              ? AppColors.primary
-                              : AppColors.onPrimary)
-                          .withValues(alpha: isPickup ? 0.18 : 0.22),
+                      color:
+                          (isPickup ? AppColors.primary : AppColors.onPrimary)
+                              .withValues(alpha: isPickup ? 0.18 : 0.22),
                       borderRadius: BorderRadius.circular(11),
                     ),
                     child: Icon(
@@ -2083,9 +2707,12 @@ class _ActiveTripCard extends StatelessWidget {
   final VoidCallback onMarkArrived;
   final VoidCallback onStartTrip;
   final VoidCallback onCompleteTrip;
+  final VoidCallback onArrivalReminder;
+  final int? arrivalReminderCooldownUntilMs;
   final VoidCallback onNavigateToPickup;
   final VoidCallback onNavigateToDestination;
   final VoidCallback onReactivate;
+  final VoidCallback onOpenChat;
 
   const _ActiveTripCard({
     required this.trip,
@@ -2094,9 +2721,12 @@ class _ActiveTripCard extends StatelessWidget {
     required this.onMarkArrived,
     required this.onStartTrip,
     required this.onCompleteTrip,
+    required this.onArrivalReminder,
+    required this.arrivalReminderCooldownUntilMs,
     required this.onNavigateToPickup,
     required this.onNavigateToDestination,
     required this.onReactivate,
+    required this.onOpenChat,
   });
 
   String _statusLabel(AppLocalizations l10n, String status) {
@@ -2157,21 +2787,35 @@ class _ActiveTripCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isProcessing = processingAction != null;
-    final canAct = !isProcessing &&
+    final canAct =
+        !isProcessing &&
         trip.status != 'completed' &&
         trip.status != 'cancelled';
-    final hasPassenger = trip.passengerName != null && trip.passengerName!.isNotEmpty;
+    final hasPassenger =
+        trip.passengerName != null && trip.passengerName!.isNotEmpty;
     final hasPickupCoords = trip.pickupLat != null && trip.pickupLng != null;
-    final hasDestCoords = trip.destinationLat != null && trip.destinationLng != null;
-    final hasOriginLine = (trip.originAddress != null && trip.originAddress!.isNotEmpty) ||
+    final hasDestCoords =
+        trip.destinationLat != null && trip.destinationLng != null;
+    final hasOriginLine =
+        (trip.originAddress != null && trip.originAddress!.isNotEmpty) ||
         hasPickupCoords;
-    final hasDestLine = (trip.destinationAddress != null && trip.destinationAddress!.isNotEmpty) ||
+    final hasDestLine =
+        (trip.destinationAddress != null &&
+            trip.destinationAddress!.isNotEmpty) ||
         hasDestCoords;
     final hasMetrics =
         trip.tripDistanceKm != null || trip.etaToDestinationMinutes != null;
-    final hasRouteDetail = hasPassenger || hasMetrics || hasOriginLine || hasDestLine;
+    final hasRouteDetail =
+        hasPassenger || hasMetrics || hasOriginLine || hasDestLine;
     final accent = _statusAccentColor(trip.status);
     final progress = _statusProgress(trip.status);
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final reminderCooldownLeftSec = (arrivalReminderCooldownUntilMs != null &&
+            arrivalReminderCooldownUntilMs! > nowMs)
+        ? ((arrivalReminderCooldownUntilMs! - nowMs) / 1000).ceil()
+        : 0;
+    final canSendArrivalReminder =
+        trip.status == 'arrived' && canAct && reminderCooldownLeftSec <= 0;
 
     Widget section({
       required Widget child,
@@ -2182,9 +2826,7 @@ class _ActiveTripCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surface.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(AppFoundation.radiusSm),
-          border: Border.all(
-            color: AppColors.border.withValues(alpha: 0.55),
-          ),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.55)),
         ),
         child: child,
       );
@@ -2213,11 +2855,7 @@ class _ActiveTripCard extends StatelessWidget {
           section(
             child: Row(
               children: [
-                Icon(
-                  Icons.directions_car_rounded,
-                  color: accent,
-                  size: 28,
-                ),
+                Icon(Icons.directions_car_rounded, color: accent, size: 28),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -2228,7 +2866,8 @@ class _ActiveTripCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               _statusLabel(l10n, trip.status),
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
                                     color: accent,
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -2250,7 +2889,9 @@ class _ActiveTripCard extends StatelessWidget {
                         child: LinearProgressIndicator(
                           minHeight: 4,
                           value: progress,
-                          backgroundColor: AppColors.border.withValues(alpha: 0.45),
+                          backgroundColor: AppColors.border.withValues(
+                            alpha: 0.45,
+                          ),
                           valueColor: AlwaysStoppedAnimation<Color>(accent),
                         ),
                       ),
@@ -2258,7 +2899,10 @@ class _ActiveTripCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           l10n.driverTripEstimatedPrice(
-                            '\$${trip.estimatedPrice!.toStringAsFixed(2)}',
+                            formatMoney(
+                              trip.estimatedPrice,
+                              currencyCode: trip.currencyCode,
+                            ),
                           ),
                           style: const TextStyle(
                             fontSize: 13,
@@ -2281,18 +2925,25 @@ class _ActiveTripCard extends StatelessWidget {
                   if (hasPassenger)
                     Row(
                       children: [
-                        Icon(Icons.person_rounded, size: 18, color: AppColors.textSecondary),
+                        Icon(
+                          Icons.person_rounded,
+                          size: 18,
+                          color: AppColors.textSecondary,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             trip.passengerName!,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
                           ),
                         ),
                         if (trip.passengerRating != null) ...[
-                          Icon(Icons.star_rounded, size: 16, color: AppColors.primary),
+                          Icon(
+                            Icons.star_rounded,
+                            size: 16,
+                            color: AppColors.primary,
+                          ),
                           const SizedBox(width: 2),
                           Text(
                             trip.passengerRating!.toStringAsFixed(1),
@@ -2305,21 +2956,33 @@ class _ActiveTripCard extends StatelessWidget {
                         ],
                       ],
                     ),
-                  if (hasPassenger && (hasOriginLine || hasDestLine || hasMetrics))
+                  if (hasPassenger &&
+                      (hasOriginLine || hasDestLine || hasMetrics))
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Divider(height: 1, color: AppColors.border.withValues(alpha: 0.5)),
+                      child: Divider(
+                        height: 1,
+                        color: AppColors.border.withValues(alpha: 0.5),
+                      ),
                     ),
-                  if (trip.originAddress != null && trip.originAddress!.isNotEmpty)
+                  if (trip.originAddress != null &&
+                      trip.originAddress!.isNotEmpty)
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.place_rounded, size: 18, color: AppColors.primary),
+                        Icon(
+                          Icons.place_rounded,
+                          size: 18,
+                          color: AppColors.primary,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             trip.originAddress!,
-                            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -2330,12 +2993,19 @@ class _ActiveTripCard extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.place_rounded, size: 18, color: AppColors.primary),
+                        Icon(
+                          Icons.place_rounded,
+                          size: 18,
+                          color: AppColors.primary,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             '${l10n.driverMapPickupPoint}: ${trip.pickupLat!.toStringAsFixed(5)}, ${trip.pickupLng!.toStringAsFixed(5)}',
-                            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -2343,16 +3013,24 @@ class _ActiveTripCard extends StatelessWidget {
                       ],
                     ),
                   if (hasOriginLine && hasDestLine) const SizedBox(height: 6),
-                  if (trip.destinationAddress != null && trip.destinationAddress!.isNotEmpty)
+                  if (trip.destinationAddress != null &&
+                      trip.destinationAddress!.isNotEmpty)
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.flag_rounded, size: 18, color: AppColors.error),
+                        Icon(
+                          Icons.flag_rounded,
+                          size: 18,
+                          color: AppColors.error,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             trip.destinationAddress!,
-                            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -2363,12 +3041,19 @@ class _ActiveTripCard extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.flag_rounded, size: 18, color: AppColors.error),
+                        Icon(
+                          Icons.flag_rounded,
+                          size: 18,
+                          color: AppColors.error,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             '${l10n.driverMapDestinationPoint}: ${trip.destinationLat!.toStringAsFixed(5)}, ${trip.destinationLng!.toStringAsFixed(5)}',
-                            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -2378,28 +3063,45 @@ class _ActiveTripCard extends StatelessWidget {
                   if ((hasOriginLine || hasDestLine) && hasMetrics)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Divider(height: 1, color: AppColors.border.withValues(alpha: 0.5)),
+                      child: Divider(
+                        height: 1,
+                        color: AppColors.border.withValues(alpha: 0.5),
+                      ),
                     ),
                   if (hasMetrics)
                     Row(
                       children: [
                         if (trip.tripDistanceKm != null) ...[
-                          Icon(Icons.straighten_rounded, size: 16, color: AppColors.textSecondary),
+                          Icon(
+                            Icons.straighten_rounded,
+                            size: 16,
+                            color: AppColors.textSecondary,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             '${trip.tripDistanceKm!.toStringAsFixed(1)} km',
-                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ],
                         if (trip.tripDistanceKm != null &&
                             trip.etaToDestinationMinutes != null)
                           const SizedBox(width: 14),
                         if (trip.etaToDestinationMinutes != null) ...[
-                          Icon(Icons.schedule_rounded, size: 16, color: AppColors.textSecondary),
+                          Icon(
+                            Icons.schedule_rounded,
+                            size: 16,
+                            color: AppColors.textSecondary,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             '~${trip.etaToDestinationMinutes!.round()} min',
-                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ],
                       ],
@@ -2414,10 +3116,9 @@ class _ActiveTripCard extends StatelessWidget {
             section(
               padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
               child: _AssistedTripNavButtons(
-                showPickup:
-                    trip.pickupLat != null && trip.pickupLng != null,
-                showDestination: trip.destinationLat != null &&
-                    trip.destinationLng != null,
+                showPickup: trip.pickupLat != null && trip.pickupLng != null,
+                showDestination:
+                    trip.destinationLat != null && trip.destinationLng != null,
                 tripStatus: trip.status,
                 l10n: l10n,
                 onNavigateToPickup: onNavigateToPickup,
@@ -2428,6 +3129,17 @@ class _ActiveTripCard extends StatelessWidget {
           if (errorMessage != null && errorMessage!.isNotEmpty) ...[
             const SizedBox(height: 8),
             DriverInlineError(message: errorMessage!),
+          ],
+          if (driverTripChatPhaseActive(trip.status)) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onOpenChat,
+                icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                label: const Text('Chat seguro'),
+              ),
+            ),
           ],
           if (trip.status == 'accepted' && canAct) ...[
             const SizedBox(height: 12),
@@ -2451,23 +3163,49 @@ class _ActiveTripCard extends StatelessWidget {
           ],
           if (trip.status == 'arrived' && canAct) ...[
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: processingAction == 'started' ? null : onStartTrip,
-                icon: processingAction == 'started'
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.onPrimary,
-                        ),
-                      )
-                    : const Icon(Icons.play_arrow_rounded, size: 24),
-                label: Text(l10n.driverTripStartButton),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: processingAction == 'started' ? null : onStartTrip,
+                    icon: processingAction == 'started'
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.onPrimary,
+                            ),
+                          )
+                        : const Icon(Icons.play_arrow_rounded, size: 24),
+                    label: Text(l10n.driverTripStartButton),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Tooltip(
+                  message: canSendArrivalReminder
+                      ? 'Notificar nuevamente al pasajero'
+                      : 'Disponible en ${reminderCooldownLeftSec > 0 ? reminderCooldownLeftSec : 0}s',
+                  child: OutlinedButton(
+                    onPressed: canSendArrivalReminder ? onArrivalReminder : null,
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(52, 48),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    child: const Icon(Icons.campaign_rounded),
+                  ),
+                ),
+              ],
             ),
+            if (reminderCooldownLeftSec > 0) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Podrás volver a notificar en ${reminderCooldownLeftSec}s',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+              ),
+            ],
           ],
           if ((trip.status == 'started' || trip.status == 'in_trip') &&
               canAct) ...[
@@ -2475,8 +3213,9 @@ class _ActiveTripCard extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed:
-                    processingAction == 'completed' ? null : onCompleteTrip,
+                onPressed: processingAction == 'completed'
+                    ? null
+                    : onCompleteTrip,
                 icon: processingAction == 'completed'
                     ? const SizedBox(
                         width: 18,
@@ -2507,10 +3246,7 @@ class _ActiveTripCard extends StatelessWidget {
                 ),
                 child: Text(
                   l10n.driverTripReactivate,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                 ),
               ),
             ),
@@ -2540,10 +3276,8 @@ class _TripOfferCard extends StatelessWidget {
     required this.onReject,
   });
 
-  static String _formatPrice(double? value) {
-    if (value == null) return '—';
-    if (value.truncateToDouble() == value) return '\$${value.toInt()}';
-    return '\$${value.toStringAsFixed(2)}';
+  static String _formatPrice(double? value, {String? currencyCode}) {
+    return formatMoney(value, currencyCode: currencyCode);
   }
 
   static String _formatDistance(double? km) {
@@ -2552,10 +3286,7 @@ class _TripOfferCard extends StatelessWidget {
     return '${km.toStringAsFixed(1)} km';
   }
 
-  static String _formatDurationWithUnit(
-    BuildContext context,
-    double? minutes,
-  ) {
+  static String _formatDurationWithUnit(BuildContext context, double? minutes) {
     if (minutes == null) return '—';
     final m = minutes.round();
     if (m <= 0) return '<1 min';
@@ -2577,7 +3308,8 @@ class _TripOfferCard extends StatelessWidget {
     final hasRouteEta = offer.etaToDestinationMinutes != null;
     final hasTripKm = offer.tripDistanceKm != null;
     final hasPassenger = (offer.passengerName ?? '').isNotEmpty;
-    final hasRating = offer.passengerRating != null;
+    final passengerRatingValue = offer.passengerRating ?? 5.0;
+    final hasRating = true;
     final showChips = hasRouteEta || hasTripKm;
 
     final originText = (offer.originAddress ?? '').isNotEmpty
@@ -2633,7 +3365,10 @@ class _TripOfferCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             hasPrice
-                                ? _formatPrice(offer.offeredPrice)
+                                ? _formatPrice(
+                                    offer.offeredPrice,
+                                    currencyCode: offer.currencyCode,
+                                  )
                                 : l10n.driverTripOfferPriceTbd,
                             style: const TextStyle(
                               fontSize: 24,
@@ -2645,7 +3380,10 @@ class _TripOfferCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 5,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.16),
                             borderRadius: BorderRadius.circular(999),
@@ -2660,7 +3398,9 @@ class _TripOfferCard extends StatelessWidget {
                               Icon(
                                 Icons.bolt_rounded,
                                 size: 13,
-                                color: AppColors.primary.withValues(alpha: 0.95),
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.95,
+                                ),
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -2722,10 +3462,15 @@ class _TripOfferCard extends StatelessWidget {
                     const SizedBox(height: 10),
                     if (hasPassenger || hasRating) ...[
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.surface.withValues(alpha: 0.38),
-                          borderRadius: BorderRadius.circular(AppFoundation.radiusSm),
+                          borderRadius: BorderRadius.circular(
+                            AppFoundation.radiusSm,
+                          ),
                           border: Border.all(
                             color: AppColors.border.withValues(alpha: 0.55),
                           ),
@@ -2752,10 +3497,14 @@ class _TripOfferCard extends StatelessWidget {
                               ),
                             ),
                             if (hasRating) ...[
-                              Icon(Icons.star_rounded, size: 16, color: AppColors.primary),
+                              Icon(
+                                Icons.star_rounded,
+                                size: 16,
+                                color: AppColors.primary,
+                              ),
                               const SizedBox(width: 4),
                               Text(
-                                offer.passengerRating!.toStringAsFixed(1),
+                                passengerRatingValue.toStringAsFixed(1),
                                 style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
@@ -2838,7 +3587,10 @@ class _TripOfferCard extends StatelessWidget {
                                 : Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      const Icon(Icons.check_circle_outline_rounded, size: 16),
+                                      const Icon(
+                                        Icons.check_circle_outline_rounded,
+                                        size: 16,
+                                      ),
                                       const SizedBox(width: 6),
                                       Text(
                                         l10n.driverTripAccept,
@@ -2920,11 +3672,7 @@ class _OriginRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          Icons.place_rounded,
-          size: 16,
-          color: const Color(0xFF00BFA5),
-        ),
+        Icon(Icons.place_rounded, size: 16, color: const Color(0xFF00BFA5)),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -2988,4 +3736,3 @@ class _CompactAddressLine extends StatelessWidget {
     );
   }
 }
-

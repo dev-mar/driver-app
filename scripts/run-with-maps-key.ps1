@@ -91,6 +91,7 @@ if (-not [string]::IsNullOrWhiteSpace($Flavor)) {
 if (-not [string]::IsNullOrWhiteSpace($Target)) {
   $flutterArgs += @("-t", $Target)
 }
+$flutterArgs += @("--dart-define", "GOOGLE_MAPS_API_KEY=$resolvedKey")
 
 if ($Mode -eq "run") {
   Write-Host "Ejecutando: flutter run (config de API key cargada)" -ForegroundColor Cyan

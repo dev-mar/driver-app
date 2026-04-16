@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/login/driver_login_screen.dart';
 import '../../features/login/driver_home_screen.dart';
+import '../../features/login/driver_trip_history_screen.dart';
 import '../session/driver_registration_resume_gate.dart';
 import '../../features/profile/driver_profile_screen.dart';
 import '../../features/profile/driver_registered_images_screen.dart';
@@ -23,6 +24,7 @@ class AppRouter {
   static const String register = 'driver_register';
   static const String profile = 'driver_profile';
   static const String registeredImages = 'driver_registered_images';
+  static const String tripHistory = 'driver_trip_history';
 
   static const _storage = FlutterSecureStorage();
 
@@ -112,6 +114,11 @@ class AppRouter {
         builder: (context, state) => const DriverHomeScreen(),
       ),
       GoRoute(
+        path: '/trip-history',
+        name: tripHistory,
+        builder: (context, state) => const DriverTripHistoryScreen(),
+      ),
+      GoRoute(
         path: '/profile',
         name: profile,
         builder: (context, state) => const DriverProfileScreen(),
@@ -124,4 +131,3 @@ class AppRouter {
     ],
   );
 }
-

@@ -378,7 +378,7 @@ class DriverVehicleCatalogSection extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 12),
-          ..._brandModelFields(cat, mode),
+          ..._brandModelFields(cat, mode, selectedVehicleTypeId),
           ...afterCatalogBrandModelFields,
         ],
         if (showExtended &&
@@ -448,17 +448,24 @@ class DriverVehicleCatalogSection extends StatelessWidget {
   ) =>
       vehicleCatalogServiceTypeLabel(catalog, serviceTypeId, l10n);
 
-  List<Widget> _brandModelFields(VehicleCatalog cat, String mode) {
+  List<Widget> _brandModelFields(
+    VehicleCatalog cat,
+    String mode,
+    int? selectedVehicleTypeId,
+  ) {
     final mfrs = List<CatalogManufacturer>.from(
-      cat.manufacturersForTransportMode(mode),
+      cat.manufacturersForRegistrationFilters(
+        vehicleTypeId: selectedVehicleTypeId,
+        transportMode: mode,
+      ),
     )..sort((a, b) => a.name.compareTo(b.name));
 
-    final models = cat.vehicleModels
-        .where(
-          (e) =>
-              e.manufacturerId == catalogManufacturerId &&
-              (e.segmentTransportMode ?? '').toLowerCase() == mode,
+    final models = cat
+        .modelsForRegistrationFilters(
+          vehicleTypeId: selectedVehicleTypeId,
+          transportMode: mode,
         )
+        .where((e) => e.manufacturerId == catalogManufacturerId)
         .toList()
       ..sort((a, b) => a.name.compareTo(b.name));
 

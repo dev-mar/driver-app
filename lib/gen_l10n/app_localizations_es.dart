@@ -294,6 +294,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Si acabamos de cargar la solicitud desde la alerta, revisa la lista abajo. Si no aparece, puede haber expirado o falló la conexión: vuelve a ponerte en línea.';
 
   @override
+  String get driverFcmOpenedTripOfferOfflineHint =>
+      'Estás fuera de línea. Activa disponibilidad para poder atender solicitudes desde las alertas.';
+
+  @override
   String get driverHomeMiniVehicleEmpty => 'Vehículo';
 
   @override
@@ -303,6 +307,86 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverLogout => 'Cerrar sesión';
+
+  @override
+  String get driverTripHistoryMenu => 'Historial de viajes';
+
+  @override
+  String get driverTripHistoryTitle => 'Historial de viajes';
+
+  @override
+  String get driverTripHistoryFilterAll => 'Todos';
+
+  @override
+  String get driverTripHistoryFilterCompleted => 'Completados';
+
+  @override
+  String get driverTripHistoryFilterCancelled => 'Cancelados';
+
+  @override
+  String get driverTripHistoryFilterInProgress => 'En curso';
+
+  @override
+  String get driverTripHistoryDateAll => 'Todo el tiempo';
+
+  @override
+  String get driverTripHistoryDateToday => 'Hoy';
+
+  @override
+  String get driverTripHistoryDate7d => 'Últimos 7 días';
+
+  @override
+  String get driverTripHistoryDate30d => 'Últimos 30 días';
+
+  @override
+  String get driverTripHistoryStatusLabel => 'Estado';
+
+  @override
+  String get driverTripHistoryStatusCompleted => 'Completado';
+
+  @override
+  String get driverTripHistoryStatusCancelled => 'Cancelado';
+
+  @override
+  String get driverTripHistoryStatusInProgress => 'En curso';
+
+  @override
+  String get driverTripHistoryDateCustom => 'Personalizado';
+
+  @override
+  String get driverTripHistoryActiveFilters => 'Filtros activos';
+
+  @override
+  String get driverTripHistoryCustomRangeLabel => 'Rango elegido';
+
+  @override
+  String get driverTripHistorySectionToday => 'Hoy';
+
+  @override
+  String get driverTripHistorySectionYesterday => 'Ayer';
+
+  @override
+  String get driverTripHistorySectionOlder => 'Anteriores';
+
+  @override
+  String get driverTripHistoryEmpty => 'Aún no tienes viajes en este filtro.';
+
+  @override
+  String get driverTripHistoryLoadError =>
+      'No se pudo cargar el historial. Intenta nuevamente.';
+
+  @override
+  String get driverTripHistoryNoSession =>
+      'Tu sesión expiró. Vuelve a iniciar sesión.';
+
+  @override
+  String get driverTripHistoryPrevPage => 'Anterior';
+
+  @override
+  String get driverTripHistoryNextPage => 'Siguiente';
+
+  @override
+  String get driverTripHistoryPricePending => 'Sin monto';
 
   @override
   String get driverHomeMenuAddVehicle => 'Agregar otro vehículo';
@@ -707,6 +791,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverTripRatingYourRating => 'Tu valoración';
+
+  @override
+  String get driverTripRatingFeedbackPromptLow =>
+      '¿Qué afectó el viaje? (múltiple)';
+
+  @override
+  String get driverTripRatingFeedbackPromptHigh =>
+      '¿Qué destacó del pasajero? (múltiple)';
 
   @override
   String driverTripRatingRouteHint(String origin, String destination) {

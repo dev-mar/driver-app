@@ -360,8 +360,15 @@ class DriverRegistrationFlowController
           );
         }
       }
-      if (cat.catalogExtensionsAvailable) {
-        setCatalogTransportMode('road_vehicle');
+      if (cat.catalogExtensionsAvailable &&
+          !cat.compatibilityMode &&
+          state.selectedVehicleTypeId != null) {
+        setCatalogTransportMode(
+          _catalogTransportModeStringForVehicleType(
+            cat,
+            state.selectedVehicleTypeId!,
+          ),
+        );
       }
     } catch (e) {
       state = state.copyWith(
@@ -370,6 +377,19 @@ class DriverRegistrationFlowController
             e.toString().replaceFirst('DriverRegistrationException: ', ''),
       );
     }
+  }
+
+  /// `road_vehicle` | `motorcycle` según `fleet.vehicle_types` (livianos/carga vs dos ruedas).
+  String _catalogTransportModeStringForVehicleType(
+    VehicleCatalog cat,
+    int typeId,
+  ) {
+    for (final t in cat.vehicleTypes) {
+      if (t.id != typeId) continue;
+      final code = t.code.toLowerCase();
+      if (code == 'two_wheeler' || code == 'motorcycle') return 'motorcycle';
+    }
+    return 'road_vehicle';
   }
 
   VehicleCatalogVehicleType? _vehicleTypeForTransportMode(
@@ -475,12 +495,14 @@ class DriverRegistrationFlowController
     if (cat == null || cat.compatibilityMode) return;
     final cats = cat.categoriesForType(typeId);
     final c0 = cats.isNotEmpty ? cats.first : null;
+    final mode = _catalogTransportModeStringForVehicleType(cat, typeId);
     state = state.copyWith(
       clearCatalogModelPicks: true,
       selectedVehicleTypeId: typeId,
       selectedVehicleCategoryId: c0?.id,
       selectedEnabledServiceTypeIds:
           c0 != null ? _enabledServiceIdsDefaultStandardOnly(cat, c0.serviceTypeIds) : const [],
+      catalogTransportMode: mode,
     );
   }
 

@@ -108,10 +108,6 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
 
     if (!mounted) return;
     _loadingTimer?.cancel();
-    setState(() {
-      _isLoading = false;
-      _loadingTick = 0;
-    });
 
     if (success) {
       ref.invalidate(driverOperationalProfileProvider);
@@ -136,6 +132,8 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
       context.goNamed(AppRouter.home);
     } else {
       setState(() {
+        _isLoading = false;
+        _loadingTick = 0;
         final loginState = ref.read(driverLoginControllerProvider);
         _errorMessage = switch (loginState.errorCode) {
           'NETWORK_TIMEOUT' => l10n.driverLoginErrorNetwork,
@@ -301,65 +299,17 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                         width: double.infinity,
                         child: FilledButton(
                           onPressed: _isLoading ? null : _submit,
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(l10n.driverLoginButton),
-                                    const SizedBox(width: AppFoundation.spacingSm),
-                                    const Icon(Icons.arrow_forward_rounded, size: 18),
-                                  ],
-                                ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(l10n.driverLoginButton),
+                              const SizedBox(width: AppFoundation.spacingSm),
+                              const Icon(Icons.arrow_forward_rounded, size: 18),
+                            ],
+                          ),
                         ),
                       ),
-                      AnimatedSwitcher(
-                        duration: AppMotion.stepSwitcher,
-                        switchInCurve: AppMotion.emphasized,
-                        switchOutCurve: AppMotion.standard,
-                        child: _isLoading
-                            ? Padding(
-                                key: const ValueKey('login-loading-status'),
-                                padding: const EdgeInsets.only(top: AppFoundation.spacingMd),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 10,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.surface.withValues(alpha: 0.72),
-                                    borderRadius: BorderRadius.circular(AppFoundation.radiusSm),
-                                    border: Border.all(
-                                      color: AppColors.primary.withValues(alpha: 0.4),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
-                                      ),
-                                      const SizedBox(width: AppFoundation.spacingMd),
-                                      Expanded(
-                                        child: Text(
-                                          loadingMessage,
-                                          style: const TextStyle(
-                                            color: AppColors.textPrimary,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                            : const SizedBox.shrink(key: ValueKey('login-loading-empty')),
-                      ),
+                      const SizedBox(height: AppFoundation.spacingSm),
                       const SizedBox(height: AppFoundation.spacingXl),
                       DecoratedBox(
                         decoration: BoxDecoration(
@@ -482,6 +432,50 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
               ),
             ),
           ),
+          if (_isLoading)
+            IgnorePointer(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                color: Colors.black.withValues(alpha: 0.58),
+                child: Center(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 28),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 18,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface.withValues(alpha: 0.94),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.34),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          width: 36,
+                          height: 36,
+                          child: CircularProgressIndicator(strokeWidth: 3.2),
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          loadingMessage,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
