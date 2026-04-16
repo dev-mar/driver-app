@@ -680,6 +680,54 @@ class AppLocalizationsEs extends AppLocalizations {
       'Se abrirá tu app de mapas o GPS (Maps, Waze…)';
 
   @override
+  String get driverRegisteredImagesMenu => 'Imágenes registradas';
+
+  @override
+  String get driverTripChatOpenCta => 'Chat seguro';
+
+  @override
+  String get driverTripChatTitle => 'Chat del viaje';
+
+  @override
+  String get driverTripChatSubtitle =>
+      'Conversación activa con el pasajero en tiempo real.';
+
+  @override
+  String get driverTripChatOnline => 'En línea';
+
+  @override
+  String get driverTripChatOffline => 'Sin conexión';
+
+  @override
+  String get driverTripChatTemplateArrived => 'Ya llegué al punto';
+
+  @override
+  String get driverTripChatTemplateCannotFind => 'No logro ubicarte';
+
+  @override
+  String get driverTripChatTemplateConfirmLocation => 'Confirma tu ubicación';
+
+  @override
+  String get driverTripChatNow => 'Ahora';
+
+  @override
+  String get driverTripChatErrorStorage =>
+      'Chat no disponible: falta configuración en el servidor. Contactá soporte.';
+
+  @override
+  String get driverTripChatErrorPhase =>
+      'El chat solo está disponible antes de iniciar el viaje.';
+
+  @override
+  String driverTripChatErrorSendReceive(String code) {
+    return 'No se pudo enviar/recibir chat ($code). Revisa la conexión.';
+  }
+
+  @override
+  String get driverTripChatEmptyState =>
+      'Aún no hay mensajes.\nEnvía uno para iniciar la conversación.';
+
+  @override
   String get driverTripReactivate => 'Volver a recibir viajes';
 
   @override

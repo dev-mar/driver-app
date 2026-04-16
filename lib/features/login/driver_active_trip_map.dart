@@ -49,9 +49,9 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
   String? _lastRouteSignature;
   DateTime? _lastFitAt;
   bool _showFollowHint = true;
-  bool _lightweightMapMode = false;
-  bool _showTollReferences = true;
-  bool _showSignalReferences = true;
+  bool _lightweightMapMode = true;
+  bool _showTollReferences = false;
+  bool _showSignalReferences = false;
   double _referenceConfidenceThreshold = 0.85;
   Timer? _prefsPersistDebounce;
   String _prefsNamespace = 'global';
@@ -113,8 +113,7 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
 
   /// GPS del stream del realtime puede ir unos instantes detrás del punto azul del mapa;
   /// para Directions usamos semilla del dispositivo como respaldo y no dejamos de dibujar la polyline.
-  LatLng? get _effectiveDriverForRouting =>
-      _driverLatLng ?? _deviceSeedLatLng;
+  LatLng? get _effectiveDriverForRouting => _driverLatLng ?? _deviceSeedLatLng;
 
   @override
   void didUpdateWidget(DriverActiveTripMapView oldWidget) {
@@ -132,7 +131,8 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
         oldWidget.trip.pickupLng != widget.trip.pickupLng ||
         oldWidget.trip.destinationLat != widget.trip.destinationLat ||
         oldWidget.trip.destinationLng != widget.trip.destinationLng ||
-        oldWidget.trip.routeOverviewEncoded != widget.trip.routeOverviewEncoded) {
+        oldWidget.trip.routeOverviewEncoded !=
+            widget.trip.routeOverviewEncoded) {
       _scheduleRouteRefresh();
     } else if (oldWidget.driverBearing != widget.driverBearing &&
         _mapReady &&
@@ -150,25 +150,26 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
     _resolveDeviceSeedLocation();
     // El punto azul del mapa no expone coordenadas al widget; sin esto a veces no hay
     // ancla para Directions hasta que el padre inyecte driverLat/Lng.
-    _routingPositionSub = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 12,
-      ),
-    ).listen(
-      (pos) {
-        if (!mounted) return;
-        setState(() {
-          _deviceSeedLatLng = LatLng(pos.latitude, pos.longitude);
-        });
-        _scheduleRouteRefresh();
-      },
-      onError: (Object e) {
-        if (kDebugMode) {
-          debugPrint('[DriverActiveTripMap] routing position stream: $e');
-        }
-      },
-    );
+    _routingPositionSub =
+        Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 12,
+          ),
+        ).listen(
+          (pos) {
+            if (!mounted) return;
+            setState(() {
+              _deviceSeedLatLng = LatLng(pos.latitude, pos.longitude);
+            });
+            _scheduleRouteRefresh();
+          },
+          onError: (Object e) {
+            if (kDebugMode) {
+              debugPrint('[DriverActiveTripMap] routing position stream: $e');
+            }
+          },
+        );
     _scheduleRouteRefresh(immediate: true);
     Timer(const Duration(seconds: 4), () {
       if (!mounted) return;
@@ -216,13 +217,12 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
       final prefs = await SharedPreferences.getInstance();
       if (!mounted) return;
       setState(() {
-        _lightweightMapMode =
-            prefs.getBool(_prefsKey(_prefMapModeLightweight)) ?? _lightweightMapMode;
-        _showTollReferences =
-            prefs.getBool(_prefsKey(_prefShowTolls)) ?? _showTollReferences;
-        _showSignalReferences =
-            prefs.getBool(_prefsKey(_prefShowSignals)) ?? _showSignalReferences;
-        final confidence = prefs.getDouble(_prefsKey(_prefReferenceConfidence)) ??
+        _lightweightMapMode = true;
+        // Temporalmente oculto por versión: indicadores no visibles y desactivados.
+        _showTollReferences = false;
+        _showSignalReferences = false;
+        final confidence =
+            prefs.getDouble(_prefsKey(_prefReferenceConfidence)) ??
             _referenceConfidenceThreshold;
         _referenceConfidenceThreshold = _normalizeConfidence(confidence);
         _followNavigationCamera = true;
@@ -301,7 +301,9 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
         return;
       }
       final current = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
       ).timeout(const Duration(seconds: 6));
       if (!mounted) return;
       setState(() {
@@ -321,10 +323,13 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
   }
 
   bool get _hasTripAnchors =>
-      _driverLatLng != null || _pickupLatLng != null || _destinationLatLng != null;
+      _driverLatLng != null ||
+      _pickupLatLng != null ||
+      _destinationLatLng != null;
 
-  String _coordLabel(LatLng? p) =>
-      p == null ? 'null' : '${p.latitude.toStringAsFixed(5)},${p.longitude.toStringAsFixed(5)}';
+  String _coordLabel(LatLng? p) => p == null
+      ? 'null'
+      : '${p.latitude.toStringAsFixed(5)},${p.longitude.toStringAsFixed(5)}';
 
   void _routeDebug(String message) {
     if (!_routeDebugEnabled) return;
@@ -443,13 +448,13 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
         _routeDebug('fetch:encoded missing -> fallback directions');
       }
       if (pickupToDest == null && originForDest != null) {
-      final toDestinationSnapshot = await _safeRouteSnapshot(
-        originLat: originForDest.latitude,
-        originLng: originForDest.longitude,
-        destinationLat: dest.latitude,
-        destinationLng: dest.longitude,
-        tag: 'origin->dest',
-      );
+        final toDestinationSnapshot = await _safeRouteSnapshot(
+          originLat: originForDest.latitude,
+          originLng: originForDest.longitude,
+          destinationLat: dest.latitude,
+          destinationLng: dest.longitude,
+          tag: 'origin->dest',
+        );
         pickupToDest = toDestinationSnapshot?.polyline;
         _routeDebug(
           'fetch:origin->dest fallback points=${pickupToDest?.length ?? 0} '
@@ -595,8 +600,12 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
 
     final minLat = from.latitude < to.latitude ? from.latitude : to.latitude;
     final maxLat = from.latitude > to.latitude ? from.latitude : to.latitude;
-    final minLng = from.longitude < to.longitude ? from.longitude : to.longitude;
-    final maxLng = from.longitude > to.longitude ? from.longitude : to.longitude;
+    final minLng = from.longitude < to.longitude
+        ? from.longitude
+        : to.longitude;
+    final maxLng = from.longitude > to.longitude
+        ? from.longitude
+        : to.longitude;
 
     final latSpan = (maxLat - minLat).abs();
     final lngSpan = (maxLng - minLng).abs();
@@ -636,10 +645,7 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
     if (_deviceSeedLatLng != null) {
       return CameraPosition(target: _deviceSeedLatLng!, zoom: 15);
     }
-    return const CameraPosition(
-      target: LatLng(-12.0464, -77.0428),
-      zoom: 12,
-    );
+    return const CameraPosition(target: LatLng(-12.0464, -77.0428), zoom: 12);
   }
 
   Set<Marker> _buildMarkers() {
@@ -721,14 +727,16 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
     if (!_showTollReferences && !_showSignalReferences) {
       return const [];
     }
-    final filtered = _routeReferences.where((ref) {
-      if (ref.confidence < _referenceConfidenceThreshold) return false;
-      if (ref.type == RouteReferenceType.toll) return _showTollReferences;
-      if (ref.type == RouteReferenceType.trafficSignal) {
-        return _showSignalReferences;
-      }
-      return true;
-    }).toList(growable: false);
+    final filtered = _routeReferences
+        .where((ref) {
+          if (ref.confidence < _referenceConfidenceThreshold) return false;
+          if (ref.type == RouteReferenceType.toll) return _showTollReferences;
+          if (ref.type == RouteReferenceType.trafficSignal) {
+            return _showSignalReferences;
+          }
+          return true;
+        })
+        .toList(growable: false);
     filtered.sort((a, b) => b.confidence.compareTo(a.confidence));
     if (filtered.length <= _maxVisibleReferenceMarkers) return filtered;
     return filtered.sublist(0, _maxVisibleReferenceMarkers);
@@ -736,13 +744,14 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
 
   Set<Polyline> _buildPolylines() {
     final polylines = <Polyline>{};
-    final routeToPickup = (_routeToPickup != null && _routeToPickup!.length >= 2)
+    final routeToPickup =
+        (_routeToPickup != null && _routeToPickup!.length >= 2)
         ? _routeToPickup!
         : null;
     final routeToDestination =
         (_routePickupToDest != null && _routePickupToDest!.length >= 2)
-            ? _routePickupToDest!
-            : null;
+        ? _routePickupToDest!
+        : null;
 
     if (routeToPickup != null && routeToPickup.length >= 2) {
       polylines.add(
@@ -874,48 +883,6 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
           ),
         ),
         Positioned(
-          top: 16,
-          left: 12,
-          right: 76,
-          child: SafeArea(
-            bottom: false,
-            child: _MapControlsPanel(
-              lightweightMapMode: _lightweightMapMode,
-              showTollReferences: _showTollReferences,
-              showSignalReferences: _showSignalReferences,
-              referenceConfidenceThreshold: _referenceConfidenceThreshold,
-              onToggleLightweightMap: () {
-                HapticFeedback.selectionClick();
-                _updateMapPreferences(
-                  () => _lightweightMapMode = !_lightweightMapMode,
-                );
-              },
-              onToggleTolls: () {
-                HapticFeedback.selectionClick();
-                _updateMapPreferences(
-                  () => _showTollReferences = !_showTollReferences,
-                );
-              },
-              onToggleSignals: () {
-                HapticFeedback.selectionClick();
-                _updateMapPreferences(
-                  () => _showSignalReferences = !_showSignalReferences,
-                );
-              },
-              onCycleConfidence: () {
-                HapticFeedback.selectionClick();
-                final currentIndex = _referenceConfidenceLevels.indexOf(
-                  _referenceConfidenceThreshold,
-                );
-                final nextIndex = (currentIndex + 1) % _referenceConfidenceLevels.length;
-                _updateMapPreferences(() {
-                  _referenceConfidenceThreshold = _referenceConfidenceLevels[nextIndex];
-                });
-              },
-            ),
-          ),
-        ),
-        Positioned(
           left: 0,
           right: 0,
           bottom: 0,
@@ -941,11 +908,7 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
 }
 
 class _MapHintChip extends StatelessWidget {
-  const _MapHintChip({
-    super.key,
-    required this.icon,
-    required this.text,
-  });
+  const _MapHintChip({super.key, required this.icon, required this.text});
 
   final IconData icon;
   final String text;
@@ -972,141 +935,6 @@ class _MapHintChip extends StatelessWidget {
                 color: AppColors.textPrimary,
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MapControlsPanel extends StatelessWidget {
-  const _MapControlsPanel({
-    required this.lightweightMapMode,
-    required this.showTollReferences,
-    required this.showSignalReferences,
-    required this.referenceConfidenceThreshold,
-    required this.onToggleLightweightMap,
-    required this.onToggleTolls,
-    required this.onToggleSignals,
-    required this.onCycleConfidence,
-  });
-
-  final bool lightweightMapMode;
-  final bool showTollReferences;
-  final bool showSignalReferences;
-  final double referenceConfidenceThreshold;
-  final VoidCallback onToggleLightweightMap;
-  final VoidCallback onToggleTolls;
-  final VoidCallback onToggleSignals;
-  final VoidCallback onCycleConfidence;
-
-  @override
-  Widget build(BuildContext context) {
-    final chips = <Widget>[
-      _MapControlChip(
-        icon: lightweightMapMode ? Icons.layers_clear : Icons.layers,
-        label: lightweightMapMode ? 'Ligero' : 'Detallado',
-        active: !lightweightMapMode,
-        onTap: onToggleLightweightMap,
-      ),
-      _MapControlChip(
-        icon: Icons.toll_rounded,
-        label: 'Peajes',
-        active: showTollReferences,
-        onTap: onToggleTolls,
-      ),
-      _MapControlChip(
-        icon: Icons.traffic_rounded,
-        label: 'Semaforos',
-        active: showSignalReferences,
-        onTap: onToggleSignals,
-      ),
-      _MapControlChip(
-        icon: Icons.filter_alt_rounded,
-        label: 'Conf ${(referenceConfidenceThreshold * 100).round()}%',
-        active: true,
-        onTap: onCycleConfidence,
-        showCheck: false,
-      ),
-    ];
-    return Material(
-      color: AppColors.surfaceCard.withValues(alpha: 0.9),
-      borderRadius: BorderRadius.circular(13),
-      elevation: 6,
-      shadowColor: Colors.black.withValues(alpha: 0.18),
-      child: SizedBox(
-        height: 44,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-          physics: const BouncingScrollPhysics(),
-          itemCount: chips.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 6),
-          itemBuilder: (context, i) => chips[i],
-        ),
-      ),
-    );
-  }
-}
-
-class _MapControlChip extends StatelessWidget {
-  const _MapControlChip({
-    required this.icon,
-    required this.label,
-    required this.active,
-    required this.onTap,
-    this.showCheck = true,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  final bool showCheck;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
-          color: active
-              ? AppColors.primary.withValues(alpha: 0.16)
-              : AppColors.surface.withValues(alpha: 0.42),
-          border: Border.all(
-            color: active
-                ? AppColors.primary.withValues(alpha: 0.4)
-                : AppColors.textSecondary.withValues(alpha: 0.2),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 14,
-              color: active ? AppColors.primary : AppColors.textSecondary,
-            ),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: active ? AppColors.textPrimary : AppColors.textSecondary,
-              ),
-            ),
-            if (active && showCheck) ...[
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.check_circle_rounded,
-                size: 13,
-                color: AppColors.primary,
-              ),
-            ],
           ],
         ),
       ),

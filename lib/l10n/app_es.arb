@@ -242,6 +242,23 @@
   "driverTripNavigateDestination": "Navegar al destino",
   "driverTripNavAssistedTitle": "Navegación asistida",
   "driverTripNavAssistedSubtitle": "Se abrirá tu app de mapas o GPS (Maps, Waze…)",
+  "driverRegisteredImagesMenu": "Imágenes registradas",
+  "driverTripChatOpenCta": "Chat seguro",
+  "driverTripChatTitle": "Chat del viaje",
+  "driverTripChatSubtitle": "Conversación activa con el pasajero en tiempo real.",
+  "driverTripChatOnline": "En línea",
+  "driverTripChatOffline": "Sin conexión",
+  "driverTripChatTemplateArrived": "Ya llegué al punto",
+  "driverTripChatTemplateCannotFind": "No logro ubicarte",
+  "driverTripChatTemplateConfirmLocation": "Confirma tu ubicación",
+  "driverTripChatNow": "Ahora",
+  "driverTripChatErrorStorage": "Chat no disponible: falta configuración en el servidor. Contactá soporte.",
+  "driverTripChatErrorPhase": "El chat solo está disponible antes de iniciar el viaje.",
+  "driverTripChatErrorSendReceive": "No se pudo enviar/recibir chat ({code}). Revisa la conexión.",
+  "@driverTripChatErrorSendReceive": {
+    "placeholders": { "code": { "type": "String" } }
+  },
+  "driverTripChatEmptyState": "Aún no hay mensajes.\nEnvía uno para iniciar la conversación.",
   "driverTripReactivate": "Volver a recibir viajes",
   "driverTripSnackbarNavigationFailed": "No se pudo abrir la navegación ({label})",
   "@driverTripSnackbarNavigationFailed": {

@@ -4,16 +4,20 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import 'driver_fcm_navigation.dart';
+
 /// Notificaciones locales del conductor: FCM en foreground / data-only en background
 /// (ofertas las envía el backend por FCM; ver `sendDriverTripOffer`).
 class DriverNotificationService {
   DriverNotificationService._();
-  static final DriverNotificationService instance = DriverNotificationService._();
+  static final DriverNotificationService instance =
+      DriverNotificationService._();
 
   static const String _channelId = 'texi_driver_trip_offers';
   static const String _channelName = 'Solicitudes de viaje';
 
-  final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
   bool _initialized = false;
   static const int _quietHoursStart = 22; // 22:00
   static const int _quietHoursEnd = 7; // 07:00
@@ -36,15 +40,18 @@ class DriverNotificationService {
       playSound: true,
     );
     await _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(channel);
 
     // Android 13+ requiere permiso en runtime para mostrar notificaciones.
     if (Platform.isAndroid) {
       try {
-        final androidPlugin =
-            _plugin.resolvePlatformSpecificImplementation<
-                AndroidFlutterLocalNotificationsPlugin>();
+        final androidPlugin = _plugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
         await androidPlugin?.requestNotificationsPermission();
       } catch (_) {
         // Si el permiso ya fue concedido o el SO ignora la llamada, continuamos.
@@ -64,7 +71,8 @@ class DriverNotificationService {
       return;
     }
     final tripId =
-        message.data['tripId']?.toString() ?? message.data['trip_id']?.toString();
+        message.data['tripId']?.toString() ??
+        message.data['trip_id']?.toString();
     await inst._showFcmRaw(
       title: title?.isNotEmpty == true ? title! : 'Texi Conductor',
       body: body ?? '',
@@ -78,13 +86,14 @@ class DriverNotificationService {
     final title = n?.title?.trim().isNotEmpty == true
         ? n!.title!.trim()
         : (message.data['title']?.toString().trim().isNotEmpty == true
-            ? message.data['title']!.trim()
-            : 'Texi Conductor');
+              ? message.data['title']!.trim()
+              : 'Texi Conductor');
     final body = n?.body?.trim().isNotEmpty == true
         ? n!.body!.trim()
         : (message.data['body']?.toString() ?? '');
     final tripId =
-        message.data['tripId']?.toString() ?? message.data['trip_id']?.toString();
+        message.data['tripId']?.toString() ??
+        message.data['trip_id']?.toString();
     await _showFcmRaw(title: title, body: body, payload: tripId);
   }
 
@@ -108,6 +117,7 @@ class DriverNotificationService {
   }
 
   void _onNotificationTapped(NotificationResponse response) {
+    handleDriverLocalNotificationTap(response.payload);
     if (response.payload != null && kDebugMode) {
       debugPrint('[DriverNotification] Tapped payload=${response.payload}');
     }
@@ -140,7 +150,7 @@ class DriverNotificationService {
       'Nuevo mensaje de chat',
       '$who: $messageText',
       details,
-      payload: tripId,
+      payload: 'chat:$tripId',
     );
   }
 

@@ -71,14 +71,20 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
     final storedDateRange = await _storage.read(key: _kDateRangeKey);
     final storedFrom = await _storage.read(key: _kCustomFromKey);
     final storedTo = await _storage.read(key: _kCustomToKey);
-    final parsedFrom = storedFrom != null ? DateTime.tryParse(storedFrom) : null;
+    final parsedFrom = storedFrom != null
+        ? DateTime.tryParse(storedFrom)
+        : null;
     final parsedTo = storedTo != null ? DateTime.tryParse(storedTo) : null;
     if (!mounted) {
       return;
     }
     setState(() {
-      _status = (storedStatus == null || storedStatus.isEmpty) ? null : storedStatus;
-      _dateRange = (storedDateRange == null || storedDateRange.isEmpty) ? '7d' : storedDateRange;
+      _status = (storedStatus == null || storedStatus.isEmpty)
+          ? null
+          : storedStatus;
+      _dateRange = (storedDateRange == null || storedDateRange.isEmpty)
+          ? '7d'
+          : storedDateRange;
       _activeTimeIndex = _timeIndexForRange(_dateRange);
       _customRange = (parsedFrom != null && parsedTo != null)
           ? DateTimeRange(start: parsedFrom, end: parsedTo)
@@ -239,7 +245,7 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
                           setState(() {
                             _customRange = picked;
                             _dateRange = 'custom';
-                              _activeTimeIndex = 0;
+                            _activeTimeIndex = 0;
                             _offset = 0;
                           });
                           _persistFilters();
@@ -248,7 +254,7 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
                         }
                         setState(() {
                           _dateRange = range;
-                            _activeTimeIndex = _timeIndexForRange(range);
+                          _activeTimeIndex = _timeIndexForRange(range);
                           _offset = 0;
                         });
                         _persistFilters();
@@ -298,69 +304,73 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
                   child: _loading
                       ? const _LoadingSkeletonList(key: ValueKey('loading'))
                       : _error != null
-                          ? Card(
-                              key: const ValueKey('error'),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Text(
-                                  _error == 'NO_SESSION'
-                                      ? l10n.driverTripHistoryNoSession
-                                      : l10n.driverTripHistoryLoadError,
+                      ? Card(
+                          key: const ValueKey('error'),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(
+                              _error == 'NO_SESSION'
+                                  ? l10n.driverTripHistoryNoSession
+                                  : l10n.driverTripHistoryLoadError,
+                            ),
+                          ),
+                        )
+                      : trips.isEmpty
+                      ? Card(
+                          key: const ValueKey('empty'),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: [
+                                const Icon(
+                                  Icons.history_toggle_off_rounded,
+                                  size: 34,
                                 ),
-                              ),
-                            )
-                          : trips.isEmpty
-                              ? Card(
-                                  key: const ValueKey('empty'),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Column(
-                                      children: [
-                                        const Icon(Icons.history_toggle_off_rounded, size: 34),
-                                        const SizedBox(height: 8),
-                                        Text(l10n.driverTripHistoryEmpty),
-                                      ],
-                                    ),
+                                const SizedBox(height: 8),
+                                Text(l10n.driverTripHistoryEmpty),
+                              ],
+                            ),
+                          ),
+                        )
+                      : Column(
+                          key: const ValueKey('list'),
+                          children: [
+                            ..._buildGroupedTripWidgets(trips, l10n),
+                            const SizedBox(height: 14),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: canPrev
+                                        ? () {
+                                            setState(() {
+                                              _offset = (_offset - _pageSize)
+                                                  .clamp(0, 1 << 30);
+                                            });
+                                            _load();
+                                          }
+                                        : null,
+                                    child: Text(l10n.driverTripHistoryPrevPage),
                                   ),
-                                )
-                              : Column(
-                                  key: const ValueKey('list'),
-                                  children: [
-                                    ..._buildGroupedTripWidgets(trips, l10n),
-                                    const SizedBox(height: 14),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: OutlinedButton(
-                                            onPressed: canPrev
-                                                ? () {
-                                                    setState(() {
-                                                      _offset = (_offset - _pageSize).clamp(0, 1 << 30);
-                                                    });
-                                                    _load();
-                                                  }
-                                                : null,
-                                            child: Text(l10n.driverTripHistoryPrevPage),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: OutlinedButton(
-                                            onPressed: canNext
-                                                ? () {
-                                                    setState(() {
-                                                      _offset += _pageSize;
-                                                    });
-                                                    _load();
-                                                  }
-                                                : null,
-                                            child: Text(l10n.driverTripHistoryNextPage),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
                                 ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: canNext
+                                        ? () {
+                                            setState(() {
+                                              _offset += _pageSize;
+                                            });
+                                            _load();
+                                          }
+                                        : null,
+                                    child: Text(l10n.driverTripHistoryNextPage),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                 ),
               ),
             ),
@@ -589,7 +599,9 @@ class _FiltersPanelDriver extends StatelessWidget {
         ),
         AnimatedCrossFade(
           duration: const Duration(milliseconds: 180),
-          crossFadeState: compact ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          crossFadeState: compact
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
           firstChild: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -599,14 +611,21 @@ class _FiltersPanelDriver extends StatelessWidget {
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    for (final range in const <String>['today', '7d', '30d', 'custom']) ...[
+                    for (final range in const <String>[
+                      'today',
+                      '7d',
+                      '30d',
+                      'custom',
+                    ]) ...[
                       ChoiceChip(
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         backgroundColor: unselectedBg,
                         selectedColor: selectedBg,
                         side: BorderSide(
-                          color: dateRange == range ? selectedBorder : unselectedBorder,
+                          color: dateRange == range
+                              ? selectedBorder
+                              : unselectedBorder,
                         ),
                         iconTheme: IconThemeData(
                           color: dateRange == range ? selectedFg : unselectedFg,
@@ -617,7 +636,9 @@ class _FiltersPanelDriver extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: dateRange == range ? selectedFg : AppColors.textPrimary,
+                            color: dateRange == range
+                                ? selectedFg
+                                : AppColors.textPrimary,
                           ),
                         ),
                         labelPadding: const EdgeInsets.symmetric(horizontal: 2),
@@ -636,36 +657,43 @@ class _FiltersPanelDriver extends StatelessWidget {
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: statusOptions
-                      .map((it) => Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: ChoiceChip(
-                              visualDensity: VisualDensity.compact,
-                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              backgroundColor: unselectedBg,
-                              selectedColor: selectedBg,
-                              side: BorderSide(
-                                color: status == it ? selectedBorder : unselectedBorder,
-                              ),
-                              iconTheme: IconThemeData(
-                                color: status == it ? selectedFg : unselectedFg,
-                              ),
-                              avatar: Icon(statusIcon(it), size: 15),
-                              label: Text(
-                                _statusText(l10n, it),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: status == it
-                                      ? selectedFg
-                                      : AppColors.textPrimary,
-                                ),
-                              ),
-                              labelPadding: const EdgeInsets.symmetric(horizontal: 2),
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              selected: status == it,
-                              onSelected: (_) => onStatusTap(it),
+                      .map(
+                        (it) => Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            backgroundColor: unselectedBg,
+                            selectedColor: selectedBg,
+                            side: BorderSide(
+                              color: status == it
+                                  ? selectedBorder
+                                  : unselectedBorder,
                             ),
-                          ))
+                            iconTheme: IconThemeData(
+                              color: status == it ? selectedFg : unselectedFg,
+                            ),
+                            avatar: Icon(statusIcon(it), size: 15),
+                            label: Text(
+                              _statusText(l10n, it),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: status == it
+                                    ? selectedFg
+                                    : AppColors.textPrimary,
+                              ),
+                            ),
+                            labelPadding: const EdgeInsets.symmetric(
+                              horizontal: 2,
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            selected: status == it,
+                            onSelected: (_) => onStatusTap(it),
+                          ),
+                        ),
+                      )
                       .toList(growable: false),
                 ),
               ),
@@ -673,7 +701,9 @@ class _FiltersPanelDriver extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   '${l10n.driverTripHistoryCustomRangeLabel}: ${fmtDate(customRange!.start)} - ${fmtDate(customRange!.end)}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ],
@@ -714,7 +744,11 @@ class _FiltersPanelDriver extends StatelessWidget {
 }
 
 class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
-  _StickyHeaderDelegate({required this.minHeight, required this.maxHeight, required this.builder});
+  _StickyHeaderDelegate({
+    required this.minHeight,
+    required this.maxHeight,
+    required this.builder,
+  });
 
   final double minHeight;
   final double maxHeight;
@@ -725,10 +759,14 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   double get maxExtent => maxHeight;
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) => builder(context, shrinkOffset, overlapsContent);
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) => builder(context, shrinkOffset, overlapsContent);
   @override
   bool shouldRebuild(covariant _StickyHeaderDelegate oldDelegate) {
-    return minHeight != oldDelegate.minHeight || maxHeight != oldDelegate.maxHeight;
+    return true;
   }
 }
 
@@ -765,14 +803,17 @@ class _SkeletonLine extends StatefulWidget {
   State<_SkeletonLine> createState() => _SkeletonLineState();
 }
 
-class _SkeletonLineState extends State<_SkeletonLine> with SingleTickerProviderStateMixin {
+class _SkeletonLineState extends State<_SkeletonLine>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
-      ..repeat();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
   }
 
   @override
@@ -843,7 +884,9 @@ class _DriverTripTileState extends State<_DriverTripTile> {
         subtitle: Row(
           children: [
             Expanded(
-              child: Text('$when • ${trip.id.substring(0, trip.id.length > 8 ? 8 : trip.id.length)}'),
+              child: Text(
+                '$when • ${trip.id.substring(0, trip.id.length > 8 ? 8 : trip.id.length)}',
+              ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
@@ -853,7 +896,10 @@ class _DriverTripTileState extends State<_DriverTripTile> {
               ),
               child: Text(
                 statusText,
-                style: TextStyle(color: statusColor, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: statusColor,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -861,9 +907,9 @@ class _DriverTripTileState extends State<_DriverTripTile> {
         trailing: Text(
           amount,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: statusColor,
-              ),
+            fontWeight: FontWeight.w700,
+            color: statusColor,
+          ),
         ),
         children: [
           AnimatedContainer(
@@ -874,7 +920,9 @@ class _DriverTripTileState extends State<_DriverTripTile> {
               padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text('ID: ${trip.id}\n${l10n.driverTripHistoryStatusLabel}: $statusText'),
+                child: Text(
+                  'ID: ${trip.id}\n${l10n.driverTripHistoryStatusLabel}: $statusText',
+                ),
               ),
             ),
           ),
@@ -925,7 +973,12 @@ class _DateSectionHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(2, 10, 2, 8),
       child: Row(
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Divider(color: Theme.of(context).colorScheme.outlineVariant),

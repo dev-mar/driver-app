@@ -243,6 +243,23 @@
   "driverTripNavigateDestination": "Navigate to destination",
   "driverTripNavAssistedTitle": "Assisted navigation",
   "driverTripNavAssistedSubtitle": "Opens your maps or GPS app (Maps, Waze…)",
+  "driverRegisteredImagesMenu": "Registered images",
+  "driverTripChatOpenCta": "Secure chat",
+  "driverTripChatTitle": "Trip chat",
+  "driverTripChatSubtitle": "Live conversation with the passenger in real time.",
+  "driverTripChatOnline": "Online",
+  "driverTripChatOffline": "Offline",
+  "driverTripChatTemplateArrived": "I arrived at the pickup point",
+  "driverTripChatTemplateCannotFind": "I can't find you",
+  "driverTripChatTemplateConfirmLocation": "Please confirm your location",
+  "driverTripChatNow": "Now",
+  "driverTripChatErrorStorage": "Chat unavailable: server configuration is missing. Contact support.",
+  "driverTripChatErrorPhase": "Chat is only available before the trip starts.",
+  "driverTripChatErrorSendReceive": "Could not send/receive chat ({code}). Check your connection.",
+  "@driverTripChatErrorSendReceive": {
+    "placeholders": { "code": { "type": "String" } }
+  },
+  "driverTripChatEmptyState": "No messages yet.\nSend one to start the conversation.",
   "driverTripReactivate": "Resume receiving rides",
   "driverTripSnackbarNavigationFailed": "Could not open navigation ({label})",
   "@driverTripSnackbarNavigationFailed": {

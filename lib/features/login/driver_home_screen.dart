@@ -21,7 +21,11 @@ import '../../core/ui/texi_circular_avatar.dart';
 import '../../core/router/app_router.dart';
 import '../../core/session/driver_internal_tools_gate.dart';
 import '../../core/notifications/driver_fcm_navigation.dart'
-    show driverFcmTripOfferOpenBump, takePendingTripOfferFromNotification;
+    show
+        driverFcmTripOfferOpenBump,
+        driverTripChatOpenBump,
+        takePendingTripOfferFromNotification,
+        takePendingTripChatTripIdFromNotification;
 import '../../core/config/locale_provider.dart';
 import '../../gen_l10n/app_localizations.dart';
 import '../session/driver_operational_profile.dart';
@@ -125,6 +129,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
   late final Animation<Offset> _homeListSlide;
   bool _keepScreenOnApplied = false;
   int _lastHandledFcmTripOfferBump = 0;
+  int _lastHandledTripChatOpenBump = 0;
   bool _handlingAuthSessionExpired = false;
 
   /// La tarjeta de viaje en mapa: el estado no depende de ticks de GPS ni rebuilds del mapa.
@@ -163,11 +168,29 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
         snackText = l10n.driverFcmOpenedTripOfferOfflineHint;
       }
       messenger.showSnackBar(
-        SnackBar(
-          content: Text(snackText),
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text(snackText), behavior: SnackBarBehavior.floating),
       );
+    });
+  }
+
+  void _onTripChatOpenBump() {
+    final bump = driverTripChatOpenBump.value;
+    if (bump <= _lastHandledTripChatOpenBump) return;
+    _lastHandledTripChatOpenBump = bump;
+    if (!mounted) return;
+    final tripId = takePendingTripChatTripIdFromNotification();
+    if (tripId == null || tripId.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await ref
+          .read(driverRealtimeProvider.notifier)
+          .syncActiveTripFromApi(force: true);
+      if (!mounted) return;
+      final activeTrip = ref.read(driverRealtimeProvider).activeTrip;
+      if (activeTrip?.tripId != tripId) return;
+      if (!driverTripChatPhaseActive(activeTrip?.status)) return;
+      if (_tripChatSheetDisplayed) return;
+      await _openTripChatSheet(tripId: tripId);
     });
   }
 
@@ -176,8 +199,10 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     driverFcmTripOfferOpenBump.addListener(_onFcmTripOfferOpenBump);
+    driverTripChatOpenBump.addListener(_onTripChatOpenBump);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _onFcmTripOfferOpenBump();
+      _onTripChatOpenBump();
     });
     _homeListEntrance = AnimationController(
       vsync: this,
@@ -199,6 +224,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
   @override
   void dispose() {
     driverFcmTripOfferOpenBump.removeListener(_onFcmTripOfferOpenBump);
+    driverTripChatOpenBump.removeListener(_onTripChatOpenBump);
     unawaited(WakelockPlus.disable());
     _homeListEntrance.dispose();
     WidgetsBinding.instance.removeObserver(this);
@@ -754,9 +780,9 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                 child: Text(l10n.driverHomeMenuAddVehicle),
               ),
               if (showInternalTools)
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'registered_images',
-                  child: Text('Imágenes registradas'),
+                  child: Text(l10n.driverRegisteredImagesMenu),
                 ),
               PopupMenuItem(value: 'logout', child: Text(l10n.driverLogout)),
             ],
@@ -782,8 +808,9 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                     ref.read(driverRealtimeProvider.notifier).startTrip(),
                 onCompleteTrip: () =>
                     ref.read(driverRealtimeProvider.notifier).completeTrip(),
-                onArrivalReminder: () =>
-                    ref.read(driverRealtimeProvider.notifier).sendArrivalReminder(),
+                onArrivalReminder: () => ref
+                    .read(driverRealtimeProvider.notifier)
+                    .sendArrivalReminder(),
                 arrivalReminderCooldownUntilMs:
                     realtime.arrivalReminderCooldownUntilMs,
                 onNavigateToPickup: () {
@@ -795,7 +822,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                     _openNavigation(
                       lat: activeTrip.pickupLat!,
                       lng: activeTrip.pickupLng!,
-                      label: 'origen',
+                      label: l10n.tripOrigin,
                     ),
                   );
                 },
@@ -808,7 +835,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                     _openNavigation(
                       lat: activeTrip.destinationLat!,
                       lng: activeTrip.destinationLng!,
-                      label: 'destino',
+                      label: l10n.tripDestination,
                     ),
                   );
                 },
@@ -838,14 +865,17 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Material(
-                                color: AppColors.primary.withValues(alpha: 0.14),
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.14,
+                                ),
                                 borderRadius: BorderRadius.circular(
                                   AppFoundation.radiusLg,
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(14),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
                                     children: [
                                       Row(
                                         children: [
@@ -894,241 +924,247 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                       // Mini perfil: nombre, vehículo y valoración desde connection:ack + estado
                       SliverToBoxAdapter(
                         child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceCard.withValues(alpha: 0.92),
-                          borderRadius: BorderRadius.circular(
-                            AppFoundation.radiusLg,
-                          ),
-                          border: Border.all(
-                            color: AppColors.border.withValues(alpha: 0.5),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 18,
-                              offset: const Offset(0, 8),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceCard.withValues(
+                              alpha: 0.92,
                             ),
-                          ],
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildMiniProfileAvatar(realtime),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    (realtime.driverDisplayName != null &&
-                                            realtime.driverDisplayName!
-                                                .trim()
-                                                .isNotEmpty)
-                                        ? realtime.driverDisplayName!.trim()
-                                        : l10n.driverProfileDefaultName,
-                                    style: const TextStyle(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: -0.35,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    (realtime.driverVehicleLabel != null &&
-                                            realtime.driverVehicleLabel!
-                                                .trim()
-                                                .isNotEmpty)
-                                        ? realtime.driverVehicleLabel!.trim()
-                                        : l10n.driverHomeMiniVehicleEmpty,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      height: 1.25,
-                                      color: AppColors.textSecondary.withValues(
-                                        alpha: 0.96,
+                            borderRadius: BorderRadius.circular(
+                              AppFoundation.radiusLg,
+                            ),
+                            border: Border.all(
+                              color: AppColors.border.withValues(alpha: 0.5),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 18,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildMiniProfileAvatar(realtime),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      (realtime.driverDisplayName != null &&
+                                              realtime.driverDisplayName!
+                                                  .trim()
+                                                  .isNotEmpty)
+                                          ? realtime.driverDisplayName!.trim()
+                                          : l10n.driverProfileDefaultName,
+                                      style: const TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: -0.35,
+                                        color: AppColors.textPrimary,
                                       ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  if (realtime.driverRating != null) ...[
-                                    const SizedBox(height: 6),
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.star_rounded,
-                                          size: 17,
-                                          color: AppColors.primary.withValues(
-                                            alpha: 0.95,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          l10n.driverHomeMiniRating(
-                                            realtime.driverRating!
-                                                .toStringAsFixed(1),
-                                          ),
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w800,
-                                            color: AppColors.textPrimary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                  const SizedBox(height: 8),
-                                  AnimatedSwitcher(
-                                    duration: AppMotion.stepSwitcher,
-                                    switchInCurve: AppMotion.emphasized,
-                                    switchOutCurve: AppMotion.standard,
-                                    transitionBuilder: (child, animation) {
-                                      return FadeTransition(
-                                        opacity: animation,
-                                        child: SlideTransition(
-                                          position: Tween<Offset>(
-                                            begin: const Offset(0, 0.16),
-                                            end: Offset.zero,
-                                          ).animate(animation),
-                                          child: child,
-                                        ),
-                                      );
-                                    },
-                                    child: Row(
-                                      key: ValueKey<String>(
-                                        'conn-$connectionLabel',
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      (realtime.driverVehicleLabel != null &&
+                                              realtime.driverVehicleLabel!
+                                                  .trim()
+                                                  .isNotEmpty)
+                                          ? realtime.driverVehicleLabel!.trim()
+                                          : l10n.driverHomeMiniVehicleEmpty,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        height: 1.25,
+                                        color: AppColors.textSecondary
+                                            .withValues(alpha: 0.96),
                                       ),
-                                      children: [
-                                        TweenAnimationBuilder<double>(
-                                          duration: const Duration(
-                                            milliseconds: 900,
-                                          ),
-                                          tween: Tween<double>(
-                                            begin: 0.88,
-                                            end: 1,
-                                          ),
-                                          builder: (context, value, child) =>
-                                              Transform.scale(
-                                                scale: value,
-                                                child: child,
-                                              ),
-                                          child: Icon(
-                                            connectionIcon,
-                                            size: 14,
-                                            color: connectionColor,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Expanded(
-                                          child: Text(
-                                            connectionLabel,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w700,
-                                              color: AppColors.textSecondary
-                                                  .withValues(alpha: 0.97),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (realtime.driverRating != null) ...[
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.star_rounded,
+                                            size: 17,
+                                            color: AppColors.primary.withValues(
+                                              alpha: 0.95,
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (connecting || isRestoring) ...[
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            l10n.driverHomeMiniRating(
+                                              realtime.driverRating!
+                                                  .toStringAsFixed(1),
+                                            ),
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w800,
+                                              color: AppColors.textPrimary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                     const SizedBox(height: 8),
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(999),
-                                      child: const LinearProgressIndicator(
-                                        minHeight: 3,
+                                    AnimatedSwitcher(
+                                      duration: AppMotion.stepSwitcher,
+                                      switchInCurve: AppMotion.emphasized,
+                                      switchOutCurve: AppMotion.standard,
+                                      transitionBuilder: (child, animation) {
+                                        return FadeTransition(
+                                          opacity: animation,
+                                          child: SlideTransition(
+                                            position: Tween<Offset>(
+                                              begin: const Offset(0, 0.16),
+                                              end: Offset.zero,
+                                            ).animate(animation),
+                                            child: child,
+                                          ),
+                                        );
+                                      },
+                                      child: Row(
+                                        key: ValueKey<String>(
+                                          'conn-$connectionLabel',
+                                        ),
+                                        children: [
+                                          TweenAnimationBuilder<double>(
+                                            duration: const Duration(
+                                              milliseconds: 900,
+                                            ),
+                                            tween: Tween<double>(
+                                              begin: 0.88,
+                                              end: 1,
+                                            ),
+                                            builder: (context, value, child) =>
+                                                Transform.scale(
+                                                  scale: value,
+                                                  child: child,
+                                                ),
+                                            child: Icon(
+                                              connectionIcon,
+                                              size: 14,
+                                              color: connectionColor,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              connectionLabel,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.textSecondary
+                                                    .withValues(alpha: 0.97),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    const SizedBox(height: 8),
-                                    Wrap(
-                                      spacing: 6,
-                                      runSpacing: 6,
-                                      children: [
-                                        _connectionPhaseChip(
-                                          icon: Icons.sync_rounded,
-                                          label: l10n.driverHomeMiniConnecting,
-                                          active: connecting,
+                                    if (connecting || isRestoring) ...[
+                                      const SizedBox(height: 8),
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(
+                                          999,
                                         ),
-                                        _connectionPhaseChip(
-                                          icon: Icons.autorenew_rounded,
-                                          label: l10n
-                                              .driverHomeMiniStatusRestoringConnection,
-                                          active: isRestoring,
+                                        child: const LinearProgressIndicator(
+                                          minHeight: 3,
                                         ),
-                                        _connectionPhaseChip(
-                                          icon: Icons.verified_rounded,
-                                          label:
-                                              l10n.driverHomeMiniStatusOnline,
-                                          active: online,
-                                        ),
-                                      ],
-                                    ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 6,
+                                        children: [
+                                          _connectionPhaseChip(
+                                            icon: Icons.sync_rounded,
+                                            label:
+                                                l10n.driverHomeMiniConnecting,
+                                            active: connecting,
+                                          ),
+                                          _connectionPhaseChip(
+                                            icon: Icons.autorenew_rounded,
+                                            label: l10n
+                                                .driverHomeMiniStatusRestoringConnection,
+                                            active: isRestoring,
+                                          ),
+                                          _connectionPhaseChip(
+                                            icon: Icons.verified_rounded,
+                                            label:
+                                                l10n.driverHomeMiniStatusOnline,
+                                            active: online,
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ],
-                                ],
+                                ),
                               ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Switch.adaptive(
-                                  value: switchVisualOn,
-                                  activeThumbColor: AppColors.onPrimary,
-                                  activeTrackColor: AppColors.primary,
-                                  onChanged: connecting
-                                      ? null
-                                      : (value) async {
-                                          if (value && !online) {
-                                            if (!await _vehicleGateAllowsOnline()) {
-                                              return;
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Switch.adaptive(
+                                    value: switchVisualOn,
+                                    activeThumbColor: AppColors.onPrimary,
+                                    activeTrackColor: AppColors.primary,
+                                    onChanged: connecting
+                                        ? null
+                                        : (value) async {
+                                            if (value && !online) {
+                                              if (!await _vehicleGateAllowsOnline()) {
+                                                return;
+                                              }
+                                              if (!context.mounted) return;
+                                              final rtNow = ref.read(
+                                                driverRealtimeProvider,
+                                              );
+                                              final skipLocalAuth =
+                                                  rtNow.activeTrip != null ||
+                                                  rtNow.tripPendingRating !=
+                                                      null;
+                                              if (!skipLocalAuth) {
+                                                final ok =
+                                                    await _authenticateBeforeGoingOnline(
+                                                      context,
+                                                    );
+                                                if (!ok) return;
+                                              }
                                             }
                                             if (!context.mounted) return;
-                                            final rtNow = ref.read(
-                                              driverRealtimeProvider,
-                                            );
-                                            final skipLocalAuth =
-                                                rtNow.activeTrip != null ||
-                                                rtNow.tripPendingRating != null;
-                                            if (!skipLocalAuth) {
-                                              final ok =
-                                                  await _authenticateBeforeGoingOnline(
-                                                    context,
-                                                  );
-                                              if (!ok) return;
-                                            }
-                                          }
-                                          if (!context.mounted) return;
-                                          await ref
-                                              .read(
-                                                driverRealtimeProvider.notifier,
-                                              )
-                                              .setOnline(value);
-                                          if (value && context.mounted) {
-                                            final s = ref.read(
-                                              driverRealtimeProvider,
-                                            );
-                                            if (s.online &&
-                                                (s.errorCode == null ||
-                                                    s.errorCode!.isEmpty)) {
-                                              unawaited(
-                                                _maybeSuggestBackgroundLocationAfterOnline(
-                                                  context,
-                                                ),
+                                            await ref
+                                                .read(
+                                                  driverRealtimeProvider
+                                                      .notifier,
+                                                )
+                                                .setOnline(value);
+                                            if (value && context.mounted) {
+                                              final s = ref.read(
+                                                driverRealtimeProvider,
                                               );
+                                              if (s.online &&
+                                                  (s.errorCode == null ||
+                                                      s.errorCode!.isEmpty)) {
+                                                unawaited(
+                                                  _maybeSuggestBackgroundLocationAfterOnline(
+                                                    context,
+                                                  ),
+                                                );
+                                              }
                                             }
-                                          }
-                                        },
-                                ),
-                              ],
-                            ),
-                          ],
+                                          },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
                       ),
                       if (errorMessage != null)
                         SliverToBoxAdapter(
@@ -1136,54 +1172,61 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                        const SizedBox(height: 12),
-                        DriverInlineError(message: errorMessage),
-                        if (realtime.errorCode != null &&
-                            _kDriverOnlinePermissionHintCodes.contains(
-                              realtime.errorCode,
-                            )) ...[
-                          const SizedBox(height: 8),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
-                            child: DriverInlineInfo(
-                              message: l10n.driverHomeOnlineRequirementsHint,
-                            ),
-                          ),
-                          if (realtime.errorCode == 'GPS_SERVICE_OFF') ...[
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              width: double.infinity,
-                              child: FilledButton.icon(
-                                onPressed: () async {
-                                  await Geolocator.openLocationSettings();
-                                },
-                                icon: const Icon(
-                                  Icons.location_searching_rounded,
+                              const SizedBox(height: 12),
+                              DriverInlineError(message: errorMessage),
+                              if (realtime.errorCode != null &&
+                                  _kDriverOnlinePermissionHintCodes.contains(
+                                    realtime.errorCode,
+                                  )) ...[
+                                const SizedBox(height: 8),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    4,
+                                    0,
+                                    4,
+                                    0,
+                                  ),
+                                  child: DriverInlineInfo(
+                                    message:
+                                        l10n.driverHomeOnlineRequirementsHint,
+                                  ),
                                 ),
-                                label: Text(
-                                  l10n.driverHomeOpenSystemLocationSettings,
-                                ),
-                              ),
-                            ),
-                          ],
-                          if (realtime.errorCode == 'NO_GPS') ...[
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              width: double.infinity,
-                              child: FilledButton.icon(
-                                onPressed: () async {
-                                  await Geolocator.openAppSettings();
-                                },
-                                icon: const Icon(
-                                  Icons.app_settings_alt_outlined,
-                                ),
-                                label: Text(
-                                  l10n.driverHomeOpenAppPermissionSettings,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
+                                if (realtime.errorCode ==
+                                    'GPS_SERVICE_OFF') ...[
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: FilledButton.icon(
+                                      onPressed: () async {
+                                        await Geolocator.openLocationSettings();
+                                      },
+                                      icon: const Icon(
+                                        Icons.location_searching_rounded,
+                                      ),
+                                      label: Text(
+                                        l10n.driverHomeOpenSystemLocationSettings,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                if (realtime.errorCode == 'NO_GPS') ...[
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: FilledButton.icon(
+                                      onPressed: () async {
+                                        await Geolocator.openAppSettings();
+                                      },
+                                      icon: const Icon(
+                                        Icons.app_settings_alt_outlined,
+                                      ),
+                                      label: Text(
+                                        l10n.driverHomeOpenAppPermissionSettings,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ],
                           ),
                         ),
@@ -1197,85 +1240,87 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceCard.withValues(
-                                  alpha: 0.95,
-                                ),
-                                borderRadius: BorderRadius.circular(
-                                  AppFoundation.radiusSm,
-                                ),
-                                border: Border.all(
-                                  color: AppColors.border.withValues(
-                                    alpha: 0.6,
-                                  ),
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.notifications_active_rounded,
-                                color: const Color(0xFF9FB2CB),
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: AppFoundation.spacingMd),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    l10n.driverHomeRequestsTitle,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                          color: AppColors.textPrimary,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                  ),
-                                  Text(
-                                    l10n.driverHomeMiniStatusOnline,
-                                    style: TextStyle(
-                                      fontSize: 11.5,
-                                      color: AppColors.textSecondary.withValues(
-                                        alpha: 0.92,
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surfaceCard.withValues(
+                                        alpha: 0.95,
                                       ),
-                                      fontWeight: FontWeight.w600,
+                                      borderRadius: BorderRadius.circular(
+                                        AppFoundation.radiusSm,
+                                      ),
+                                      border: Border.all(
+                                        color: AppColors.border.withValues(
+                                          alpha: 0.6,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.notifications_active_rounded,
+                                      color: const Color(0xFF9FB2CB),
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(
+                                    width: AppFoundation.spacingMd,
+                                  ),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          l10n.driverHomeRequestsTitle,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                color: AppColors.textPrimary,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        ),
+                                        Text(
+                                          l10n.driverHomeMiniStatusOnline,
+                                          style: TextStyle(
+                                            fontSize: 11.5,
+                                            color: AppColors.textSecondary
+                                                .withValues(alpha: 0.92),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppFoundation.spacingSm,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surfaceCard,
+                                      borderRadius: BorderRadius.circular(
+                                        AppFoundation.radiusSm,
+                                      ),
+                                      border: Border.all(
+                                        color: AppColors.border.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '${pendingOffers.length}',
+                                      style: TextStyle(
+                                        color: AppColors.textPrimary.withValues(
+                                          alpha: 0.92,
+                                        ),
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppFoundation.spacingSm,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceCard,
-                                borderRadius: BorderRadius.circular(
-                                  AppFoundation.radiusSm,
-                                ),
-                                border: Border.all(
-                                  color: AppColors.border.withValues(
-                                    alpha: 0.7,
-                                  ),
-                                ),
-                              ),
-                              child: Text(
-                                '${pendingOffers.length}',
-                                style: TextStyle(
-                                  color: AppColors.textPrimary.withValues(
-                                    alpha: 0.92,
-                                  ),
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
                               const SizedBox(height: AppFoundation.spacingMd),
                             ],
                           ),
@@ -1283,13 +1328,15 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                         SliverPadding(
                           padding: const EdgeInsets.only(bottom: 8),
                           sliver: SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
                               final offer = pendingOffers[index];
-                              final perOfferCode =
-                                  realtime.offersErrorCodeByTripId[offer.tripId];
-                              String? offerErrorMessage =
-                                  realtime.offersErrorMessageByTripId[offer.tripId];
+                              final perOfferCode = realtime
+                                  .offersErrorCodeByTripId[offer.tripId];
+                              String? offerErrorMessage = realtime
+                                  .offersErrorMessageByTripId[offer.tripId];
                               switch (perOfferCode) {
                                 case 'NO_CONNECTION':
                                   offerErrorMessage =
@@ -1347,18 +1394,16 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                                       .rejectOffer(offer.tripId),
                                 ),
                               );
-                            },
-                            childCount: pendingOffers.length,
+                            }, childCount: pendingOffers.length),
                           ),
-                        ),
                         ),
                       ] else ...[
                         SliverToBoxAdapter(
                           child: Text(
-                          l10n.driverHomeRequestsTitle,
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(color: AppColors.textPrimary),
-                        ),
+                            l10n.driverHomeRequestsTitle,
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(color: AppColors.textPrimary),
+                          ),
                         ),
                         SliverToBoxAdapter(child: const SizedBox(height: 8)),
                         SliverFillRemaining(
@@ -1392,7 +1437,9 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
             .fetchDriverRatingFeedbackCatalog(stars: stars),
         onSubmitted: (stars, feedbackCodes) {
           unawaited(
-            ref.read(driverRealtimeProvider.notifier).submitTripRating(
+            ref
+                .read(driverRealtimeProvider.notifier)
+                .submitTripRating(
                   tripId: trip.tripId,
                   stars: stars,
                   feedbackCodes: feedbackCodes,
@@ -1422,312 +1469,373 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
       return;
     }
     final controller = ref.read(driverRealtimeProvider.notifier);
+    final l10n = AppLocalizations.of(context);
     final textController = TextEditingController();
-    const quickTemplates = <Map<String, String>>[
-      {'code': 'I_AM_AT_PICKUP', 'label': 'Ya llegué al punto'},
-      {'code': 'CANNOT_FIND_PASSENGER', 'label': 'No logro ubicarte'},
-      {'code': 'PLEASE_CONFIRM_LOCATION', 'label': 'Confirma tu ubicación'},
+    final quickTemplates = <Map<String, String>>[
+      {'code': 'I_AM_AT_PICKUP', 'label': l10n.driverTripChatTemplateArrived},
+      {
+        'code': 'CANNOT_FIND_PASSENGER',
+        'label': l10n.driverTripChatTemplateCannotFind,
+      },
+      {
+        'code': 'PLEASE_CONFIRM_LOCATION',
+        'label': l10n.driverTripChatTemplateConfirmLocation,
+      },
     ];
     String formatTime(DateTime? dt) {
-      if (dt == null) return 'Ahora';
+      if (dt == null) return l10n.driverTripChatNow;
       final hh = dt.hour.toString().padLeft(2, '0');
       final mm = dt.minute.toString().padLeft(2, '0');
       return '$hh:$mm';
     }
+
     _tripChatSheetDisplayed = true;
     try {
       await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        final mq = MediaQuery.of(ctx);
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: mq.viewInsets.bottom,
-            left: 10,
-            right: 10,
-            top: 8,
-          ),
-          child: FractionallySizedBox(
-            heightFactor: 0.82,
-            child: Consumer(
-              builder: (context, ref, _) {
-                final rt = ref.watch(driverRealtimeProvider);
-                return Material(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(22),
-                  clipBehavior: Clip.antiAlias,
-                  child: SafeArea(
-                    top: false,
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        14,
-                        10,
-                        14,
-                        12 + mq.viewPadding.bottom,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            children: [
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (ctx) {
+          final mq = MediaQuery.of(ctx);
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: mq.viewInsets.bottom,
+              left: 10,
+              right: 10,
+              top: 8,
+            ),
+            child: FractionallySizedBox(
+              heightFactor: 0.82,
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final rt = ref.watch(driverRealtimeProvider);
+                  return Material(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(22),
+                    clipBehavior: Clip.antiAlias,
+                    child: SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          14,
+                          10,
+                          14,
+                          12 + mq.viewPadding.bottom,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.16,
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(
+                                    Icons.chat_bubble_rounded,
+                                    color: AppColors.primary,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    l10n.driverTripChatTitle,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 17,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: (rt.online || rt.connecting)
+                                        ? AppColors.success.withValues(
+                                            alpha: 0.12,
+                                          )
+                                        : AppColors.error.withValues(
+                                            alpha: 0.12,
+                                          ),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    (rt.online || rt.connecting)
+                                        ? l10n.driverTripChatOnline
+                                        : l10n.driverTripChatOffline,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: (rt.online || rt.connecting)
+                                          ? AppColors.success
+                                          : AppColors.error,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: () => Navigator.of(ctx).pop(),
+                                  icon: const Icon(Icons.close_rounded),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              l10n.driverTripChatSubtitle,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary.withValues(
+                                  alpha: 0.95,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              height: 38,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: quickTemplates.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(width: 8),
+                                itemBuilder: (context, index) {
+                                  final it = quickTemplates[index];
+                                  return OutlinedButton(
+                                    style: OutlinedButton.styleFrom(
+                                      visualDensity: VisualDensity.compact,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      textController.text = it['label']!;
+                                      textController.selection =
+                                          TextSelection.collapsed(
+                                            offset: textController.text.length,
+                                          );
+                                    },
+                                    child: Text(
+                                      it['label']!,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            if (rt.tripChatErrorCode != null) ...[
+                              const SizedBox(height: 8),
                               Container(
-                                width: 36,
-                                height: 36,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.16),
+                                  color: AppColors.error.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Icon(
-                                  Icons.chat_bubble_rounded,
-                                  color: AppColors.primary,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              const Expanded(
                                 child: Text(
-                                  'Chat del viaje',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 17,
+                                  (rt.tripChatErrorCode == '42P01' ||
+                                          rt.tripChatErrorCode ==
+                                              'TRIP_CHAT_STORAGE_UNAVAILABLE')
+                                      ? l10n.driverTripChatErrorStorage
+                                      : rt.tripChatErrorCode ==
+                                            'TRIP_CHAT_NOT_AVAILABLE'
+                                      ? l10n.driverTripChatErrorPhase
+                                      : l10n.driverTripChatErrorSendReceive(
+                                          rt.tripChatErrorCode!,
+                                        ),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.error,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: (rt.online || rt.connecting)
-                                      ? AppColors.success.withValues(alpha: 0.12)
-                                      : AppColors.error.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  (rt.online || rt.connecting)
-                                      ? 'En línea'
-                                      : 'Sin conexión',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: (rt.online || rt.connecting)
-                                        ? AppColors.success
-                                        : AppColors.error,
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () => Navigator.of(ctx).pop(),
-                                icon: const Icon(Icons.close_rounded),
                               ),
                             ],
-                          ),
-                          Text(
-                            'Conversación activa con el pasajero en tiempo real.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary.withValues(alpha: 0.95),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          SizedBox(
-                            height: 38,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: quickTemplates.length,
-                              separatorBuilder: (_, _) => const SizedBox(width: 8),
-                              itemBuilder: (context, index) {
-                                final it = quickTemplates[index];
-                                return OutlinedButton(
-                                  style: OutlinedButton.styleFrom(
-                                    visualDensity: VisualDensity.compact,
-                                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                            const SizedBox(height: 10),
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.background,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: AppColors.border.withValues(
+                                      alpha: 0.45,
+                                    ),
                                   ),
-                                  onPressed: () {
-                                    textController.text = it['label']!;
-                                    textController.selection = TextSelection.collapsed(
-                                      offset: textController.text.length,
-                                    );
-                                  },
-                                  child: Text(
-                                    it['label']!,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          if (rt.tripChatErrorCode != null) ...[
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: AppColors.error.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: rt.chatMessages.isEmpty
+                                    ? Center(
+                                        child: Text(
+                                          l10n.driverTripChatEmptyState,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            color: AppColors.textSecondary
+                                                .withValues(alpha: 0.9),
+                                          ),
+                                        ),
+                                      )
+                                    : ListView.builder(
+                                        padding: const EdgeInsets.all(10),
+                                        itemCount: rt.chatMessages.length,
+                                        itemBuilder: (context, index) {
+                                          final msg = rt.chatMessages[index];
+                                          final mine =
+                                              msg.senderRole == 'driver';
+                                          return Align(
+                                            alignment: mine
+                                                ? Alignment.centerRight
+                                                : Alignment.centerLeft,
+                                            child: Container(
+                                              constraints: const BoxConstraints(
+                                                maxWidth: 280,
+                                              ),
+                                              margin: const EdgeInsets.only(
+                                                bottom: 8,
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 9,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: mine
+                                                    ? AppColors.primary
+                                                          .withValues(
+                                                            alpha: 0.2,
+                                                          )
+                                                    : AppColors.surface,
+                                                borderRadius: BorderRadius.only(
+                                                  topLeft:
+                                                      const Radius.circular(14),
+                                                  topRight:
+                                                      const Radius.circular(14),
+                                                  bottomLeft: Radius.circular(
+                                                    mine ? 14 : 4,
+                                                  ),
+                                                  bottomRight: Radius.circular(
+                                                    mine ? 4 : 14,
+                                                  ),
+                                                ),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    msg.messageText,
+                                                    style: const TextStyle(
+                                                      height: 1.25,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    '${mine ? 'Tú' : 'Pasajero'} · ${formatTime(msg.createdAt)}',
+                                                    style: TextStyle(
+                                                      fontSize: 10.5,
+                                                      color: AppColors
+                                                          .textSecondary
+                                                          .withValues(
+                                                            alpha: 0.85,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
                               ),
-                              child: Text(
-                                (rt.tripChatErrorCode == '42P01' ||
-                                        rt.tripChatErrorCode ==
-                                            'TRIP_CHAT_STORAGE_UNAVAILABLE')
-                                    ? 'Chat no disponible: falta configuración en el servidor. Contactá soporte.'
-                                    : rt.tripChatErrorCode == 'TRIP_CHAT_NOT_AVAILABLE'
-                                        ? 'El chat solo está disponible antes de iniciar el viaje.'
-                                        : 'No se pudo enviar/recibir chat (${rt.tripChatErrorCode!}). Revisa la conexión.',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.error,
-                                  fontWeight: FontWeight.w600,
+                            ),
+                            const SizedBox(height: 10),
+                            Material(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(14),
+                              child: Container(
+                                padding: const EdgeInsets.fromLTRB(8, 6, 6, 6),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: AppColors.border.withValues(
+                                      alpha: 0.55,
+                                    ),
+                                  ),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: textController,
+                                        minLines: 1,
+                                        maxLines: 4,
+                                        decoration: const InputDecoration(
+                                          hintText: 'Escribe un mensaje',
+                                          border: InputBorder.none,
+                                          contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 10,
+                                          ),
+                                          isDense: true,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    SizedBox(
+                                      height: 40,
+                                      child: FilledButton(
+                                        onPressed: () {
+                                          final t = textController.text.trim();
+                                          if (t.isEmpty) return;
+                                          controller.sendTripChatText(
+                                            tripId: tripId,
+                                            text: t,
+                                          );
+                                          textController.clear();
+                                        },
+                                        style: FilledButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                          ),
+                                          minimumSize: const Size(44, 40),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              11,
+                                            ),
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.send_rounded,
+                                          size: 20,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ],
-                          const SizedBox(height: 10),
-                          Expanded(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: AppColors.background,
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: AppColors.border.withValues(alpha: 0.45),
-                                ),
-                              ),
-                              child: rt.chatMessages.isEmpty
-                                  ? Center(
-                                      child: Text(
-                                        'Aún no hay mensajes.\nEnvía uno para iniciar la conversación.',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: 12.5,
-                                          color: AppColors.textSecondary.withValues(alpha: 0.9),
-                                        ),
-                                      ),
-                                    )
-                                  : ListView.builder(
-                                      padding: const EdgeInsets.all(10),
-                                      itemCount: rt.chatMessages.length,
-                                      itemBuilder: (context, index) {
-                                        final msg = rt.chatMessages[index];
-                                        final mine = msg.senderRole == 'driver';
-                                        return Align(
-                                          alignment: mine
-                                              ? Alignment.centerRight
-                                              : Alignment.centerLeft,
-                                          child: Container(
-                                            constraints: const BoxConstraints(maxWidth: 280),
-                                            margin: const EdgeInsets.only(bottom: 8),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 9,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: mine
-                                                  ? AppColors.primary.withValues(alpha: 0.2)
-                                                  : AppColors.surface,
-                                              borderRadius: BorderRadius.only(
-                                                topLeft: const Radius.circular(14),
-                                                topRight: const Radius.circular(14),
-                                                bottomLeft: Radius.circular(mine ? 14 : 4),
-                                                bottomRight: Radius.circular(mine ? 4 : 14),
-                                              ),
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  msg.messageText,
-                                                  style: const TextStyle(height: 1.25),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  '${mine ? 'Tú' : 'Pasajero'} · ${formatTime(msg.createdAt)}',
-                                                  style: TextStyle(
-                                                    fontSize: 10.5,
-                                                    color: AppColors.textSecondary.withValues(
-                                                      alpha: 0.85,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Material(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(14),
-                            child: Container(
-                              padding: const EdgeInsets.fromLTRB(8, 6, 6, 6),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: AppColors.border.withValues(alpha: 0.55),
-                                ),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Expanded(
-                                    child: TextField(
-                                      controller: textController,
-                                      minLines: 1,
-                                      maxLines: 4,
-                                      decoration: const InputDecoration(
-                                        hintText: 'Escribe un mensaje',
-                                        border: InputBorder.none,
-                                        contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 10,
-                                        ),
-                                        isDense: true,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  SizedBox(
-                                    height: 40,
-                                    child: FilledButton(
-                                      onPressed: () {
-                                        final t = textController.text.trim();
-                                        if (t.isEmpty) return;
-                                        controller.sendTripChatText(
-                                          tripId: tripId,
-                                          text: t,
-                                        );
-                                        textController.clear();
-                                      },
-                                      style: FilledButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                                        minimumSize: const Size(44, 40),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(11),
-                                        ),
-                                      ),
-                                      child: const Icon(Icons.send_rounded, size: 20),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
-        );
-      },
-    );
+          );
+        },
+      );
     } finally {
       _tripChatSheetDisplayed = false;
       textController.dispose();
@@ -1822,7 +1930,7 @@ class _RatingSheetContent extends StatefulWidget {
   final VoidCallback onSkipped;
   final DriverActiveTrip? trip;
   final Future<List<DriverRatingFeedbackItem>> Function(int stars)
-      loadFeedbackCatalog;
+  loadFeedbackCatalog;
 
   const _RatingSheetContent({
     required this.onSubmitted,
@@ -2123,7 +2231,9 @@ class _RatingSheetContentState extends State<_RatingSheetContent>
                                   borderRadius: BorderRadius.circular(999),
                                   color: AppColors.background,
                                   border: Border.all(
-                                    color: AppColors.border.withValues(alpha: 0.62),
+                                    color: AppColors.border.withValues(
+                                      alpha: 0.62,
+                                    ),
                                   ),
                                 ),
                                 child: Row(
@@ -2132,7 +2242,9 @@ class _RatingSheetContentState extends State<_RatingSheetContent>
                                     Icon(
                                       Icons.person_rounded,
                                       size: 17,
-                                      color: AppColors.primary.withValues(alpha: 0.92),
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.92,
+                                      ),
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
@@ -2193,28 +2305,37 @@ class _RatingSheetContentState extends State<_RatingSheetContent>
                           ),
                           const SizedBox(height: 10),
                           if (_loadingCatalog)
-                            const Center(child: CircularProgressIndicator(strokeWidth: 2))
+                            const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           else if (_displayedOptions.isNotEmpty)
                             Wrap(
                               alignment: WrapAlignment.center,
                               spacing: 8,
                               runSpacing: 8,
-                              children: _displayedOptions.map((item) {
-                                final selected = _selectedFeedbackCodes.contains(item.code);
-                                return FilterChip(
-                                  selected: selected,
-                                  onSelected: (value) {
-                                    setState(() {
-                                      if (value) {
-                                        _selectedFeedbackCodes.add(item.code);
-                                      } else {
-                                        _selectedFeedbackCodes.remove(item.code);
-                                      }
-                                    });
-                                  },
-                                  label: Text(item.label),
-                                );
-                              }).toList(growable: false),
+                              children: _displayedOptions
+                                  .map((item) {
+                                    final selected = _selectedFeedbackCodes
+                                        .contains(item.code);
+                                    return FilterChip(
+                                      selected: selected,
+                                      onSelected: (value) {
+                                        setState(() {
+                                          if (value) {
+                                            _selectedFeedbackCodes.add(
+                                              item.code,
+                                            );
+                                          } else {
+                                            _selectedFeedbackCodes.remove(
+                                              item.code,
+                                            );
+                                          }
+                                        });
+                                      },
+                                      label: Text(item.label),
+                                    );
+                                  })
+                                  .toList(growable: false),
                             ),
                         ],
                         const SizedBox(height: 12),
@@ -2225,7 +2346,9 @@ class _RatingSheetContentState extends State<_RatingSheetContent>
                                   HapticFeedback.lightImpact();
                                   widget.onSubmitted(
                                     _rating,
-                                    _selectedFeedbackCodes.toList(growable: false),
+                                    _selectedFeedbackCodes.toList(
+                                      growable: false,
+                                    ),
                                   );
                                 },
                           style: FilledButton.styleFrom(
@@ -2550,24 +2673,24 @@ class _AssistedTripNavButtonsState extends State<_AssistedTripNavButtons>
         : widget.onNavigateToDestination;
 
     return AnimatedBuilder(
-          animation: _t,
-          builder: (context, child) {
-            final wave = isPickup ? _t.value : (1 - _t.value);
-            return _assistedNavPill(
-              context,
-              glow: 0.24 + 0.52 * wave,
-              iconScale: 1.0 + 0.09 * wave,
-              isPickup: isPickup,
-              title: title,
-              subtitle: subtitle,
-              icon: icon,
-              onTap: () {
-                HapticFeedback.lightImpact();
-                onTap();
-              },
-            );
+      animation: _t,
+      builder: (context, child) {
+        final wave = isPickup ? _t.value : (1 - _t.value);
+        return _assistedNavPill(
+          context,
+          glow: 0.24 + 0.52 * wave,
+          iconScale: 1.0 + 0.09 * wave,
+          isPickup: isPickup,
+          title: title,
+          subtitle: subtitle,
+          icon: icon,
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
           },
         );
+      },
+    );
   }
 
   bool _shouldNavigateToPickupFirst(String status) {
@@ -2810,7 +2933,8 @@ class _ActiveTripCard extends StatelessWidget {
     final accent = _statusAccentColor(trip.status);
     final progress = _statusProgress(trip.status);
     final nowMs = DateTime.now().millisecondsSinceEpoch;
-    final reminderCooldownLeftSec = (arrivalReminderCooldownUntilMs != null &&
+    final reminderCooldownLeftSec =
+        (arrivalReminderCooldownUntilMs != null &&
             arrivalReminderCooldownUntilMs! > nowMs)
         ? ((arrivalReminderCooldownUntilMs! - nowMs) / 1000).ceil()
         : 0;
@@ -3137,7 +3261,7 @@ class _ActiveTripCard extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: onOpenChat,
                 icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-                label: const Text('Chat seguro'),
+                label: Text(l10n.driverTripChatOpenCta),
               ),
             ),
           ],
@@ -3167,7 +3291,9 @@ class _ActiveTripCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: processingAction == 'started' ? null : onStartTrip,
+                    onPressed: processingAction == 'started'
+                        ? null
+                        : onStartTrip,
                     icon: processingAction == 'started'
                         ? const SizedBox(
                             width: 18,
@@ -3187,7 +3313,9 @@ class _ActiveTripCard extends StatelessWidget {
                       ? 'Notificar nuevamente al pasajero'
                       : 'Disponible en ${reminderCooldownLeftSec > 0 ? reminderCooldownLeftSec : 0}s',
                   child: OutlinedButton(
-                    onPressed: canSendArrivalReminder ? onArrivalReminder : null,
+                    onPressed: canSendArrivalReminder
+                        ? onArrivalReminder
+                        : null,
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(52, 48),
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -3201,9 +3329,9 @@ class _ActiveTripCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 'Podrás volver a notificar en ${reminderCooldownLeftSec}s',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
               ),
             ],
           ],

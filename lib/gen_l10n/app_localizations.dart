@@ -1298,6 +1298,90 @@ abstract class AppLocalizations {
   /// **'Opens your maps or GPS app (Maps, Waze…)'**
   String get driverTripNavAssistedSubtitle;
 
+  /// No description provided for @driverRegisteredImagesMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Registered images'**
+  String get driverRegisteredImagesMenu;
+
+  /// No description provided for @driverTripChatOpenCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Secure chat'**
+  String get driverTripChatOpenCta;
+
+  /// No description provided for @driverTripChatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip chat'**
+  String get driverTripChatTitle;
+
+  /// No description provided for @driverTripChatSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Live conversation with the passenger in real time.'**
+  String get driverTripChatSubtitle;
+
+  /// No description provided for @driverTripChatOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get driverTripChatOnline;
+
+  /// No description provided for @driverTripChatOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get driverTripChatOffline;
+
+  /// No description provided for @driverTripChatTemplateArrived.
+  ///
+  /// In en, this message translates to:
+  /// **'I arrived at the pickup point'**
+  String get driverTripChatTemplateArrived;
+
+  /// No description provided for @driverTripChatTemplateCannotFind.
+  ///
+  /// In en, this message translates to:
+  /// **'I can\'t find you'**
+  String get driverTripChatTemplateCannotFind;
+
+  /// No description provided for @driverTripChatTemplateConfirmLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your location'**
+  String get driverTripChatTemplateConfirmLocation;
+
+  /// No description provided for @driverTripChatNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get driverTripChatNow;
+
+  /// No description provided for @driverTripChatErrorStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat unavailable: server configuration is missing. Contact support.'**
+  String get driverTripChatErrorStorage;
+
+  /// No description provided for @driverTripChatErrorPhase.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat is only available before the trip starts.'**
+  String get driverTripChatErrorPhase;
+
+  /// No description provided for @driverTripChatErrorSendReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send/receive chat ({code}). Check your connection.'**
+  String driverTripChatErrorSendReceive(String code);
+
+  /// No description provided for @driverTripChatEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet.\nSend one to start the conversation.'**
+  String get driverTripChatEmptyState;
+
   /// No description provided for @driverTripReactivate.
   ///
   /// In en, this message translates to:
