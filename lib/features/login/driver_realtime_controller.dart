@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:dio/dio.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -15,13 +16,14 @@ import '../../core/config/driver_realtime_config.dart';
 import '../../core/app_lifecycle/app_lifecycle_state.dart';
 import '../../core/notifications/driver_push_token_service.dart';
 import '../../core/notifications/driver_notification_service.dart';
+import '../../core/network/driver_resilience_telemetry_service.dart';
 import '../../core/foreground/driver_foreground_session.dart';
 import '../../core/session/driver_map_preferences_store.dart';
 
 final driverRealtimeProvider =
     StateNotifierProvider<DriverRealtimeController, DriverRealtimeState>(
-  (ref) => DriverRealtimeController(),
-);
+      (ref) => DriverRealtimeController(),
+    );
 
 /// Convención de errores (login/realtime):
 /// - Estado/controladores publican códigos (`errorCode`, `tripErrorCode`) en
@@ -31,56 +33,86 @@ final driverRealtimeProvider =
 class DriverRealtimeState {
   final bool online;
   final bool connecting;
+
   /// Conductor quiere sesión de disponibilidad/ofertas (switch ON), aunque el socket falle temporalmente.
   final bool availabilityDesired;
+
   /// Código de error simple para i18n (NO_INTERNET, NO_GPS, GPS_SERVICE_OFF,
   /// NO_NOTIFICATIONS, NO_TOKEN, SOCKET, DRIVER_VEHICLE_REQUIRED, UNKNOWN).
   final String? errorCode;
+
   /// Ofertas de viaje pendientes (trip:offer) que el conductor puede aceptar/rechazar.
   final List<DriverTripOffer> pendingOffers;
+
   /// tripId de la oferta que se está procesando (aceptando o rechazando), o null.
   final String? processingOfferTripId;
+
   /// true si la operación en curso es aceptar, false si es rechazar.
   final bool processingIsAccept;
+
   /// Estado de error por oferta (`tripId`) para evitar contaminar otras tarjetas.
   final Map<String, String> offersErrorCodeByTripId;
   final Map<String, String> offersErrorMessageByTripId;
+
   /// Viaje activo una vez aceptado (ir a recoger → llegó → en trayecto → completado/cancelado).
   final DriverActiveTrip? activeTrip;
+
   /// Viaje guardado cuando llega a `completed` para mostrar la calificación
   /// sin mantener el mapa visible.
   final DriverActiveTrip? tripPendingRating;
+
   /// Para evitar que eventos tardíos del backend (por ejemplo `connection:ack`)
   /// restauren un viaje ya finalizado y vuelva a aparecer el mapa después
   /// de la calificación.
   final String? ignoreActiveTripRestoreTripId;
   final int? ignoreActiveTripRestoreUntilMs;
+
   /// Último trip que el backend marcó (o el conductor marcó) como final.
   final String? lastCompletedTripId;
+
   /// Acción de cambio de estado en curso: 'arrived' | 'started' | 'completed' para mostrar loading.
   final String? processingTripAction;
+
   /// Mensaje de error en cambio de estado del viaje (trip:error).
   final String? tripErrorMessage;
+
   /// Código de error en cambio de estado del viaje (trip:error).
   final String? tripErrorCode;
   final int? arrivalReminderCooldownUntilMs;
   final String? arrivalReminderErrorCode;
+
   /// Posición actual del conductor (actualizada con location:update) para el mapa.
   final double? driverLat;
   final double? driverLng;
   final double? driverBearing;
+
   /// Desde `connection:ack.profile` (nombre para mini perfil en home).
   final String? driverDisplayName;
+
   /// Ej. "Toyota Corolla · ABC-123" desde `connection:ack.profile.vehicle`.
   final String? driverVehicleLabel;
+
   /// Valoración media del conductor si el backend la envía en el perfil.
   final double? driverRating;
+
   /// Foto de perfil del conductor (URL firmada o data URL) desde `connection:ack.profile`.
   final String? driverPictureProfile;
+
   /// Expiración de la URL firmada para refresco condicional.
   final DateTime? driverPictureExpiresAt;
   final List<DriverTripChatMessage> chatMessages;
   final String? tripChatErrorCode;
+
+  /// Admin/política: no puede pasar a `available` desde la app para recibir ofertas.
+  final bool goOnlineBlocked;
+
+  /// Motivo opcional (mensaje servidor / connection:ack).
+  final String? goOnlineBlockReason;
+  final bool accountBlocked;
+  final String? accountBlockReason;
+  final bool insufficientCreditsToGoOnline;
+  final double minCreditsToGoOnline;
+  final double driverCreditsBalance;
 
   /// Valor interno para [copyWith] y poder asignar `null` en campos opcionales.
   static const Object _unset = Object();
@@ -115,6 +147,13 @@ class DriverRealtimeState {
     this.driverPictureExpiresAt,
     this.chatMessages = const [],
     this.tripChatErrorCode,
+    this.goOnlineBlocked = false,
+    this.goOnlineBlockReason,
+    this.accountBlocked = false,
+    this.accountBlockReason,
+    this.insufficientCreditsToGoOnline = false,
+    this.minCreditsToGoOnline = 0,
+    this.driverCreditsBalance = 0,
   });
 
   DriverRealtimeState copyWith({
@@ -147,6 +186,13 @@ class DriverRealtimeState {
     Object? driverPictureExpiresAt = _unset,
     List<DriverTripChatMessage>? chatMessages,
     String? tripChatErrorCode,
+    bool? goOnlineBlocked,
+    Object? goOnlineBlockReason = _unset,
+    bool? accountBlocked,
+    Object? accountBlockReason = _unset,
+    bool? insufficientCreditsToGoOnline,
+    double? minCreditsToGoOnline,
+    double? driverCreditsBalance,
   }) {
     return DriverRealtimeState(
       online: online ?? this.online,
@@ -162,15 +208,18 @@ class DriverRealtimeState {
           offersErrorCodeByTripId ?? this.offersErrorCodeByTripId,
       offersErrorMessageByTripId:
           offersErrorMessageByTripId ?? this.offersErrorMessageByTripId,
-      activeTrip:
-          identical(activeTrip, _unset) ? this.activeTrip : activeTrip as DriverActiveTrip?,
+      activeTrip: identical(activeTrip, _unset)
+          ? this.activeTrip
+          : activeTrip as DriverActiveTrip?,
       tripPendingRating: identical(tripPendingRating, _unset)
           ? this.tripPendingRating
           : tripPendingRating as DriverActiveTrip?,
-      ignoreActiveTripRestoreTripId: identical(ignoreActiveTripRestoreTripId, _unset)
+      ignoreActiveTripRestoreTripId:
+          identical(ignoreActiveTripRestoreTripId, _unset)
           ? this.ignoreActiveTripRestoreTripId
           : ignoreActiveTripRestoreTripId as String?,
-      ignoreActiveTripRestoreUntilMs: identical(ignoreActiveTripRestoreUntilMs, _unset)
+      ignoreActiveTripRestoreUntilMs:
+          identical(ignoreActiveTripRestoreUntilMs, _unset)
           ? this.ignoreActiveTripRestoreUntilMs
           : ignoreActiveTripRestoreUntilMs as int?,
       lastCompletedTripId: identical(lastCompletedTripId, _unset)
@@ -181,12 +230,17 @@ class DriverRealtimeState {
           : processingTripAction as String?,
       tripErrorMessage: tripErrorMessage,
       tripErrorCode: tripErrorCode,
-      arrivalReminderCooldownUntilMs: identical(arrivalReminderCooldownUntilMs, _unset)
+      arrivalReminderCooldownUntilMs:
+          identical(arrivalReminderCooldownUntilMs, _unset)
           ? this.arrivalReminderCooldownUntilMs
           : arrivalReminderCooldownUntilMs as int?,
       arrivalReminderErrorCode: arrivalReminderErrorCode,
-      driverLat: identical(driverLat, _unset) ? this.driverLat : driverLat as double?,
-      driverLng: identical(driverLng, _unset) ? this.driverLng : driverLng as double?,
+      driverLat: identical(driverLat, _unset)
+          ? this.driverLat
+          : driverLat as double?,
+      driverLng: identical(driverLng, _unset)
+          ? this.driverLng
+          : driverLng as double?,
       driverBearing: identical(driverBearing, _unset)
           ? this.driverBearing
           : driverBearing as double?,
@@ -207,41 +261,60 @@ class DriverRealtimeState {
           : driverPictureExpiresAt as DateTime?,
       chatMessages: chatMessages ?? this.chatMessages,
       tripChatErrorCode: tripChatErrorCode,
+      goOnlineBlocked: goOnlineBlocked ?? this.goOnlineBlocked,
+      goOnlineBlockReason: identical(goOnlineBlockReason, _unset)
+          ? this.goOnlineBlockReason
+          : goOnlineBlockReason as String?,
+      accountBlocked: accountBlocked ?? this.accountBlocked,
+      accountBlockReason: identical(accountBlockReason, _unset)
+          ? this.accountBlockReason
+          : accountBlockReason as String?,
+      insufficientCreditsToGoOnline:
+          insufficientCreditsToGoOnline ?? this.insufficientCreditsToGoOnline,
+      minCreditsToGoOnline:
+          minCreditsToGoOnline ?? this.minCreditsToGoOnline,
+      driverCreditsBalance: driverCreditsBalance ?? this.driverCreditsBalance,
     );
   }
 
-  static const initial =
-      DriverRealtimeState(
-        online: false,
-        connecting: false,
-        availabilityDesired: false,
-        errorCode: null,
-        pendingOffers: [],
-        processingOfferTripId: null,
-        processingIsAccept: true,
-        offersErrorCodeByTripId: {},
-        offersErrorMessageByTripId: {},
-        activeTrip: null,
-        tripPendingRating: null,
-        ignoreActiveTripRestoreTripId: null,
-        ignoreActiveTripRestoreUntilMs: null,
-        lastCompletedTripId: null,
-        processingTripAction: null,
-        tripErrorMessage: null,
-        tripErrorCode: null,
-        arrivalReminderCooldownUntilMs: null,
-        arrivalReminderErrorCode: null,
-        driverLat: null,
-        driverLng: null,
-        driverBearing: null,
-        driverDisplayName: null,
-        driverVehicleLabel: null,
-        driverRating: null,
-        driverPictureProfile: null,
-        driverPictureExpiresAt: null,
-        chatMessages: [],
-        tripChatErrorCode: null,
-      );
+  static const initial = DriverRealtimeState(
+    online: false,
+    connecting: false,
+    availabilityDesired: false,
+    errorCode: null,
+    pendingOffers: [],
+    processingOfferTripId: null,
+    processingIsAccept: true,
+    offersErrorCodeByTripId: {},
+    offersErrorMessageByTripId: {},
+    activeTrip: null,
+    tripPendingRating: null,
+    ignoreActiveTripRestoreTripId: null,
+    ignoreActiveTripRestoreUntilMs: null,
+    lastCompletedTripId: null,
+    processingTripAction: null,
+    tripErrorMessage: null,
+    tripErrorCode: null,
+    arrivalReminderCooldownUntilMs: null,
+    arrivalReminderErrorCode: null,
+    driverLat: null,
+    driverLng: null,
+    driverBearing: null,
+    driverDisplayName: null,
+    driverVehicleLabel: null,
+    driverRating: null,
+    driverPictureProfile: null,
+    driverPictureExpiresAt: null,
+    chatMessages: [],
+    tripChatErrorCode: null,
+    goOnlineBlocked: false,
+    goOnlineBlockReason: null,
+    accountBlocked: false,
+    accountBlockReason: null,
+    insufficientCreditsToGoOnline: false,
+    minCreditsToGoOnline: 0,
+    driverCreditsBalance: 0,
+  );
 }
 
 /// Chat pasajero–conductor: solo en `accepted` / `arrived` (antes de iniciar el trayecto).
@@ -273,6 +346,16 @@ class DriverTripChatMessage {
 /// calificación pendiente aunque `online` sea false (caída de red durante carrera).
 extension DriverRealtimeStateAvailabilityUi on DriverRealtimeState {
   bool get availabilitySwitchVisualOn {
+    if ((goOnlineBlocked ||
+            errorCode == 'DRIVER_GO_ONLINE_BLOCKED' ||
+            accountBlocked ||
+            errorCode == 'DRIVER_ACCOUNT_BLOCKED' ||
+            insufficientCreditsToGoOnline ||
+            errorCode == 'DRIVER_CREDITS_BELOW_MIN') &&
+        activeTrip == null &&
+        tripPendingRating == null) {
+      return false;
+    }
     if (online) return true;
     if (connecting) return true;
     if (activeTrip != null || tripPendingRating != null) return true;
@@ -331,7 +414,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
   static const _storage = FlutterSecureStorage();
   static Dio? _profileHttp;
 
-  static Dio _profileDio () {
+  static Dio _profileDio() {
     _profileHttp ??= Dio(
       BaseOptions(
         baseUrl: DriverBackendConfig.baseUrl,
@@ -349,12 +432,21 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
   Timer? _tripReconnectTimer;
   Timer? _availabilityReconnectTimer;
   Timer? _presenceHeartbeatTimer;
+  final Random _reconnectJitterRandom = Random();
+  int _availabilityReconnectAttempts = 0;
+  int _tripReconnectAttempts = 0;
+  final Set<String> _tripRatingInFlight = <String>{};
+  final Map<int, Future<List<DriverRatingFeedbackItem>>> _ratingCatalogInFlight =
+      <int, Future<List<DriverRatingFeedbackItem>>>{};
   DateTime? _lastTouchReconnect;
   bool _disposed = false;
+
   /// `true` tras apagar el switch o logout: no auto-reconectar por `onDisconnect`.
   bool _userRequestedOffline = false;
+
   /// `true` mientras el conductor quiere estar disponible (switch ON en esta sesión).
   bool _availabilitySessionDesired = false;
+
   /// Si el conductor intenta finalizar viaje sin socket conectado (por red
   /// caída o background), guardamos el tripId para reintentarlo en
   /// cuanto se restablezca la conexión.
@@ -365,6 +457,9 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
   /// Última vez que el servidor recibió `location:update` (anti saturación).
   DateTime? _lastLocationEmittedAt;
   static const _locationEmitMinInterval = Duration(milliseconds: 2800);
+  static const int _availabilityReconnectBaseMs = 900;
+  static const int _tripReconnectBaseMs = 700;
+  static const int _reconnectMaxDelayMs = 12000;
 
   /// Evita `checkPermission` repetido en reconexiones seguidas.
   DateTime? _locationPermissionCachedAt;
@@ -375,9 +470,95 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     debugPrint('[DRIVER_RT] $message');
   }
 
+  int? _retryAfterMsFromDio(DioException e) {
+    final headers = e.response?.headers;
+    final retryAfterRaw = headers?.value('retry-after');
+    if (retryAfterRaw != null) {
+      final sec = int.tryParse(retryAfterRaw.trim());
+      if (sec != null && sec > 0) return sec * 1000;
+    }
+    final body = e.response?.data;
+    if (body is Map) {
+      final envelope = Map<String, dynamic>.from(body);
+      final error = envelope['error'];
+      if (error is Map) {
+        final err = Map<String, dynamic>.from(error);
+        final msRaw = err['retry_after_ms'];
+        if (msRaw is num && msRaw > 0) return msRaw.toInt();
+        final secRaw = err['retry_after_sec'];
+        if (secRaw is num && secRaw > 0) return secRaw.toInt() * 1000;
+      }
+      final topMs = envelope['retry_after_ms'];
+      if (topMs is num && topMs > 0) return topMs.toInt();
+      final topSec = envelope['retry_after_sec'];
+      if (topSec is num && topSec > 0) return topSec.toInt() * 1000;
+    }
+    return null;
+  }
+
+  bool _isRetryableHttpFailure(DioException e) {
+    final status = e.response?.statusCode ?? 0;
+    if (status == 429 || status >= 500) return true;
+    return e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.connectionError ||
+        e.type == DioExceptionType.unknown;
+  }
+
+  Future<T> _requestWithBackpressureRetry<T>({
+    required int maxAttempts,
+    required String flow,
+    required String endpoint,
+    required Future<T> Function() operation,
+  }) async {
+    var attempt = 0;
+    while (true) {
+      attempt += 1;
+      try {
+        return await operation();
+      } on DioException catch (e) {
+        final canRetry = attempt < maxAttempts && _isRetryableHttpFailure(e);
+        if (!canRetry) {
+          unawaited(
+            DriverResilienceTelemetryService.sendEvent(
+              flow: flow,
+              endpoint: endpoint,
+              event: 'retry_exhausted',
+              attempt: attempt,
+              statusCode: e.response?.statusCode,
+            ),
+          );
+          rethrow;
+        }
+        final retryAfterMs = _retryAfterMsFromDio(e);
+        final expBaseMs = 320 * (1 << (attempt - 1).clamp(0, 4));
+        final jitterMs = _reconnectJitterRandom.nextInt(260);
+        final waitMs = max(
+          retryAfterMs ?? 0,
+          expBaseMs + jitterMs,
+        ).clamp(250, 5000).toInt();
+        final statusCode = e.response?.statusCode;
+        unawaited(
+          DriverResilienceTelemetryService.sendEvent(
+            flow: flow,
+            endpoint: endpoint,
+            event: statusCode == 429 ? 'rate_limited' : 'retry_attempt',
+            attempt: attempt,
+            waitMs: waitMs,
+            statusCode: statusCode,
+          ),
+        );
+        await Future<void>.delayed(Duration(milliseconds: waitMs));
+      }
+    }
+  }
+
   void _clearOfferErrorForTrip(String tripId) {
     final codeMap = Map<String, String>.from(state.offersErrorCodeByTripId);
-    final messageMap = Map<String, String>.from(state.offersErrorMessageByTripId);
+    final messageMap = Map<String, String>.from(
+      state.offersErrorMessageByTripId,
+    );
     codeMap.remove(tripId);
     messageMap.remove(tripId);
     state = state.copyWith(
@@ -392,7 +573,9 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     String? message,
   }) {
     final codeMap = Map<String, String>.from(state.offersErrorCodeByTripId);
-    final messageMap = Map<String, String>.from(state.offersErrorMessageByTripId);
+    final messageMap = Map<String, String>.from(
+      state.offersErrorMessageByTripId,
+    );
     if (code == null || code.isEmpty) {
       codeMap.remove(tripId);
     } else {
@@ -435,7 +618,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     }
     final nestedTrip = data['trip'];
     if (nestedTrip is Map) {
-      final raw = nestedTrip['tripId']?.toString().trim() ??
+      final raw =
+          nestedTrip['tripId']?.toString().trim() ??
           nestedTrip['id']?.toString().trim();
       if (raw != null && raw.isNotEmpty) {
         return raw;
@@ -476,14 +660,16 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       if (p.isNotEmpty) picture = p;
     }
     DateTime? pictureExpiresAt;
-    final expRaw = map['profilePictureExpiresAt'] ?? map['profile_picture_expires_at'];
+    final expRaw =
+        map['profilePictureExpiresAt'] ?? map['profile_picture_expires_at'];
     if (expRaw != null) {
       final t = expRaw.toString().trim();
       if (t.isNotEmpty) pictureExpiresAt = DateTime.tryParse(t);
     }
 
-    final newName =
-        (fn != null && fn.isNotEmpty) ? fn : state.driverDisplayName;
+    final newName = (fn != null && fn.isNotEmpty)
+        ? fn
+        : state.driverDisplayName;
     final newVehicle = vehicleLabel ?? state.driverVehicleLabel;
     final newRating = rating ?? state.driverRating;
 
@@ -506,9 +692,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
 
   void _setAvailability(String availability) {
     if (_socket?.connected != true) return;
-    _socket!.emit('driver:setAvailability', {
-      'availability': availability,
-    });
+    _socket!.emit('driver:setAvailability', {'availability': availability});
   }
 
   /// Antes de desconectar por offline explícito: el backend excluye ofertas con `availability = available`.
@@ -528,7 +712,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
   }
 
   /// Emite al socket respetando [_locationEmitMinInterval] salvo [force].
-  void _emitLocationToServer (
+  void _emitLocationToServer(
     double lat,
     double lng,
     double speed, {
@@ -569,7 +753,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     });
   }
 
-  Future<void> _ensureLocationPermissionForSocket () async {
+  Future<void> _ensureLocationPermissionForSocket() async {
     final now = DateTime.now();
     final cached = _locationPermissionCached;
     final cachedAt = _locationPermissionCachedAt;
@@ -603,7 +787,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     _locationPermissionCachedAt = DateTime.now();
   }
 
-  Future<void> _ensureLocationServiceEnabled () async {
+  Future<void> _ensureLocationServiceEnabled() async {
     if (kIsWeb) return;
     final enabled = await Geolocator.isLocationServiceEnabled();
     if (!enabled) {
@@ -613,7 +797,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
   }
 
   /// Notificaciones son necesarias para ofertas en segundo plano (FCM).
-  Future<void> _ensureNotificationPermissionForTripOffers () async {
+  Future<void> _ensureNotificationPermissionForTripOffers() async {
     if (kIsWeb) return;
     if (defaultTargetPlatform != TargetPlatform.android &&
         defaultTargetPlatform != TargetPlatform.iOS) {
@@ -634,11 +818,12 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       return;
     }
     debugPrint(
-        '[DRIVER_RT] Permiso de notificaciones denegado: ${settings.authorizationStatus}');
+      '[DRIVER_RT] Permiso de notificaciones denegado: ${settings.authorizationStatus}',
+    );
     throw const _RealtimeException('NO_NOTIFICATIONS');
   }
 
-  bool _notificationPermissionOk (NotificationSettings settings) {
+  bool _notificationPermissionOk(NotificationSettings settings) {
     final s = settings.authorizationStatus;
     return s == AuthorizationStatus.authorized ||
         s == AuthorizationStatus.provisional;
@@ -664,7 +849,10 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       if (token == null || token.isEmpty) return false;
       await _storage.write(key: 'driver_token', value: token);
       if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
-        await _storage.write(key: 'driver_refresh_token', value: newRefreshToken);
+        await _storage.write(
+          key: 'driver_refresh_token',
+          value: newRefreshToken,
+        );
       }
       debugPrint('[DRIVER_RT] Refresh de sesión OK. Reintentando socket...');
       return true;
@@ -710,7 +898,9 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     if (!force && !_shouldRefreshDriverPhoto()) return;
     final last = _lastDriverPhotoRefreshAt;
     final now = DateTime.now();
-    if (!force && last != null && now.difference(last) < const Duration(seconds: 30)) {
+    if (!force &&
+        last != null &&
+        now.difference(last) < const Duration(seconds: 30)) {
       return;
     }
     _isRefreshingDriverPhoto = true;
@@ -751,8 +941,28 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
   /// [forceOffline]: logout u otros casos que deben cortar sesión aunque haya viaje activo.
   Future<void> setOnline(bool value, {bool forceOffline = false}) async {
     // En logout forzado debemos ejecutar limpieza total incluso si ya estaba offline.
-    if (value == state.online && !state.connecting && !(forceOffline && !value)) return;
+    if (value == state.online &&
+        !state.connecting &&
+        !(forceOffline && !value)) {
+      return;
+    }
     if (value) {
+      if ((state.goOnlineBlocked || state.accountBlocked) &&
+          state.activeTrip == null &&
+          state.tripPendingRating == null) {
+        state = state.copyWith(
+          errorCode: state.accountBlocked
+              ? 'DRIVER_ACCOUNT_BLOCKED'
+              : 'DRIVER_GO_ONLINE_BLOCKED',
+        );
+        return;
+      }
+      if (state.insufficientCreditsToGoOnline &&
+          state.activeTrip == null &&
+          state.tripPendingRating == null) {
+        state = state.copyWith(errorCode: 'DRIVER_CREDITS_BELOW_MIN');
+        return;
+      }
       _userRequestedOffline = false;
       _availabilitySessionDesired = true;
       state = state.copyWith(
@@ -806,7 +1016,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       preservePendingOffers: true,
     );
     if (_userRequestedOffline || _disposed) return;
-    await Future<void>.delayed(const Duration(milliseconds: 600));
+    final delayMs = _nextReconnectDelayMs(hasTrip: false);
+    await Future<void>.delayed(Duration(milliseconds: delayMs));
     if (_userRequestedOffline || _disposed) return;
     try {
       await _goOnline();
@@ -829,7 +1040,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     );
     if (_userRequestedOffline || _disposed) return;
     state = state.copyWith(connecting: true, errorCode: 'SOCKET_RECONNECTING');
-    await Future<void>.delayed(const Duration(milliseconds: 600));
+    final delayMs = _nextReconnectDelayMs(hasTrip: true);
+    await Future<void>.delayed(Duration(milliseconds: delayMs));
     if (_userRequestedOffline || _disposed) return;
     try {
       await _goOnline();
@@ -847,6 +1059,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
   void _cancelTripReconnectLoop() {
     _tripReconnectTimer?.cancel();
     _tripReconnectTimer = null;
+    _tripReconnectAttempts = 0;
   }
 
   /// Expuesto para el home: reintentar socket si el conductor dejó el switch ON
@@ -871,9 +1084,54 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
   void _cancelAvailabilityReconnectLoop() {
     _availabilityReconnectTimer?.cancel();
     _availabilityReconnectTimer = null;
+    _availabilityReconnectAttempts = 0;
   }
 
-  /// Reintentos periódicos en espera de ofertas (sin viaje) tras fallos de socket.
+  int _nextReconnectDelayMs({required bool hasTrip}) {
+    if (hasTrip) {
+      _tripReconnectAttempts += 1;
+      final exp = 1 << (_tripReconnectAttempts - 1).clamp(0, 5);
+      final jitter = _reconnectJitterRandom.nextInt(450);
+      return (_tripReconnectBaseMs * exp + jitter)
+          .clamp(700, _reconnectMaxDelayMs)
+          .toInt();
+    }
+    _availabilityReconnectAttempts += 1;
+    final exp = 1 << (_availabilityReconnectAttempts - 1).clamp(0, 5);
+    final jitter = _reconnectJitterRandom.nextInt(550);
+    return (_availabilityReconnectBaseMs * exp + jitter)
+        .clamp(900, _reconnectMaxDelayMs)
+        .toInt();
+  }
+
+  Future<void> _runAvailabilityReconnectAttempt() async {
+    if (_userRequestedOffline || _disposed) {
+      _cancelAvailabilityReconnectLoop();
+      return;
+    }
+    if (!_availabilitySessionDesired) {
+      _cancelAvailabilityReconnectLoop();
+      return;
+    }
+    if (state.activeTrip != null || state.tripPendingRating != null) {
+      _cancelAvailabilityReconnectLoop();
+      return;
+    }
+    if (state.online) {
+      _cancelAvailabilityReconnectLoop();
+      return;
+    }
+    if (state.connecting) {
+      _ensureAvailabilityReconnectLoop();
+      return;
+    }
+    await setOnline(true);
+    if (!state.online) {
+      _ensureAvailabilityReconnectLoop();
+    }
+  }
+
+  /// Reintentos escalonados en espera de ofertas (sin viaje) tras fallos de socket.
   void _ensureAvailabilityReconnectLoop() {
     if (_userRequestedOffline || _disposed) return;
     if (!_availabilitySessionDesired) return;
@@ -883,60 +1141,49 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       return;
     }
     _availabilityReconnectTimer?.cancel();
-    if (!state.connecting) {
-      unawaited(setOnline(true));
-    }
-    _availabilityReconnectTimer =
-        Timer.periodic(const Duration(seconds: 8), (_) async {
-      if (_userRequestedOffline || _disposed) {
-        _cancelAvailabilityReconnectLoop();
-        return;
-      }
-      if (!_availabilitySessionDesired) {
-        _cancelAvailabilityReconnectLoop();
-        return;
-      }
-      if (state.activeTrip != null || state.tripPendingRating != null) {
-        _cancelAvailabilityReconnectLoop();
-        return;
-      }
-      if (state.online) {
-        _cancelAvailabilityReconnectLoop();
-        return;
-      }
-      if (state.connecting) return;
-      await setOnline(true);
-    });
+    final delayMs = _nextReconnectDelayMs(hasTrip: false);
+    _availabilityReconnectTimer = Timer(
+      Duration(milliseconds: delayMs),
+      () => unawaited(_runAvailabilityReconnectAttempt()),
+    );
   }
 
-  /// Reintentos periódicos mientras haya viaje (o calificación) y el usuario
+  Future<void> _runTripReconnectAttempt() async {
+    if (_userRequestedOffline || _disposed) {
+      _cancelTripReconnectLoop();
+      return;
+    }
+    if (state.activeTrip == null && state.tripPendingRating == null) {
+      _cancelTripReconnectLoop();
+      return;
+    }
+    if (state.online) {
+      _cancelTripReconnectLoop();
+      return;
+    }
+    if (state.connecting) {
+      _ensureTripReconnectLoop();
+      return;
+    }
+    await setOnline(true);
+    if (!state.online) {
+      _ensureTripReconnectLoop();
+    }
+  }
+
+  /// Reintentos escalonados mientras haya viaje (o calificación) y el usuario
   /// no pidió offline explícitamente.
   void _ensureTripReconnectLoop() {
     if (_userRequestedOffline || _disposed) return;
-    final hasWork =
-        state.activeTrip != null || state.tripPendingRating != null;
+    final hasWork = state.activeTrip != null || state.tripPendingRating != null;
     if (!hasWork) return;
     if (state.online) return;
     _tripReconnectTimer?.cancel();
-    if (!state.connecting) {
-      unawaited(setOnline(true));
-    }
-    _tripReconnectTimer = Timer.periodic(const Duration(seconds: 8), (_) async {
-      if (_userRequestedOffline || _disposed) {
-        _cancelTripReconnectLoop();
-        return;
-      }
-      if (state.activeTrip == null && state.tripPendingRating == null) {
-        _cancelTripReconnectLoop();
-        return;
-      }
-      if (state.online) {
-        _cancelTripReconnectLoop();
-        return;
-      }
-      if (state.connecting) return;
-      await setOnline(true);
-    });
+    final delayMs = _nextReconnectDelayMs(hasTrip: true);
+    _tripReconnectTimer = Timer(
+      Duration(milliseconds: delayMs),
+      () => unawaited(_runTripReconnectAttempt()),
+    );
   }
 
   /// Llamado desde el home cuando hay trabajo activo pero el socket no está
@@ -995,7 +1242,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     try {
       // connectivity_plus 6.x devuelve List<ConnectivityResult>
       final connList = await Connectivity().checkConnectivity();
-      final hasConnection = connList.isNotEmpty &&
+      final hasConnection =
+          connList.isNotEmpty &&
           !(connList.length == 1 && connList.first == ConnectivityResult.none);
       if (!hasConnection) {
         debugPrint('[DRIVER_RT] Sin conexión a internet. result=$connList');
@@ -1014,7 +1262,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       await _ensureNotificationPermissionForTripOffers();
 
       _logVerbose(
-          'Conectando socket a ${DriverRealtimeConfig.socketUrl}${DriverRealtimeConfig.socketPath}...');
+        'Conectando socket a ${DriverRealtimeConfig.socketUrl}${DriverRealtimeConfig.socketPath}...',
+      );
 
       final socket = io.io(
         DriverRealtimeConfig.socketUrl,
@@ -1023,9 +1272,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
             .setPath(DriverRealtimeConfig.socketPath)
             .enableForceNew()
             .disableMultiplex()
-            .setExtraHeaders({
-              'Authorization': 'Bearer $token',
-            })
+            .setExtraHeaders({'Authorization': 'Bearer $token'})
             .setAuth({'token': token})
             .build(),
       );
@@ -1093,6 +1340,45 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
         debugPrint('[DRIVER_RT] driver:availability_error data=$data');
         if (data is Map) {
           final code = data['code']?.toString();
+          if (code == 'DRIVER_GO_ONLINE_BLOCKED') {
+            final msg = data['message']?.toString().trim();
+            state = state.copyWith(
+              goOnlineBlocked: true,
+              goOnlineBlockReason: (msg != null && msg.isNotEmpty) ? msg : null,
+              errorCode: 'DRIVER_GO_ONLINE_BLOCKED',
+              availabilityDesired: false,
+            );
+            _availabilitySessionDesired = false;
+            return;
+          }
+          if (code == 'DRIVER_CREDITS_BELOW_MIN') {
+            final minRaw = data['minCreditsToGoOnline'];
+            final balanceRaw = data['driverCreditsBalance'];
+            state = state.copyWith(
+              insufficientCreditsToGoOnline: true,
+              minCreditsToGoOnline: minRaw is num
+                  ? minRaw.toDouble()
+                  : state.minCreditsToGoOnline,
+              driverCreditsBalance: balanceRaw is num
+                  ? balanceRaw.toDouble()
+                  : state.driverCreditsBalance,
+              errorCode: 'DRIVER_CREDITS_BELOW_MIN',
+              availabilityDesired: false,
+            );
+            _availabilitySessionDesired = false;
+            return;
+          }
+          if (code == 'DRIVER_ACCOUNT_BLOCKED') {
+            final msg = data['message']?.toString().trim();
+            state = state.copyWith(
+              accountBlocked: true,
+              accountBlockReason: (msg != null && msg.isNotEmpty) ? msg : null,
+              errorCode: 'DRIVER_ACCOUNT_BLOCKED',
+              availabilityDesired: false,
+            );
+            _availabilitySessionDesired = false;
+            return;
+          }
           if (code != null && code.startsWith('RBAC_')) {
             state = state.copyWith(
               online: false,
@@ -1129,13 +1415,17 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
           final etaMinutesRaw = data['etaMinutes'];
           final etaDestRaw = data['etaToDestinationMinutes'];
           final distanceToPickupRaw = data['distanceToPickupKm'];
-          final offeredPrice =
-              offeredPriceRaw is num ? offeredPriceRaw.toDouble() : null;
-          final currencyCode = (data['currencyCode'] ?? data['currency'])?.toString();
-          final etaMinutes =
-              etaMinutesRaw is num ? etaMinutesRaw.toDouble() : null;
-          final etaToDestinationMinutes =
-              etaDestRaw is num ? etaDestRaw.toDouble() : null;
+          final offeredPrice = offeredPriceRaw is num
+              ? offeredPriceRaw.toDouble()
+              : null;
+          final currencyCode = (data['currencyCode'] ?? data['currency'])
+              ?.toString();
+          final etaMinutes = etaMinutesRaw is num
+              ? etaMinutesRaw.toDouble()
+              : null;
+          final etaToDestinationMinutes = etaDestRaw is num
+              ? etaDestRaw.toDouble()
+              : null;
           final distanceToPickupKm = distanceToPickupRaw is num
               ? distanceToPickupRaw.toDouble()
               : null;
@@ -1144,19 +1434,22 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
           final originAddress = data['originAddress']?.toString();
           final destinationAddress = data['destinationAddress']?.toString();
           final tripDistanceRaw = data['tripDistanceKm'];
-          final tripDistanceKm =
-              tripDistanceRaw is num ? tripDistanceRaw.toDouble() : null;
+          final tripDistanceKm = tripDistanceRaw is num
+              ? tripDistanceRaw.toDouble()
+              : null;
 
           _logVerbose(
-              'trip:offer recibido tripId=$tripId, price=$offeredPrice, eta=$etaMinutes, dist=$distanceToPickupKm');
+            'trip:offer recibido tripId=$tripId, price=$offeredPrice, eta=$etaMinutes, dist=$distanceToPickupKm',
+          );
 
           // Segundo plano / app cerrada: FCM desde backend (`sendDriverTripOffer`).
           // En primer plano: beep si el conductor está libre (lista + socket).
           final inForeground = DriverAppVisibility.isInForeground.value;
           final isBusy = state.activeTrip != null;
 
-          final existingIndex = state.pendingOffers
-              .indexWhere((offer) => offer.tripId == tripId);
+          final existingIndex = state.pendingOffers.indexWhere(
+            (offer) => offer.tripId == tripId,
+          );
           final isNewOffer = existingIndex < 0;
 
           if (inForeground && isNewOffer && !isBusy) {
@@ -1205,15 +1498,26 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
           final estimatedPrice = estimatedPriceRaw is num
               ? estimatedPriceRaw.toDouble()
               : null;
-          final currencyCode = (data['currencyCode'] ?? data['currency'])?.toString();
+          final currencyCode = (data['currencyCode'] ?? data['currency'])
+              ?.toString();
           _logVerbose('trip:accepted raw data=$data');
 
           final pickupParsed = _parseLatLng(data, 'pickupLat', 'pickupLng');
-          final (pickupLat, pickupLng) = (pickupParsed.$1 != null && pickupParsed.$2 != null)
+          final (
+            pickupLat,
+            pickupLng,
+          ) = (pickupParsed.$1 != null && pickupParsed.$2 != null)
               ? pickupParsed
               : _parseLatLngFromMap(data['origin']);
-          final destParsed = _parseLatLng(data, 'destinationLat', 'destinationLng');
-          final (destLat, destLng) = (destParsed.$1 != null && destParsed.$2 != null)
+          final destParsed = _parseLatLng(
+            data,
+            'destinationLat',
+            'destinationLng',
+          );
+          final (
+            destLat,
+            destLng,
+          ) = (destParsed.$1 != null && destParsed.$2 != null)
               ? destParsed
               : _parseLatLngFromMap(data['destination']);
           final passengerName = data['passengerName']?.toString();
@@ -1221,17 +1525,22 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
           final originAddress = data['originAddress']?.toString();
           final destinationAddress = data['destinationAddress']?.toString();
           final tripDistanceRaw = data['tripDistanceKm'];
-          final tripDistanceKm = tripDistanceRaw is num ? tripDistanceRaw.toDouble() : null;
+          final tripDistanceKm = tripDistanceRaw is num
+              ? tripDistanceRaw.toDouble()
+              : null;
           final etaDestRaw = data['etaToDestinationMinutes'];
-          final etaToDestinationMinutes = etaDestRaw is num ? etaDestRaw.toDouble() : null;
+          final etaToDestinationMinutes = etaDestRaw is num
+              ? etaDestRaw.toDouble()
+              : null;
           final rawRouteEnc = data['routeOverviewEncoded'];
-          final routeOverviewEncoded = rawRouteEnc != null &&
-                  rawRouteEnc.toString().trim().isNotEmpty
+          final routeOverviewEncoded =
+              rawRouteEnc != null && rawRouteEnc.toString().trim().isNotEmpty
               ? rawRouteEnc.toString().trim()
               : null;
           _logVerbose(
-              'trip:accepted recibido tripId=$tripId status=$status '
-              'pickup=($pickupLat,$pickupLng) dest=($destLat,$destLng)');
+            'trip:accepted recibido tripId=$tripId status=$status '
+            'pickup=($pickupLat,$pickupLng) dest=($destLat,$destLng)',
+          );
 
           if (tripId != null) {
             final updatedOffers = state.pendingOffers
@@ -1263,9 +1572,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
             );
             _clearOfferErrorForTrip(tripId);
           } else {
-            state = state.copyWith(
-              processingOfferTripId: null,
-            );
+            state = state.copyWith(processingOfferTripId: null);
           }
           unawaited(_syncDriverForegroundSession());
         } catch (e) {
@@ -1289,9 +1596,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
             );
             _clearOfferErrorForTrip(tripId);
           } else {
-            state = state.copyWith(
-              processingOfferTripId: null,
-            );
+            state = state.copyWith(processingOfferTripId: null);
           }
           unawaited(_syncDriverForegroundSession());
         } catch (e) {
@@ -1305,24 +1610,24 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
           final code = data['code']?.toString();
           final message = data['message']?.toString();
           final tripId = data['tripId']?.toString();
-          debugPrint(
-              '[DRIVER_RT] trip:error code=$code message=$message');
+          debugPrint('[DRIVER_RT] trip:error code=$code message=$message');
 
           final normalized = code?.trim().toUpperCase();
           final isOfferNoLongerAvailable =
               normalized == 'OFFER_EXPIRED' ||
-                  normalized == 'TRIP_ALREADY_PROCESSED' ||
-                  normalized == 'TRIP_NOT_AVAILABLE' ||
-                  normalized == 'TRIP_TAKEN' ||
-                  normalized == 'OFFER_ALREADY_TAKEN';
+              normalized == 'TRIP_ALREADY_PROCESSED' ||
+              normalized == 'TRIP_NOT_AVAILABLE' ||
+              normalized == 'TRIP_TAKEN' ||
+              normalized == 'OFFER_ALREADY_TAKEN';
 
           final targetTripId = (tripId != null && tripId.isNotEmpty)
               ? tripId
               : state.processingOfferTripId;
-          final updatedOffers = (isOfferNoLongerAvailable && targetTripId != null)
+          final updatedOffers =
+              (isOfferNoLongerAvailable && targetTripId != null)
               ? state.pendingOffers
-                  .where((offer) => offer.tripId != targetTripId)
-                  .toList()
+                    .where((offer) => offer.tripId != targetTripId)
+                    .toList()
               : state.pendingOffers;
 
           state = state.copyWith(
@@ -1352,15 +1657,19 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
           final tripId = _extractTripIdFromPayload(data);
           final newStatusRaw = data['status']?.toString();
           final newStatus = newStatusRaw?.trim().toLowerCase();
-          final isFinal = _toBool(data['isFinal']) ||
+          final isFinal =
+              _toBool(data['isFinal']) ||
               newStatus == 'completed' ||
               newStatus == 'cancelled' ||
               newStatus == 'expired';
           if (tripId == null || newStatus == null) return;
-          debugPrint('[DRIVER_RT] trip:status tripId=$tripId status=$newStatus');
+          debugPrint(
+            '[DRIVER_RT] trip:status tripId=$tripId status=$newStatus',
+          );
           final activeTripMatches = state.activeTrip?.tripId == tripId;
-          final pendingContainsTrip =
-              state.pendingOffers.any((o) => o.tripId == tripId);
+          final pendingContainsTrip = state.pendingOffers.any(
+            (o) => o.tripId == tripId,
+          );
           final cleanedPendingOffers = state.pendingOffers
               .where((o) => o.tripId != tripId)
               .toList(growable: false);
@@ -1380,7 +1689,10 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
           if (!activeTripMatches) return;
           // Actualizamos estado y, si es estado final, sacamos el mapa
           // inmediatamente para evitar que quede la ruta pintada.
-          if (isFinal && (newStatus == 'completed' || newStatus == 'cancelled' || newStatus == 'expired')) {
+          if (isFinal &&
+              (newStatus == 'completed' ||
+                  newStatus == 'cancelled' ||
+                  newStatus == 'expired')) {
             if (newStatus == 'completed') {
               final ignoreUntilMs = DateTime.now()
                   .add(const Duration(seconds: 60))
@@ -1388,7 +1700,9 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
               state = state.copyWith(
                 pendingOffers: cleanedPendingOffers,
                 activeTrip: null,
-                tripPendingRating: state.activeTrip!.copyWith(status: newStatus),
+                tripPendingRating: state.activeTrip!.copyWith(
+                  status: newStatus,
+                ),
                 lastCompletedTripId: tripId,
                 processingTripAction: null,
                 tripErrorMessage: null,
@@ -1478,7 +1792,9 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
                 .millisecondsSinceEpoch;
             state = state.copyWith(
               activeTrip: null,
-              tripPendingRating: state.activeTrip!.copyWith(status: 'completed'),
+              tripPendingRating: state.activeTrip!.copyWith(
+                status: 'completed',
+              ),
               lastCompletedTripId: tripId,
               processingTripAction: null,
               tripErrorMessage: null,
@@ -1505,7 +1821,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
               .where((o) => o.tripId != tripId)
               .toList(growable: false);
           debugPrint(
-              '[DRIVER_RT] trip:cancelled tripId=$tripId reason=$reason');
+            '[DRIVER_RT] trip:cancelled tripId=$tripId reason=$reason',
+          );
           if (tripId != null && state.activeTrip?.tripId == tripId) {
             state = state.copyWith(
               pendingOffers: cleanedPendingOffers,
@@ -1546,14 +1863,17 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
           final tripId = data['tripId']?.toString();
           if (tripId == null || state.activeTrip?.tripId != tripId) return;
           if (!driverTripChatPhaseActive(state.activeTrip?.status)) return;
-          final id = data['id']?.toString() ??
+          final id =
+              data['id']?.toString() ??
               '${DateTime.now().millisecondsSinceEpoch}-${state.chatMessages.length}';
           final senderRole = data['senderRole']?.toString() ?? 'passenger';
           final messageKind = data['messageKind']?.toString() ?? 'text';
           final templateCode = data['templateCode']?.toString();
           final messageText = data['messageText']?.toString().trim() ?? '';
           if (messageText.isEmpty) return;
-          final createdAt = DateTime.tryParse(data['createdAt']?.toString() ?? '');
+          final createdAt = DateTime.tryParse(
+            data['createdAt']?.toString() ?? '',
+          );
           final next = List<DriverTripChatMessage>.from(state.chatMessages)
             ..add(
               DriverTripChatMessage(
@@ -1576,13 +1896,14 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
               HapticFeedback.lightImpact();
             }
             unawaited(
-              DriverNotificationService.instance.showTripChatMessageIfBackground(
-                isAppInForeground: inForeground,
-                tripId: tripId,
-                senderRole: senderRole,
-                messageText: messageText,
-                notifyInForeground: true,
-              ),
+              DriverNotificationService.instance
+                  .showTripChatMessageIfBackground(
+                    isAppInForeground: inForeground,
+                    tripId: tripId,
+                    senderRole: senderRole,
+                    messageText: messageText,
+                    notifyInForeground: true,
+                  ),
             );
           }
         } catch (e) {
@@ -1591,7 +1912,9 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       });
 
       socket.on('trip:chat:error', (data) {
-        final code = (data is Map ? data['code'] : null)?.toString() ?? 'TRIP_CHAT_ERROR';
+        final code =
+            (data is Map ? data['code'] : null)?.toString() ??
+            'TRIP_CHAT_ERROR';
         state = state.copyWith(tripChatErrorCode: code);
       });
 
@@ -1599,8 +1922,12 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
         try {
           if (data is! Map) return;
           final cooldownSecRaw = data['cooldownSec'];
-          final cooldownSec = cooldownSecRaw is num ? cooldownSecRaw.toInt() : 45;
-          final until = DateTime.now().add(Duration(seconds: cooldownSec)).millisecondsSinceEpoch;
+          final cooldownSec = cooldownSecRaw is num
+              ? cooldownSecRaw.toInt()
+              : 45;
+          final until = DateTime.now()
+              .add(Duration(seconds: cooldownSec))
+              .millisecondsSinceEpoch;
           state = state.copyWith(
             arrivalReminderCooldownUntilMs: until,
             arrivalReminderErrorCode: null,
@@ -1611,11 +1938,14 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       socket.on('trip:arrival_reminder:error', (data) {
         try {
           if (data is! Map) return;
-          final code = data['code']?.toString() ?? 'TRIP_ARRIVAL_REMINDER_ERROR';
+          final code =
+              data['code']?.toString() ?? 'TRIP_ARRIVAL_REMINDER_ERROR';
           final retryAfterRaw = data['retryAfterSec'];
           final retryAfter = retryAfterRaw is num ? retryAfterRaw.toInt() : 0;
           final until = retryAfter > 0
-              ? DateTime.now().add(Duration(seconds: retryAfter)).millisecondsSinceEpoch
+              ? DateTime.now()
+                    .add(Duration(seconds: retryAfter))
+                    .millisecondsSinceEpoch
               : state.arrivalReminderCooldownUntilMs;
           state = state.copyWith(
             arrivalReminderErrorCode: code,
@@ -1632,13 +1962,67 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
           if (_shouldRefreshDriverPhoto()) {
             unawaited(_refreshDriverPhotoFromProfile());
           }
+          final statusRaw = data['status'];
+          if (statusRaw is Map) {
+            final sm = Map<String, dynamic>.from(statusRaw);
+            final blocked =
+                _toBool(sm['goOnlineBlocked'] ?? sm['go_online_blocked']);
+            final reasonRaw =
+                sm['goOnlineBlockReason'] ?? sm['go_online_block_reason'];
+            final reason = reasonRaw?.toString().trim();
+            final accountBlocked =
+                _toBool(sm['accountBlocked'] ?? sm['account_blocked']);
+            final accountReasonRaw =
+                sm['accountBlockReason'] ?? sm['account_block_reason'];
+            final accountReason = accountReasonRaw?.toString().trim();
+            final creditsBlocked = _toBool(
+              sm['insufficientCreditsToGoOnline'] ??
+                  sm['insufficient_credits_to_go_online'],
+            );
+            final minCreditsRaw =
+                sm['minCreditsToGoOnline'] ?? sm['min_credits_to_go_online'];
+            final balanceRaw =
+                sm['driverCreditsBalance'] ?? sm['driver_credits_balance'];
+            final minCredits = minCreditsRaw is num
+                ? minCreditsRaw.toDouble()
+                : state.minCreditsToGoOnline;
+            final creditsBalance = balanceRaw is num
+                ? balanceRaw.toDouble()
+                : state.driverCreditsBalance;
+            final hadBlockedError = state.errorCode == 'DRIVER_GO_ONLINE_BLOCKED';
+            state = state.copyWith(
+              goOnlineBlocked: blocked,
+              goOnlineBlockReason:
+                  (reason != null && reason.isNotEmpty) ? reason : null,
+              accountBlocked: accountBlocked,
+              accountBlockReason: (accountReason != null && accountReason.isNotEmpty)
+                  ? accountReason
+                  : null,
+              insufficientCreditsToGoOnline: creditsBlocked,
+              minCreditsToGoOnline: minCredits,
+              driverCreditsBalance: creditsBalance,
+              errorCode: !blocked && hadBlockedError ? null : state.errorCode,
+              availabilityDesired: (blocked || accountBlocked || creditsBlocked) &&
+                      state.activeTrip == null &&
+                      state.tripPendingRating == null
+                  ? false
+                  : state.availabilityDesired,
+            );
+            if ((blocked || accountBlocked || creditsBlocked) &&
+                state.activeTrip == null &&
+                state.tripPendingRating == null) {
+              _availabilitySessionDesired = false;
+            }
+          }
           final hasActiveTrip = data['hasActiveTrip'] == true;
           final activeTripData = data['activeTrip'];
           if (hasActiveTrip && activeTripData is Map) {
             final tripId = activeTripData['tripId']?.toString();
             final status =
-                activeTripData['status']?.toString().toLowerCase() ?? 'accepted';
-            final isFinal = _toBool(activeTripData['isFinal']) ||
+                activeTripData['status']?.toString().toLowerCase() ??
+                'accepted';
+            final isFinal =
+                _toBool(activeTripData['isFinal']) ||
                 status == 'completed' ||
                 status == 'cancelled' ||
                 status == 'expired';
@@ -1646,25 +2030,49 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
             final estimatedPrice = estimatedPriceRaw is num
                 ? estimatedPriceRaw.toDouble()
                 : null;
-            final currencyCode = (activeTripData['currencyCode'] ?? activeTripData['currency'])?.toString();
-            final pickupParsed = _parseLatLng(activeTripData, 'pickupLat', 'pickupLng');
-            final (pickupLat, pickupLng) = (pickupParsed.$1 != null && pickupParsed.$2 != null)
+            final currencyCode =
+                (activeTripData['currencyCode'] ?? activeTripData['currency'])
+                    ?.toString();
+            final pickupParsed = _parseLatLng(
+              activeTripData,
+              'pickupLat',
+              'pickupLng',
+            );
+            final (
+              pickupLat,
+              pickupLng,
+            ) = (pickupParsed.$1 != null && pickupParsed.$2 != null)
                 ? pickupParsed
                 : _parseLatLngFromMap(activeTripData['origin']);
-            final destParsed = _parseLatLng(activeTripData, 'destinationLat', 'destinationLng');
-            final (destLat, destLng) = (destParsed.$1 != null && destParsed.$2 != null)
+            final destParsed = _parseLatLng(
+              activeTripData,
+              'destinationLat',
+              'destinationLng',
+            );
+            final (
+              destLat,
+              destLng,
+            ) = (destParsed.$1 != null && destParsed.$2 != null)
                 ? destParsed
                 : _parseLatLngFromMap(activeTripData['destination']);
             final passengerName = activeTripData['passengerName']?.toString();
-            final passengerRating = _asDouble(activeTripData['passengerRating']);
+            final passengerRating = _asDouble(
+              activeTripData['passengerRating'],
+            );
             final originAddress = activeTripData['originAddress']?.toString();
-            final destinationAddress = activeTripData['destinationAddress']?.toString();
+            final destinationAddress = activeTripData['destinationAddress']
+                ?.toString();
             final tripDistanceRaw = activeTripData['tripDistanceKm'];
-            final tripDistanceKm = tripDistanceRaw is num ? tripDistanceRaw.toDouble() : null;
+            final tripDistanceKm = tripDistanceRaw is num
+                ? tripDistanceRaw.toDouble()
+                : null;
             final etaDestRaw = activeTripData['etaToDestinationMinutes'];
-            final etaToDestinationMinutes = etaDestRaw is num ? etaDestRaw.toDouble() : null;
+            final etaToDestinationMinutes = etaDestRaw is num
+                ? etaDestRaw.toDouble()
+                : null;
             final rawRouteEncAck = activeTripData['routeOverviewEncoded'];
-            final routeOverviewEncoded = rawRouteEncAck != null &&
+            final routeOverviewEncoded =
+                rawRouteEncAck != null &&
                     rawRouteEncAck.toString().trim().isNotEmpty
                 ? rawRouteEncAck.toString().trim()
                 : null;
@@ -1677,93 +2085,117 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
                   tripErrorMessage: null,
                 );
               } else {
-              final existingTrip = state.activeTrip;
-              final parsedTrip = DriverActiveTrip(
-                tripId: tripId,
-                status: status,
-                estimatedPrice: estimatedPrice,
-                pickupLat: pickupLat,
-                pickupLng: pickupLng,
-                destinationLat: destLat,
-                destinationLng: destLng,
-                passengerName: passengerName,
-                passengerRating: passengerRating,
-                currencyCode: currencyCode,
-                originAddress: originAddress,
-                destinationAddress: destinationAddress,
-                tripDistanceKm: tripDistanceKm,
-                etaToDestinationMinutes: etaToDestinationMinutes,
-                routeOverviewEncoded: routeOverviewEncoded,
-              );
-              // El ack a veces trae solo status/coords; no pisar dirección/pasajero ya mostrados.
-              final mergedTrip = (existingTrip != null && existingTrip.tripId == tripId)
-                  ? existingTrip.copyWith(
-                      status: status,
-                      estimatedPrice: estimatedPrice ?? existingTrip.estimatedPrice,
-                      pickupLat: pickupLat ?? existingTrip.pickupLat,
-                      pickupLng: pickupLng ?? existingTrip.pickupLng,
-                      destinationLat: destLat ?? existingTrip.destinationLat,
-                      destinationLng: destLng ?? existingTrip.destinationLng,
-                      passengerName: passengerName ?? existingTrip.passengerName,
-                      passengerRating: passengerRating ?? existingTrip.passengerRating,
-                      currencyCode: currencyCode ?? existingTrip.currencyCode,
-                      originAddress: originAddress ?? existingTrip.originAddress,
-                      destinationAddress:
-                          destinationAddress ?? existingTrip.destinationAddress,
-                      tripDistanceKm: tripDistanceKm ?? existingTrip.tripDistanceKm,
-                      etaToDestinationMinutes:
-                          etaToDestinationMinutes ?? existingTrip.etaToDestinationMinutes,
-                      routeOverviewEncoded:
-                          routeOverviewEncoded ?? existingTrip.routeOverviewEncoded,
-                    )
-                  : parsedTrip;
+                final existingTrip = state.activeTrip;
+                final parsedTrip = DriverActiveTrip(
+                  tripId: tripId,
+                  status: status,
+                  estimatedPrice: estimatedPrice,
+                  pickupLat: pickupLat,
+                  pickupLng: pickupLng,
+                  destinationLat: destLat,
+                  destinationLng: destLng,
+                  passengerName: passengerName,
+                  passengerRating: passengerRating,
+                  currencyCode: currencyCode,
+                  originAddress: originAddress,
+                  destinationAddress: destinationAddress,
+                  tripDistanceKm: tripDistanceKm,
+                  etaToDestinationMinutes: etaToDestinationMinutes,
+                  routeOverviewEncoded: routeOverviewEncoded,
+                );
+                // El ack a veces trae solo status/coords; no pisar dirección/pasajero ya mostrados.
+                final mergedTrip =
+                    (existingTrip != null && existingTrip.tripId == tripId)
+                    ? existingTrip.copyWith(
+                        status: status,
+                        estimatedPrice:
+                            estimatedPrice ?? existingTrip.estimatedPrice,
+                        pickupLat: pickupLat ?? existingTrip.pickupLat,
+                        pickupLng: pickupLng ?? existingTrip.pickupLng,
+                        destinationLat: destLat ?? existingTrip.destinationLat,
+                        destinationLng: destLng ?? existingTrip.destinationLng,
+                        passengerName:
+                            passengerName ?? existingTrip.passengerName,
+                        passengerRating:
+                            passengerRating ?? existingTrip.passengerRating,
+                        currencyCode: currencyCode ?? existingTrip.currencyCode,
+                        originAddress:
+                            originAddress ?? existingTrip.originAddress,
+                        destinationAddress:
+                            destinationAddress ??
+                            existingTrip.destinationAddress,
+                        tripDistanceKm:
+                            tripDistanceKm ?? existingTrip.tripDistanceKm,
+                        etaToDestinationMinutes:
+                            etaToDestinationMinutes ??
+                            existingTrip.etaToDestinationMinutes,
+                        routeOverviewEncoded:
+                            routeOverviewEncoded ??
+                            existingTrip.routeOverviewEncoded,
+                      )
+                    : parsedTrip;
 
-              // Si ya estamos en flujo de rating para este mismo trip, no
-              // restauremos el mapa aunque el backend aún mande estados
-              // intermedios (evita que reaparezca "trayecto" después de
-              // finalizar).
-              final existingPending = state.tripPendingRating;
-              if (existingPending != null && existingPending.tripId == tripId) {
-                state = state.copyWith(
-                  activeTrip: null,
-                  tripPendingRating: existingPending,
-                  processingTripAction: null,
-                  tripErrorMessage: null,
-                );
-                debugPrint(
-                    '[DRIVER_RT] connection:ack llegó durante rating -> ignorando restore mapa tripId=$tripId');
-              } else if (isFinal) {
-                // Si el backend ya considera el viaje final, NO lo restauramos
-                // como "viaje activo" (para que no vuelva el mapa y el estado).
-                final ignoreUntilMs = DateTime.now()
-                    .add(const Duration(seconds: 60))
-                    .millisecondsSinceEpoch;
-                state = state.copyWith(
-                  activeTrip: null,
-                  tripPendingRating: mergedTrip,
-                  lastCompletedTripId: tripId,
-                  processingTripAction: null,
-                  tripErrorMessage: null,
-                  ignoreActiveTripRestoreTripId: tripId,
-                  ignoreActiveTripRestoreUntilMs: ignoreUntilMs,
-                );
-                debugPrint(
-                    '[DRIVER_RT] connection:ack recibió viaje final -> guardando para rating tripId=$tripId status=$status');
-              } else {
-                state = state.copyWith(
-                  activeTrip: mergedTrip,
-                  tripPendingRating: null,
-                  processingTripAction: null,
-                );
-                debugPrint(
-                    '[DRIVER_RT] connection:ack restaurado activeTrip=$tripId status=$status');
-              }
+                // Si ya estamos en flujo de rating para este mismo trip, no
+                // restauremos el mapa aunque el backend aún mande estados
+                // intermedios (evita que reaparezca "trayecto" después de
+                // finalizar).
+                final existingPending = state.tripPendingRating;
+                if (existingPending != null &&
+                    existingPending.tripId == tripId) {
+                  state = state.copyWith(
+                    activeTrip: null,
+                    tripPendingRating: existingPending,
+                    processingTripAction: null,
+                    tripErrorMessage: null,
+                  );
+                  debugPrint(
+                    '[DRIVER_RT] connection:ack llegó durante rating -> ignorando restore mapa tripId=$tripId',
+                  );
+                } else if (isFinal) {
+                  // Si el backend ya considera el viaje final, NO lo restauramos
+                  // como "viaje activo" (para que no vuelva el mapa y el estado).
+                  final ignoreUntilMs = DateTime.now()
+                      .add(const Duration(seconds: 60))
+                      .millisecondsSinceEpoch;
+                  state = state.copyWith(
+                    activeTrip: null,
+                    tripPendingRating: mergedTrip,
+                    lastCompletedTripId: tripId,
+                    processingTripAction: null,
+                    tripErrorMessage: null,
+                    ignoreActiveTripRestoreTripId: tripId,
+                    ignoreActiveTripRestoreUntilMs: ignoreUntilMs,
+                  );
+                  debugPrint(
+                    '[DRIVER_RT] connection:ack recibió viaje final -> guardando para rating tripId=$tripId status=$status',
+                  );
+                } else {
+                  state = state.copyWith(
+                    activeTrip: mergedTrip,
+                    tripPendingRating: null,
+                    processingTripAction: null,
+                  );
+                  debugPrint(
+                    '[DRIVER_RT] connection:ack restaurado activeTrip=$tripId status=$status',
+                  );
+                }
               }
             }
           }
         } catch (e) {
           debugPrint('[DRIVER_RT] Error manejando connection:ack: $e');
         }
+      });
+      socket.on('driver:force_logout', (data) {
+        final msg = data is Map ? data['message']?.toString() : null;
+        state = state.copyWith(
+          accountBlocked: true,
+          accountBlockReason: msg,
+          online: false,
+          connecting: false,
+          availabilityDesired: false,
+          errorCode: 'AUTH',
+        );
       });
 
       _socket = socket;
@@ -1775,11 +2207,9 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
         },
       );
 
-      state = state.copyWith(
-        online: true,
-        connecting: false,
-        errorCode: null,
-      );
+      state = state.copyWith(online: true, connecting: false, errorCode: null);
+      _availabilityReconnectAttempts = 0;
+      _tripReconnectAttempts = 0;
       _lastTouchReconnect = null;
       _cancelTripReconnectLoop();
       _cancelAvailabilityReconnectLoop();
@@ -1817,8 +2247,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
         );
         return;
       }
-      final preserveTrip = state.activeTrip != null ||
-          state.tripPendingRating != null;
+      final preserveTrip =
+          state.activeTrip != null || state.tripPendingRating != null;
       await _goOffline(
         internal: true,
         preserveTripState: preserveTrip,
@@ -1837,8 +2267,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     } catch (e, stackTrace) {
       debugPrint('[DRIVER_RT] Error inesperado al ir online: $e');
       debugPrint('[DRIVER_RT] $stackTrace');
-      final preserveTrip = state.activeTrip != null ||
-          state.tripPendingRating != null;
+      final preserveTrip =
+          state.activeTrip != null || state.tripPendingRating != null;
       await _goOffline(
         internal: true,
         preserveTripState: preserveTrip,
@@ -1877,10 +2307,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     });
   }
 
-  void sendTripChatText({
-    required String tripId,
-    required String text,
-  }) {
+  void sendTripChatText({required String tripId, required String text}) {
     final sanitized = text.trim();
     if (sanitized.isEmpty) return;
     if (!driverTripChatPhaseActive(state.activeTrip?.status)) {
@@ -1899,9 +2326,14 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     });
   }
 
-  void sendArrivalReminder () {
+  void sendArrivalReminder() {
     final tripId = state.activeTrip?.tripId;
     if (tripId == null || tripId.isEmpty) return;
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final cooldownUntilMs = state.arrivalReminderCooldownUntilMs;
+    if (cooldownUntilMs != null && cooldownUntilMs > nowMs) {
+      return;
+    }
     final socket = _socket;
     if (socket == null || !socket.connected) {
       state = state.copyWith(arrivalReminderErrorCode: 'SOCKET');
@@ -1915,33 +2347,66 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     required int stars,
     List<String> feedbackCodes = const [],
   }) async {
-    if (tripId.trim().isEmpty) return;
+    final normalizedTripId = tripId.trim();
+    if (normalizedTripId.isEmpty) return;
     if (stars < 1 || stars > 5) return;
+    if (_tripRatingInFlight.contains(normalizedTripId)) return;
     final token = await _storage.read(key: 'driver_token');
     if (token == null || token.isEmpty) return;
-    await _profileDio().post<Map<String, dynamic>>(
-      '/drivers/me/trips/$tripId/rating',
-      data: <String, dynamic>{
-        'stars': stars,
-        if (feedbackCodes.isNotEmpty) 'feedbackCodes': feedbackCodes,
-      },
-      options: Options(
-        headers: <String, String>{'Authorization': 'Bearer $token'},
-      ),
-    );
+    _tripRatingInFlight.add(normalizedTripId);
+    try {
+      await _requestWithBackpressureRetry<void>(
+        maxAttempts: 2,
+        flow: 'driver_trip_rating',
+        endpoint: '/drivers/me/trips/:tripId/rating',
+        operation: () async {
+          await _profileDio().post<Map<String, dynamic>>(
+            '/drivers/me/trips/$normalizedTripId/rating',
+            data: <String, dynamic>{
+              'stars': stars,
+              if (feedbackCodes.isNotEmpty) 'feedbackCodes': feedbackCodes,
+            },
+            options: Options(
+              headers: <String, String>{'Authorization': 'Bearer $token'},
+            ),
+          );
+        },
+      );
+    } finally {
+      _tripRatingInFlight.remove(normalizedTripId);
+    }
   }
 
   Future<List<DriverRatingFeedbackItem>> fetchDriverRatingFeedbackCatalog({
     required int stars,
   }) async {
     if (stars < 1 || stars > 5) return const [];
+    final inFlight = _ratingCatalogInFlight[stars];
+    if (inFlight != null) return inFlight;
+    final future = _fetchDriverRatingFeedbackCatalogInternal(stars: stars);
+    _ratingCatalogInFlight[stars] = future;
+    try {
+      return await future;
+    } finally {
+      _ratingCatalogInFlight.remove(stars);
+    }
+  }
+
+  Future<List<DriverRatingFeedbackItem>> _fetchDriverRatingFeedbackCatalogInternal({
+    required int stars,
+  }) async {
     final token = await _storage.read(key: 'driver_token');
     if (token == null || token.isEmpty) return const [];
-    final res = await _profileDio().get<Map<String, dynamic>>(
-      '/drivers/me/trips/rating-feedback-catalog',
-      queryParameters: <String, dynamic>{'stars': stars},
-      options: Options(
-        headers: <String, String>{'Authorization': 'Bearer $token'},
+    final res = await _requestWithBackpressureRetry<Response<Map<String, dynamic>>>(
+      maxAttempts: 3,
+      flow: 'driver_trip_rating',
+      endpoint: '/drivers/me/trips/rating-feedback-catalog',
+      operation: () => _profileDio().get<Map<String, dynamic>>(
+        '/drivers/me/trips/rating-feedback-catalog',
+        queryParameters: <String, dynamic>{'stars': stars},
+        options: Options(
+          headers: <String, String>{'Authorization': 'Bearer $token'},
+        ),
       ),
     );
     final body = res.data ?? const <String, dynamic>{};
@@ -1951,7 +2416,10 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     if (items is! List) return const [];
     return items
         .whereType<Map>()
-        .map((m) => DriverRatingFeedbackItem.fromJson(Map<String, dynamic>.from(m)))
+        .map(
+          (m) =>
+              DriverRatingFeedbackItem.fromJson(Map<String, dynamic>.from(m)),
+        )
         .toList(growable: false);
   }
 
@@ -1965,7 +2433,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
   Future<void> _syncDriverForegroundSession() async {
     final err = state.errorCode;
     final rbacBlocked = err != null && err.startsWith('RBAC_');
-    final availabilitySessionActive = !_disposed &&
+    final availabilitySessionActive =
+        !_disposed &&
         !_userRequestedOffline &&
         _availabilitySessionDesired &&
         !rbacBlocked;
@@ -2003,7 +2472,12 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     } catch (_) {}
     _socket = null;
 
-    final preserve = preserveTripState &&
+    if (_disposed) {
+      return;
+    }
+
+    final preserve =
+        preserveTripState &&
         (state.activeTrip != null || state.tripPendingRating != null);
 
     state = state.copyWith(
@@ -2015,12 +2489,15 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       processingOfferTripId: preservePendingOffers
           ? state.processingOfferTripId
           : null,
-      processingIsAccept:
-          preservePendingOffers ? state.processingIsAccept : true,
-      offersErrorCodeByTripId:
-          preservePendingOffers ? state.offersErrorCodeByTripId : const {},
-      offersErrorMessageByTripId:
-          preservePendingOffers ? state.offersErrorMessageByTripId : const {},
+      processingIsAccept: preservePendingOffers
+          ? state.processingIsAccept
+          : true,
+      offersErrorCodeByTripId: preservePendingOffers
+          ? state.offersErrorCodeByTripId
+          : const {},
+      offersErrorMessageByTripId: preservePendingOffers
+          ? state.offersErrorMessageByTripId
+          : const {},
       activeTrip: preserve ? state.activeTrip : null,
       tripPendingRating: preserve ? state.tripPendingRating : null,
       processingTripAction: preserve ? state.processingTripAction : null,
@@ -2064,31 +2541,35 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     }
 
     if (_disposed) return;
-    _positionSub = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 5,
-      ),
-    ).listen((pos) {
-      if (kDebugMode) {
-        _logVerbose(
-          'location:update lat=${pos.latitude}, lng=${pos.longitude}',
+    _positionSub =
+        Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 5,
+          ),
+        ).listen(
+          (pos) {
+            if (kDebugMode) {
+              _logVerbose(
+                'location:update lat=${pos.latitude}, lng=${pos.longitude}',
+              );
+            }
+            state = state.copyWith(
+              driverLat: pos.latitude,
+              driverLng: pos.longitude,
+              driverBearing: pos.heading,
+            );
+            _emitLocationToServer(
+              pos.latitude,
+              pos.longitude,
+              pos.speed,
+              bearing: pos.heading,
+            );
+          },
+          onError: (Object e, StackTrace st) {
+            debugPrint('[DRIVER_RT] positionStream error: $e');
+          },
         );
-      }
-      state = state.copyWith(
-        driverLat: pos.latitude,
-        driverLng: pos.longitude,
-        driverBearing: pos.heading,
-      );
-      _emitLocationToServer(
-        pos.latitude,
-        pos.longitude,
-        pos.speed,
-        bearing: pos.heading,
-      );
-    }, onError: (Object e, StackTrace st) {
-      debugPrint('[DRIVER_RT] positionStream error: $e');
-    });
   }
 
   /// Marcar que el conductor llegó al punto de recogida (trip:arrived).
@@ -2096,8 +2577,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     final trip = state.activeTrip;
     if (trip == null || _socket?.connected != true) return;
     if (trip.status != 'accepted') {
-      debugPrint(
-          '[DRIVER_RT] markArrived ignorado: status=${trip.status}');
+      debugPrint('[DRIVER_RT] markArrived ignorado: status=${trip.status}');
       return;
     }
     _logVerbose('Enviando trip:arrived tripId=${trip.tripId}');
@@ -2135,12 +2615,12 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       // Evita reenviar completed si el backend aún está en estado de eventos
       // tardíos y el trip ya fue finalizado.
       debugPrint(
-          '[DRIVER_RT] completeTrip ignorado por ignoreActiveTripRestoreTripId tripId=${trip.tripId}');
+        '[DRIVER_RT] completeTrip ignorado por ignoreActiveTripRestoreTripId tripId=${trip.tripId}',
+      );
       return;
     }
     if (trip.status != 'started' && trip.status != 'in_trip') {
-      debugPrint(
-          '[DRIVER_RT] completeTrip ignorado: status=${trip.status}');
+      debugPrint('[DRIVER_RT] completeTrip ignorado: status=${trip.status}');
       return;
     }
     // Marcamos el viaje como completado de forma optimista, pero
@@ -2176,7 +2656,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       // Si no hay conexión actual, guardamos para reintentar en cuanto el
       // socket vuelva a conectar.
       debugPrint(
-          '[DRIVER_RT] Socket no conectado; guardando trip:completed pendiente tripId=$completedTripId');
+        '[DRIVER_RT] Socket no conectado; guardando trip:completed pendiente tripId=$completedTripId',
+      );
       _pendingTripCompletedTripId = completedTripId;
     }
   }
@@ -2208,8 +2689,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       ignoreActiveTripRestoreUntilMs: completedTripId == null
           ? null
           : DateTime.now()
-              .add(const Duration(seconds: 60))
-              .millisecondsSinceEpoch,
+                .add(const Duration(seconds: 60))
+                .millisecondsSinceEpoch,
     );
     // Asegura que el backend nos marque disponibles para recibir nuevas ofertas.
     _setAvailability('available');
@@ -2225,18 +2706,16 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
 
   /// El conductor acepta una oferta de viaje concreta (trip:accept).
   Future<void> acceptOffer(String tripId) async {
-    final exists = state.pendingOffers
-        .any((offer) => offer.tripId == tripId);
+    final exists = state.pendingOffers.any((offer) => offer.tripId == tripId);
     if (!exists) {
       debugPrint(
-          '[DRIVER_RT] acceptOffer llamado con tripId=$tripId que no está en pendingOffers.');
+        '[DRIVER_RT] acceptOffer llamado con tripId=$tripId que no está en pendingOffers.',
+      );
       return;
     }
     if (_socket?.connected != true) {
-      debugPrint(
-          '[DRIVER_RT] acceptOffer sin conexión de socket, abortando.');
-      state = state.copyWith(
-      );
+      debugPrint('[DRIVER_RT] acceptOffer sin conexión de socket, abortando.');
+      state = state.copyWith();
       _setOfferErrorForTrip(
         tripId: tripId,
         code: 'NO_CONNECTION',
@@ -2251,25 +2730,21 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       processingIsAccept: true,
     );
     _clearOfferErrorForTrip(tripId);
-    _socket!.emit('trip:accept', {
-      'tripId': tripId,
-    });
+    _socket!.emit('trip:accept', {'tripId': tripId});
   }
 
   /// El conductor rechaza una oferta de viaje concreta (trip:reject).
   Future<void> rejectOffer(String tripId) async {
-    final exists = state.pendingOffers
-        .any((offer) => offer.tripId == tripId);
+    final exists = state.pendingOffers.any((offer) => offer.tripId == tripId);
     if (!exists) {
       debugPrint(
-          '[DRIVER_RT] rejectOffer llamado con tripId=$tripId que no está en pendingOffers.');
+        '[DRIVER_RT] rejectOffer llamado con tripId=$tripId que no está en pendingOffers.',
+      );
       return;
     }
     if (_socket?.connected != true) {
-      debugPrint(
-          '[DRIVER_RT] rejectOffer sin conexión de socket, abortando.');
-      state = state.copyWith(
-      );
+      debugPrint('[DRIVER_RT] rejectOffer sin conexión de socket, abortando.');
+      state = state.copyWith();
       _setOfferErrorForTrip(
         tripId: tripId,
         code: 'NO_CONNECTION',
@@ -2288,9 +2763,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       processingIsAccept: false,
     );
     _clearOfferErrorForTrip(tripId);
-    _socket!.emit('trip:reject', {
-      'tripId': tripId,
-    });
+    _socket!.emit('trip:reject', {'tripId': tripId});
   }
 
   double? _parseOfferDouble(String? s) {
@@ -2305,7 +2778,9 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       offeredPrice: _parseOfferDouble(data['offeredPrice']),
       currencyCode: data['currencyCode'] ?? data['currency'],
       etaMinutes: _parseOfferDouble(data['etaMinutes']),
-      etaToDestinationMinutes: _parseOfferDouble(data['etaToDestinationMinutes']),
+      etaToDestinationMinutes: _parseOfferDouble(
+        data['etaToDestinationMinutes'],
+      ),
       distanceToPickupKm: _parseOfferDouble(data['distanceToPickupKm']),
       passengerName: (data['passengerName']?.trim().isNotEmpty == true)
           ? data['passengerName']!.trim()
@@ -2323,7 +2798,9 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
 
   /// Abrir desde notificación FCM de oferta: fusiona la oferta e intenta [setOnline].
   /// `false` = no se aplicó (offline explícito, disposed o payload inválido).
-  Future<bool> onNotificationOpenedWithTripOffer(Map<String, String> data) async {
+  Future<bool> onNotificationOpenedWithTripOffer(
+    Map<String, String> data,
+  ) async {
     if (_disposed) return false;
     // Offline explícito o sin sesión de disponibilidad: no reinyectar ofertas ni reconectar.
     if (_userRequestedOffline || !_availabilitySessionDesired) {
@@ -2340,9 +2817,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     } else {
       list.add(offer);
     }
-    state = state.copyWith(
-      pendingOffers: list,
-    );
+    state = state.copyWith(pendingOffers: list);
     _clearOfferErrorForTrip(tripId);
     unawaited(_syncDriverForegroundSession());
 
@@ -2356,6 +2831,13 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     unawaited(_syncDriverForegroundSession());
   }
 
+  /// Fuerza sincronización de viaje activo desde el backend/socket handshake.
+  /// Se expone para flujos que requieren validar estado antes de abrir chat.
+  Future<void> syncActiveTripFromApi({bool force = false}) async {
+    if (_disposed) return;
+    await _syncDriverForegroundSession();
+  }
+
   @override
   void dispose() {
     _disposed = true;
@@ -2366,6 +2848,14 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     _userRequestedOffline = true;
     _availabilitySessionDesired = false;
     unawaited(_goOffline(internal: true, preserveTripState: false));
+    // `_goOffline` no toca `state` si ya `_disposed`; igual hay que bajar el FGS.
+    unawaited(
+      DriverForegroundSession.instance.sync(
+        availabilitySessionActive: false,
+        pendingOfferCount: 0,
+        hasActiveTrip: false,
+      ),
+    );
     super.dispose();
   }
 }
@@ -2384,6 +2874,7 @@ class DriverTripOffer {
   final String tripId;
   final double? offeredPrice;
   final double? etaMinutes;
+
   /// ETA hacia destino (origen → destino) que retorna el backend para `trip:offer`.
   final double? etaToDestinationMinutes;
   final double? distanceToPickupKm;
@@ -2412,6 +2903,7 @@ class DriverTripOffer {
 /// Viaje activo del conductor (aceptado → llegó → en trayecto → completado/cancelado).
 class DriverActiveTrip {
   final String tripId;
+
   /// accepted | arrived | started | completed | cancelled
   final String status;
   final double? estimatedPrice;
@@ -2426,6 +2918,7 @@ class DriverActiveTrip {
   final String? destinationAddress;
   final double? tripDistanceKm;
   final double? etaToDestinationMinutes;
+
   /// Polyline codificada (misma referencia que el mapa del pasajero: pickup → destino).
   final String? routeOverviewEncoded;
 
@@ -2478,7 +2971,8 @@ class DriverActiveTrip {
       originAddress: originAddress ?? this.originAddress,
       destinationAddress: destinationAddress ?? this.destinationAddress,
       tripDistanceKm: tripDistanceKm ?? this.tripDistanceKm,
-      etaToDestinationMinutes: etaToDestinationMinutes ?? this.etaToDestinationMinutes,
+      etaToDestinationMinutes:
+          etaToDestinationMinutes ?? this.etaToDestinationMinutes,
       routeOverviewEncoded: routeOverviewEncoded ?? this.routeOverviewEncoded,
     );
   }
@@ -2508,4 +3002,3 @@ class DriverRatingFeedbackItem {
     );
   }
 }
-

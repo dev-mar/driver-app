@@ -1,10 +1,14 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../core/config/driver_backend_config.dart';
 import '../../core/device/driver_device_telemetry.dart';
+import '../../core/media/driver_app_media_uploader.dart';
 import '../../core/notifications/driver_push_token_service.dart';
+import 'driver_registration_http_interceptor.dart';
 import 'driver_registration_models.dart';
 
 class DriverRegistrationException implements Exception {
@@ -34,7 +38,7 @@ class DriverRegistrationRepository {
               ),
             ),
         _usersDio = usersDio ??
-            Dio(
+            (Dio(
               BaseOptions(
                 baseUrl: DriverBackendConfig.baseUrl,
                 connectTimeout: const Duration(seconds: 20),
@@ -44,12 +48,15 @@ class DriverRegistrationRepository {
                   'Accept': 'application/json',
                 },
               ),
-            ),
+            )..interceptors.add(DriverRegistrationRequestIdInterceptor())),
         _storage = storage ?? const FlutterSecureStorage();
 
   final Dio _geoDio;
   final Dio _usersDio;
   final FlutterSecureStorage _storage;
+
+  late final DriverAppMediaUploader _mediaUploader =
+      DriverAppMediaUploader(apiDio: _usersDio);
 
   static const _tokenKey = 'driver_token';
 
@@ -168,15 +175,37 @@ class DriverRegistrationRepository {
     final token = await _storage.read(key: _tokenKey);
     if (token == null || token.isEmpty) {
       throw DriverRegistrationException(
-        'Sesión no disponible. Completá el paso anterior o reabrí el registro.',
+        'Sesión no disponible. Completa el paso anterior o vuelve a abrir el registro.',
       );
     }
     return token;
   }
 
+  /// Respuestas HTML típicas de nginx/Cloudflare u otros proxies (no JSON de nuestro API).
+  static bool _looksLikeProxyHtmlError(String s) {
+    final l = s.toLowerCase();
+    return l.contains('<html') ||
+        l.contains('<!doctype') ||
+        l.contains('nginx/') ||
+        l.contains('cloudflare') ||
+        (l.contains('<title>') && l.contains('internal server error'));
+  }
+
+  /// Texto único para UI cuando hay HTML de infraestructura (no envelope JSON del API).
+  /// Detalle técnico (nginx, límites Express, etc.) solo en logs de depuración.
+  static const String _kUserMsgNonJsonInfrastructure =
+      'No pudimos guardar los datos en este momento. Suele solucionarse intentando de nuevo '
+      'más tarde, con buena señal Wi‑Fi o datos. Si te ocurre varias veces seguidas, '
+      'escríbenos a soporte y cuéntanos a qué hora intentaste.';
+
+  static String _friendlyHtmlProxyErrorHint() => _kUserMsgNonJsonInfrastructure;
+
   String _extractErrorMessage(dynamic data) {
-    if (data is String && data.trim().isNotEmpty) {
-      return data.trim();
+    if (data is String) {
+      final t = data.trim();
+      if (t.isEmpty) return 'Error del servidor';
+      if (_looksLikeProxyHtmlError(t)) return _friendlyHtmlProxyErrorHint();
+      return t;
     }
     if (data is! Map) return 'Error del servidor';
     final msg = data['message']?.toString();
@@ -216,18 +245,42 @@ class DriverRegistrationRepository {
   String _messageFromDioException(DioException e) {
     final code = e.response?.statusCode;
     final body = e.response?.data;
+    if (body is String) {
+      final t = body.trim();
+      if (t.isNotEmpty && _looksLikeProxyHtmlError(t)) {
+        return _friendlyHtmlProxyErrorHint();
+      }
+    }
     if (code == 413) {
-      final s = body is String ? body.toLowerCase() : '';
-      // Infra actual: tope principal en Express body JSON (API_V2_JSON_LIMIT). Solo si el cuerpo
-      // es HTML/texto típico de proxy/CDN mencionamos capa intermedia (no nginx por defecto).
-      final hintProxy = s.contains('cloudflare') ||
-              s.contains('nginx') ||
-              s.contains('request entity too large')
-          ? ' Si el HTML/texto del error menciona un proxy o CDN, el límite puede estar ahí.'
-          : '';
-      return 'Las fotos o el envío superan el límite permitido (HTTP 413). '
-          'Probá imágenes más livianas. En nuestro backend el JSON suele ir limitado por '
-          'API_V2_JSON_LIMIT (Express); con subida por S3 (URL firmada) el tope es otro.$hintProxy';
+      return 'El envío supera el límite permitido (HTTP 413). Prueba con fotos más livianas '
+          'u otra red; si usas subida directa, el tope también puede estar en el proxy.';
+    }
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout) {
+      final path = e.requestOptions.uri.path;
+      if (path.contains('vehicles/catalog')) {
+        return 'Tiempo de espera al descargar el catálogo de vehículos (${e.type.name}). '
+            'Intenta de nuevo con buena señal; si persiste, puede hacer falta ajustar el proxy '
+            '(timeouts o buffers) hacia el backend.';
+      }
+      return 'Tiempo de espera al contactar el servidor (${e.type.name}). '
+          'Reintenta con una buena conexión.';
+    }
+    final underlyingStr = e.error?.toString() ?? '';
+    if (underlyingStr.contains('Connection closed while receiving') ||
+        underlyingStr.contains('Connection closed before')) {
+      final isCatalog = e.requestOptions.uri.path.contains('vehicles/catalog');
+      return isCatalog
+          ? 'El catálogo de vehículos no terminó de descargarse: el servidor o el proxy '
+              'cerraron la conexión a mitad de la respuesta (JSON muy grande). '
+              'Revisa en nginx: gzip para application/json, proxy_buffers / proxy_busy_buffers_size '
+              'y proxy_read_timeout hacia Node. ($underlyingStr)'
+          : 'La conexión se cerró antes de recibir la respuesta completa. ($underlyingStr)';
+    }
+    if (e.type == DioExceptionType.connectionError) {
+      final hint = _shortUnderlyingError(e);
+      return 'No se pudo establecer conexión con el servidor.${hint.isNotEmpty ? ' $hint' : ''}';
     }
     final fromJson = _extractErrorMessage(body);
     if (fromJson != 'Error del servidor') return fromJson;
@@ -239,17 +292,99 @@ class DriverRegistrationRepository {
     } else {
       buf.write(' ($type)');
     }
+    if (e.type == DioExceptionType.unknown || code == null) {
+      final hint = _shortUnderlyingError(e);
+      if (hint.isNotEmpty) buf.write(' — $hint');
+    }
     return buf.toString();
+  }
+
+  /// Causa subyacente (SocketException, TLS, JSON…) sin volcar stack completo.
+  static String _shortUnderlyingError(DioException e) {
+    final o = e.error;
+    if (o == null) return '';
+    if (o is FormatException) {
+      final m = o.message;
+      return m.length > 160 ? '${m.substring(0, 160)}…' : m;
+    }
+    if (o is IOException) {
+      final m = o.toString();
+      return m.length > 200 ? '${m.substring(0, 200)}…' : m;
+    }
+    final m = o.toString();
+    if (m == 'null' || m.isEmpty) return '';
+    return m.length > 200 ? '${m.substring(0, 200)}…' : m;
   }
 
   void _logDioIfDebug(String label, DioException e) {
     if (!kDebugMode) return;
     debugPrint('[DriverRegistration] $label DioException type=${e.type} '
         'status=${e.response?.statusCode} uri=${e.requestOptions.uri}');
-    debugPrint('[DriverRegistration] response data: ${e.response?.data}');
+    if (e.error != null) {
+      debugPrint('[DriverRegistration] $label underlying: ${e.error}');
+    }
+    final data = e.response?.data;
+    if (data == null) return;
+    if (data is String) {
+      final n = data.length;
+      final preview = n > 400 ? '${data.substring(0, 400)}… ($n chars)' : data;
+      debugPrint('[DriverRegistration] response body: $preview');
+      if (_looksLikeProxyHtmlError(data)) {
+        debugPrint(
+          '[DriverRegistration] diag: cuerpo HTML de proxy/servidor (no JSON del API). '
+          'Correlacionar rid con nginx error.log y logs Node; POST /api/v2 en Node usa '
+          'API_V2_JSON_LIMIT (env); nginx suele usar client_max_body_size por location.',
+        );
+      }
+      return;
+    }
+    debugPrint('[DriverRegistration] response data: $data');
   }
 
-  Future<({String uuid, bool tokenSaved})> submitPersonalInfo(Map<String, dynamic> body) async {
+  /// Solo depuración: suma longitudes de valores `String` en el mapa (sin serializar JSON completo).
+  static int _debugApproxMapStringChars(Map<String, dynamic> map) {
+    var n = 0;
+    for (final Object? v in map.values) {
+      if (v is String) n += v.length;
+    }
+    return n;
+  }
+
+  Future<String?> uploadRegistrationImageViaPresign({
+    required String uuid,
+    required String purpose,
+    required String base64Raw,
+    String contentType = 'image/jpeg',
+  }) async {
+    final bearer = await _requireBearerToken();
+    return _mediaUploader.uploadRegistrationImageViaPresign(
+      bearerToken: bearer,
+      uuid: uuid,
+      purpose: purpose,
+      base64Raw: base64Raw,
+      contentType: contentType,
+    );
+  }
+
+  Future<String?> uploadVehicleImageViaPresign({
+    required String vehicleAssetId,
+    required String purpose,
+    required String base64Raw,
+    String contentType = 'image/jpeg',
+  }) async {
+    final bearer = await _requireBearerToken();
+    return _mediaUploader.uploadVehicleImageViaPresign(
+      bearerToken: bearer,
+      vehicleAssetId: vehicleAssetId,
+      purpose: purpose,
+      base64Raw: base64Raw,
+      contentType: contentType,
+    );
+  }
+
+  Future<({String uuid, bool tokenSaved, bool presignUploadAvailable})> submitPersonalInfo(
+    Map<String, dynamic> body,
+  ) async {
     try {
       final telemetry = await DriverDeviceTelemetry.toApiPayload();
       final payload = Map<String, dynamic>.from(body);
@@ -274,7 +409,8 @@ class DriverRegistrationRepository {
         throw DriverRegistrationException('No se recibió uuid del usuario');
       }
       final tokenSaved = await _tryPersistTokenFromResponse(data);
-      return (uuid: uuid, tokenSaved: tokenSaved);
+      final presign = inner['presign_upload_available'] == true;
+      return (uuid: uuid, tokenSaved: tokenSaved, presignUploadAvailable: presign);
     } on DioException catch (e) {
       final d = e.response?.data;
       throw DriverRegistrationException(_extractErrorMessage(d));
@@ -298,10 +434,29 @@ class DriverRegistrationRepository {
             ? <String, dynamic>{'Idempotency-Key': idempotencyKey}
             : null),
       };
+      if (kDebugMode) {
+        final approx = _debugApproxMapStringChars(body);
+        final sizeHint = approx >= 1024 * 1024
+            ? '~${(approx / (1024 * 1024)).toStringAsFixed(2)} MiB'
+            : '~${(approx / 1024).toStringAsFixed(0)} KiB';
+        debugPrint(
+          '[DriverRegistration] submitDocumentInfo document_type=$docType '
+          'approx chars in string fields=$approx ($sizeHint en strings Base64+campos; JSON serializado algo mayor)',
+        );
+      }
+      final telemetry = await DriverDeviceTelemetry.toApiPayload();
+      final payload = Map<String, dynamic>.from(body);
+      telemetry.forEach((key, value) {
+        payload.putIfAbsent(key, () => value);
+      });
       final response = await _usersDio.post<Map<String, dynamic>>(
         '/api/v2/driver/documents',
-        data: body,
-        options: Options(headers: headers),
+        data: payload,
+        options: Options(
+          headers: headers,
+          sendTimeout: const Duration(minutes: 3),
+          receiveTimeout: const Duration(minutes: 2),
+        ),
       );
       final data = response.data;
       if (data == null) throw DriverRegistrationException('Respuesta vacía');
@@ -320,9 +475,14 @@ class DriverRegistrationRepository {
   Future<void> driverUpdateUserStatus({required String uuid}) async {
     try {
       final bearer = await _requireBearerToken();
+      final telemetry = await DriverDeviceTelemetry.toApiPayload();
+      final payload = <String, dynamic>{'uuid': uuid};
+      telemetry.forEach((key, value) {
+        payload.putIfAbsent(key, () => value);
+      });
       final response = await _usersDio.put<Map<String, dynamic>>(
         '/api/v2/driver/registration/activate',
-        data: <String, dynamic>{'uuid': uuid},
+        data: payload,
         options: Options(
           headers: <String, dynamic>{'Authorization': 'Bearer $bearer'},
         ),
@@ -368,22 +528,98 @@ class DriverRegistrationRepository {
     }
   }
 
-  /// Catálogo canónico (`vehicle_type` / `category` / servicios / marca-modelo). Requiere Bearer.
-  /// Origen: `GET /api/v2/vehicles/catalog`.
-  Future<VehicleCatalog> fetchVehicleCatalog() async {
+  /// Vehículos del conductor en flota (solo texto / etiquetas; sin galería).
+  /// Origen: `GET /api/v2/vehicles`.
+  Future<List<DriverVehicleSummary>> fetchMyVehicleSummaries() async {
     final token = await _storage.read(key: _tokenKey);
     if (token == null || token.isEmpty) {
       throw DriverRegistrationException('Sesión no disponible. Inicia sesión de nuevo.');
     }
     try {
       final response = await _usersDio.get<Map<String, dynamic>>(
-        '/api/v2/vehicles/catalog',
+        '/api/v2/vehicles',
         options: Options(
           headers: {'Authorization': 'Bearer $token'},
         ),
       );
       final data = response.data;
-      if (data == null) throw DriverRegistrationException('Respuesta vacía (catálogo vehículo)');
+      if (data == null) {
+        throw DriverRegistrationException('Respuesta vacía (vehículos)');
+      }
+      if (data['success'] != true) {
+        throw DriverRegistrationException(_extractErrorMessage(data));
+      }
+      final raw = data['data'];
+      if (raw is! Map) {
+        throw DriverRegistrationException('Respuesta sin data (vehículos)');
+      }
+      final inner = Map<String, dynamic>.from(raw);
+      final list = inner['vehicles'];
+      if (list is! List) {
+        throw DriverRegistrationException('Formato inválido de listado de vehículos');
+      }
+      final out = <DriverVehicleSummary>[];
+      for (final e in list) {
+        final m = e is Map<String, dynamic> ? e : (e is Map ? Map<String, dynamic>.from(e) : null);
+        if (m == null) continue;
+        final row = DriverVehicleSummary.fromApiJson(m);
+        if (row != null) out.add(row);
+      }
+      return out;
+    } on DioException catch (e) {
+      _logDioIfDebug('fetchMyVehicleSummaries', e);
+      throw DriverRegistrationException(_messageFromDioException(e));
+    }
+  }
+
+  /// Catálogo canónico (`vehicle_type` / `category` / servicios / marca-modelo). Requiere Bearer.
+  /// Origen: `GET /api/v2/vehicles/catalog` en dos partes (`scope=registration` + `scope=extensions`)
+  /// para evitar un JSON único demasiado grande (proxies que cortan el cuerpo).
+  Future<VehicleCatalog> fetchVehicleCatalog() async {
+    final token = await _storage.read(key: _tokenKey);
+    if (token == null || token.isEmpty) {
+      throw DriverRegistrationException('Sesión no disponible. Inicia sesión de nuevo.');
+    }
+    try {
+      final core = await _fetchVehicleCatalogScope(
+        token: token,
+        scope: 'registration',
+      );
+      // Servidor legacy sin `scope`: suele ignorar el query y devolver el catálogo completo.
+      if (core.vehicleTypes.isNotEmpty &&
+          core.manufacturers.isNotEmpty &&
+          core.vehicleModels.isNotEmpty) {
+        return core;
+      }
+      final ext = await _fetchVehicleCatalogScope(
+        token: token,
+        scope: 'extensions',
+      );
+      return VehicleCatalog.mergeRegistrationSlices(core, ext);
+    } on DioException catch (e) {
+      _logDioIfDebug('fetchVehicleCatalog', e);
+      throw DriverRegistrationException(_messageFromDioException(e));
+    }
+  }
+
+  Future<VehicleCatalog> _fetchVehicleCatalogScope({
+    required String token,
+    required String scope,
+  }) async {
+    try {
+      final response = await _usersDio.get<Map<String, dynamic>>(
+        '/api/v2/vehicles/catalog',
+        queryParameters: {'scope': scope},
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+          receiveTimeout: const Duration(minutes: 3),
+          sendTimeout: const Duration(seconds: 60),
+        ),
+      );
+      final data = response.data;
+      if (data == null) {
+        throw DriverRegistrationException('Respuesta vacía (catálogo vehículo)');
+      }
       if (data['success'] != true) {
         throw DriverRegistrationException(_extractErrorMessage(data));
       }
@@ -398,8 +634,8 @@ class DriverRegistrationRepository {
       }
       return catalog;
     } on DioException catch (e) {
-      _logDioIfDebug('fetchVehicleCatalog', e);
-      throw DriverRegistrationException(_messageFromDioException(e));
+      _logDioIfDebug('fetchVehicleCatalog scope=$scope', e);
+      rethrow;
     }
   }
 
@@ -440,7 +676,7 @@ class DriverRegistrationRepository {
     }
   }
 
-  /// Fotos del vehículo: `POST /api/v2/vehicles/images` (presign: `/api/v2/vehicles/media/presign`).
+  /// Fotos del vehículo: `POST /api/v2/vehicles/images` (cada ítem: `image_storage_key` o `image`).
   Future<void> submitVehicleImages(Map<String, dynamic> body) async {
     final token = await _storage.read(key: _tokenKey);
     if (token == null || token.isEmpty) {
@@ -452,6 +688,8 @@ class DriverRegistrationRepository {
         data: body,
         options: Options(
           headers: {'Authorization': 'Bearer $token'},
+          sendTimeout: const Duration(minutes: 3),
+          receiveTimeout: const Duration(minutes: 2),
         ),
       );
       final data = response.data;

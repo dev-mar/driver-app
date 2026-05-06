@@ -4,6 +4,9 @@ param(
 
   [string]$MapsApiKey,
 
+  [bool]$DriverSelfieCropEnabled = $true,
+  [bool]$DriverDocumentCropEnabled = $true,
+
   [string]$Flavor,
 
   [string]$Target = "lib/main.dart"
@@ -92,6 +95,10 @@ if (-not [string]::IsNullOrWhiteSpace($Target)) {
   $flutterArgs += @("-t", $Target)
 }
 $flutterArgs += @("--dart-define", "GOOGLE_MAPS_API_KEY=$resolvedKey")
+$flutterArgs += @("--dart-define", "DRIVER_SELFIE_CROP_ENABLED=$($DriverSelfieCropEnabled.ToString().ToLower())")
+# Compat temporal con builds viejos.
+$flutterArgs += @("--dart-define", "SELFIE_CROP_ENABLED=$($DriverSelfieCropEnabled.ToString().ToLower())")
+$flutterArgs += @("--dart-define", "DRIVER_DOCUMENT_CROP_ENABLED=$($DriverDocumentCropEnabled.ToString().ToLower())")
 
 if ($Mode -eq "run") {
   Write-Host "Ejecutando: flutter run (config de API key cargada)" -ForegroundColor Cyan

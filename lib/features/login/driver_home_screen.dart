@@ -26,7 +26,6 @@ import '../../core/notifications/driver_fcm_navigation.dart'
         driverTripChatOpenBump,
         takePendingTripOfferFromNotification,
         takePendingTripChatTripIdFromNotification;
-import '../../core/config/locale_provider.dart';
 import '../../gen_l10n/app_localizations.dart';
 import '../session/driver_operational_profile.dart';
 import 'driver_realtime_controller.dart';
@@ -432,6 +431,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!mounted) return;
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.hidden) {
@@ -685,6 +685,19 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
       case 'DRIVER_VEHICLE_REQUIRED':
         errorMessage = l10n.driverOnlineErrorVehicleRequired;
         break;
+      case 'DRIVER_GO_ONLINE_BLOCKED':
+        errorMessage = l10n.driverOnlineErrorGoOnlineBlocked;
+        break;
+      case 'DRIVER_CREDITS_BELOW_MIN':
+        errorMessage = l10n.driverOnlineErrorCreditsBelowMin(
+          realtime.minCreditsToGoOnline.toStringAsFixed(0),
+          realtime.driverCreditsBalance.toStringAsFixed(2),
+        );
+        break;
+      case 'DRIVER_ACCOUNT_BLOCKED':
+        errorMessage = l10n.driverOnlineErrorAccountBlocked;
+        _handleAuthSessionExpired();
+        break;
       case 'UNKNOWN':
         errorMessage = l10n.driverOnlineErrorUnknown;
         break;
@@ -746,26 +759,26 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded),
             onSelected: (value) {
-              if (value == 'language') _showLanguageMenu(context);
+              if (value == 'settings') context.pushNamed(AppRouter.settings);
               if (value == 'profile') context.goNamed(AppRouter.profile);
               if (value == 'registered_images') {
                 context.pushNamed(AppRouter.registeredImages);
               }
               if (value == 'add_vehicle') {
-                context.pushNamed(
-                  AppRouter.register,
-                  extra: {'addVehicleOnly': true},
-                );
+                context.pushNamed(AppRouter.myVehicles);
               }
               if (value == 'trip_history') {
                 context.pushNamed(AppRouter.tripHistory);
+              }
+              if (value == 'earnings_credits') {
+                context.pushNamed(AppRouter.earningsCredits);
               }
               if (value == 'logout') _logout(context);
             },
             itemBuilder: (context) => [
               PopupMenuItem(
-                value: 'language',
-                child: Text(l10n.settingsLanguage),
+                value: 'settings',
+                child: Text(l10n.driverSettingsTitle),
               ),
               PopupMenuItem(
                 value: 'profile',
@@ -774,6 +787,10 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
               PopupMenuItem(
                 value: 'trip_history',
                 child: Text(l10n.driverTripHistoryMenu),
+              ),
+              PopupMenuItem(
+                value: 'earnings_credits',
+                child: Text(l10n.driverEarningsCreditsMenu),
               ),
               PopupMenuItem(
                 value: 'add_vehicle',
@@ -841,9 +858,12 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                 },
                 onReactivate: () {
                   unawaited(() async {
+                    if (!mounted) return;
                     final notifier = ref.read(driverRealtimeProvider.notifier);
                     notifier.clearActiveTrip();
+                    if (!mounted) return;
                     if (!await _vehicleGateAllowsOnline()) return;
+                    if (!mounted) return;
                     await notifier.setOnline(true);
                   }());
                 },
@@ -904,9 +924,11 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                                           ref.invalidate(
                                             driverOperationalProfileProvider,
                                           );
-                                          context.goNamed(
+                                          context.pushNamed(
                                             AppRouter.register,
-                                            extra: true,
+                                            extra: <String, dynamic>{
+                                              'addVehicleOnly': true,
+                                            },
                                           );
                                         },
                                         child: Text(
@@ -1842,46 +1864,6 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     }
   }
 
-  void _showLanguageMenu(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                l10n.settingsLanguage,
-                style: Theme.of(ctx).textTheme.titleMedium,
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.translate),
-              title: Text(l10n.languageSpanish),
-              onTap: () {
-                ref.read(localeProvider.notifier).state = const Locale('es');
-                Navigator.pop(ctx);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.translate),
-              title: Text(l10n.languageEnglish),
-              onTap: () {
-                ref.read(localeProvider.notifier).state = const Locale('en');
-                Navigator.pop(ctx);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 Widget _connectionPhaseChip({
@@ -1958,6 +1940,7 @@ class _RatingSheetContentState extends State<_RatingSheetContent>
       _rating <= 3 ? _feedbackLow : _feedbackHigh;
 
   Future<void> _preloadFeedbackCatalogs() async {
+    if (!mounted) return;
     setState(() => _loadingCatalog = true);
     try {
       final results = await Future.wait([

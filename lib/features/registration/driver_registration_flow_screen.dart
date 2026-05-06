@@ -40,12 +40,82 @@ class _UpperCasePlateFormatter extends TextInputFormatter {
   }
 }
 
+/// Congela `ref`/controladores para persistir el borrador tras `await` sin usar el widget desmontado.
+class _DraftPersistSnapshot {
+  const _DraftPersistSnapshot({
+    required this.flow,
+    required this.paths,
+    this.idFrontB64,
+    this.idBackB64,
+    this.faceB64,
+    this.licFrontB64,
+    this.licBackB64,
+    this.carFrontB64,
+    this.carBackB64,
+    this.carLeftB64,
+    this.carRightB64,
+    required this.firstName,
+    required this.lastName,
+    required this.email,
+    required this.phoneLocal,
+    required this.birthDateIso,
+    required this.address,
+    this.genderValue,
+    required this.documentNumber,
+    required this.documentExpireIso,
+    required this.licenseExpireIso,
+    this.licenseCategoryId,
+    required this.vehicleBrand,
+    required this.vehicleModel,
+    required this.vehicleYear,
+    required this.vehicleColor,
+    required this.vehicleVin,
+    required this.vehiclePlate,
+    required this.vehicleInsurance,
+    required this.vehicleTitle,
+  });
+
+  final DriverRegistrationFlowState flow;
+  final Map<String, String?> paths;
+  final String? idFrontB64;
+  final String? idBackB64;
+  final String? faceB64;
+  final String? licFrontB64;
+  final String? licBackB64;
+  final String? carFrontB64;
+  final String? carBackB64;
+  final String? carLeftB64;
+  final String? carRightB64;
+  final String firstName;
+  final String lastName;
+  final String email;
+  final String phoneLocal;
+  final String birthDateIso;
+  final String address;
+  final String? genderValue;
+  final String documentNumber;
+  final String documentExpireIso;
+  final String licenseExpireIso;
+  final int? licenseCategoryId;
+  final String vehicleBrand;
+  final String vehicleModel;
+  final String vehicleYear;
+  final String vehicleColor;
+  final String vehicleVin;
+  final String vehiclePlate;
+  final String vehicleInsurance;
+  final String vehicleTitle;
+}
+
 /// Flujo completo de registro de conductor (geo + usuario + documentos + vehículo).
 class DriverRegistrationFlowScreen extends ConsumerStatefulWidget {
   const DriverRegistrationFlowScreen({
     super.key,
     this.resumeAfterLogin = false,
     this.addVehicleOnly = false,
+    this.completeVehicleGalleryForAssetId,
+    this.openFromProfileStep,
+    this.profilePreselectedCountryId,
   });
 
   /// Si es true: sesión ya iniciada; se consulta `GET /api/v2/driver/registration` y se salta a la etapa faltante.
@@ -53,6 +123,15 @@ class DriverRegistrationFlowScreen extends ConsumerStatefulWidget {
 
   /// Desde home: alta de un vehículo adicional (pasos vehículo + fotos) con sesión activa.
   final bool addVehicleOnly;
+
+  /// `vehicle_asset_id` existente: solo subir las 4 fotos (p. ej. tras error en paso 2 o listado "Mis vehículos").
+  final String? completeVehicleGalleryForAssetId;
+
+  /// Desde [DriverProfile] / menú: abre un paso fijo (0=datos … 5=fotos) con sesión ya autenticada.
+  final int? openFromProfileStep;
+
+  /// Alinea país (catálogo geo) al `registration_country_id` del perfil cuando exista.
+  final int? profilePreselectedCountryId;
 
   @override
   ConsumerState<DriverRegistrationFlowScreen> createState() =>
@@ -108,65 +187,75 @@ class _DriverRegistrationFlowScreenState
   int _validationStepScope = 0;
   final Map<String, String?> _draftImagePaths = <String, String?>{};
 
-  Future<void> _persistDraft() async {
-    if (_suppressDraftSave || !mounted) return;
-    final flow = ref.read(driverRegistrationFlowControllerProvider);
-    _draftImagePaths['idFront'] = await DriverRegistrationDraftMediaStore.persistBase64(
-      key: 'id_front',
-      base64Image: _idFrontB64,
-      existingPath: _draftImagePaths['idFront'],
-    );
-    _draftImagePaths['idBack'] = await DriverRegistrationDraftMediaStore.persistBase64(
-      key: 'id_back',
-      base64Image: _idBackB64,
-      existingPath: _draftImagePaths['idBack'],
-    );
-    _draftImagePaths['face'] = await DriverRegistrationDraftMediaStore.persistBase64(
-      key: 'identity_face',
-      base64Image: _faceB64,
-      existingPath: _draftImagePaths['face'],
-    );
-    _draftImagePaths['licenseFront'] = await DriverRegistrationDraftMediaStore.persistBase64(
-      key: 'license_front',
-      base64Image: _licFrontB64,
-      existingPath: _draftImagePaths['licenseFront'],
-    );
-    _draftImagePaths['licenseBack'] = await DriverRegistrationDraftMediaStore.persistBase64(
-      key: 'license_back',
-      base64Image: _licBackB64,
-      existingPath: _draftImagePaths['licenseBack'],
-    );
-    _draftImagePaths['carFront'] = await DriverRegistrationDraftMediaStore.persistBase64(
-      key: 'vehicle_front',
-      base64Image: _carFrontB64,
-      existingPath: _draftImagePaths['carFront'],
-    );
-    _draftImagePaths['carBack'] = await DriverRegistrationDraftMediaStore.persistBase64(
-      key: 'vehicle_back',
-      base64Image: _carBackB64,
-      existingPath: _draftImagePaths['carBack'],
-    );
-    _draftImagePaths['carLeft'] = await DriverRegistrationDraftMediaStore.persistBase64(
-      key: 'vehicle_left',
-      base64Image: _carLeftB64,
-      existingPath: _draftImagePaths['carLeft'],
-    );
-    _draftImagePaths['carRight'] = await DriverRegistrationDraftMediaStore.persistBase64(
-      key: 'vehicle_right',
-      base64Image: _carRightB64,
-      existingPath: _draftImagePaths['carRight'],
-    );
+  /// Desde perfil: formulario único (no asistente por etapas).
+  bool get _profileCompletionUx =>
+      widget.openFromProfileStep != null &&
+      !widget.resumeAfterLogin &&
+      !widget.addVehicleOnly &&
+      (widget.completeVehicleGalleryForAssetId == null ||
+          widget.completeVehicleGalleryForAssetId!.trim().isEmpty);
 
-    final draft = DriverRegistrationDraft(
-      step: flow.step,
-      userUuid: flow.userUuid,
-      carUuid: flow.carUuid,
-      selectedCountryName: flow.selectedCountryName,
-      selectedCountryPhoneCode: flow.selectedCountryPhoneCode,
-      selectedDepartmentName: flow.selectedDepartmentName,
-      selectedLocalityId: flow.selectedLocalityId,
-      selectedLocalityLabel: flow.selectedLocalityLabel,
-      selectedCountryId: flow.selectedCountryId,
+  bool get _galleryCompletionOnly {
+    final id = widget.completeVehicleGalleryForAssetId?.trim();
+    return id != null && id.isNotEmpty;
+  }
+
+  void _dismissToProfileAfterSave(AppLocalizations l10n) {
+    ref.invalidate(driverOperationalProfileProvider);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.driverRegProfileStepSaved),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.goNamed(AppRouter.profile);
+    }
+  }
+
+  /// Tras activar cuenta en el alta inicial: ir al inicio; el vehículo se registra desde el menú ⋮.
+  Future<void> _onOnboardingActivationComplete(AppLocalizations l10n) async {
+    ref.invalidate(driverOperationalProfileProvider);
+    DriverRegistrationResumeGate.invalidate();
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(l10n.driverRegOnboardingDoneTitle),
+        content: Text(l10n.driverRegOnboardingDoneBody),
+        actions: [
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              if (context.mounted) context.goNamed(AppRouter.home);
+            },
+            child: Text(l10n.driverRegOnboardingDoneCta),
+          ),
+        ],
+      ),
+    );
+  }
+
+  _DraftPersistSnapshot _captureDraftSnapshot() {
+    final flow = ref.read(driverRegistrationFlowControllerProvider);
+    return _DraftPersistSnapshot(
+      flow: flow,
+      paths: Map<String, String?>.from(_draftImagePaths),
+      idFrontB64: _idFrontB64,
+      idBackB64: _idBackB64,
+      faceB64: _faceB64,
+      licFrontB64: _licFrontB64,
+      licBackB64: _licBackB64,
+      carFrontB64: _carFrontB64,
+      carBackB64: _carBackB64,
+      carLeftB64: _carLeftB64,
+      carRightB64: _carRightB64,
       firstName: _firstNameCtrl.text.trim(),
       lastName: _lastNameCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
@@ -178,11 +267,6 @@ class _DriverRegistrationFlowScreenState
       documentExpireIso: _docExpireCtrl.text.trim(),
       licenseExpireIso: _licenseExpireCtrl.text.trim(),
       licenseCategoryId: _licenseCategory?.id,
-      idFrontPath: _draftImagePaths['idFront'],
-      idBackPath: _draftImagePaths['idBack'],
-      facePath: _draftImagePaths['face'],
-      licenseFrontPath: _draftImagePaths['licenseFront'],
-      licenseBackPath: _draftImagePaths['licenseBack'],
       vehicleBrand: _vehicleBrandCtrl.text.trim(),
       vehicleModel: _vehicleModelCtrl.text.trim(),
       vehicleYear: _vehicleYearCtrl.text.trim(),
@@ -191,12 +275,111 @@ class _DriverRegistrationFlowScreenState
       vehiclePlate: _vehiclePlateCtrl.text.trim(),
       vehicleInsurance: _vehicleInsuranceCtrl.text.trim(),
       vehicleTitle: _vehicleTitleCtrl.text.trim(),
-      carFrontPath: _draftImagePaths['carFront'],
-      carBackPath: _draftImagePaths['carBack'],
-      carLeftPath: _draftImagePaths['carLeft'],
-      carRightPath: _draftImagePaths['carRight'],
+    );
+  }
+
+  Future<void> _commitDraftSnapshot(_DraftPersistSnapshot d) async {
+    final paths = Map<String, String?>.from(d.paths);
+    paths['idFront'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'id_front',
+      base64Image: d.idFrontB64,
+      existingPath: paths['idFront'],
+    );
+    paths['idBack'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'id_back',
+      base64Image: d.idBackB64,
+      existingPath: paths['idBack'],
+    );
+    paths['face'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'identity_face',
+      base64Image: d.faceB64,
+      existingPath: paths['face'],
+    );
+    paths['licenseFront'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'license_front',
+      base64Image: d.licFrontB64,
+      existingPath: paths['licenseFront'],
+    );
+    paths['licenseBack'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'license_back',
+      base64Image: d.licBackB64,
+      existingPath: paths['licenseBack'],
+    );
+    paths['carFront'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'vehicle_front',
+      base64Image: d.carFrontB64,
+      existingPath: paths['carFront'],
+    );
+    paths['carBack'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'vehicle_back',
+      base64Image: d.carBackB64,
+      existingPath: paths['carBack'],
+    );
+    paths['carLeft'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'vehicle_left',
+      base64Image: d.carLeftB64,
+      existingPath: paths['carLeft'],
+    );
+    paths['carRight'] = await DriverRegistrationDraftMediaStore.persistBase64(
+      key: 'vehicle_right',
+      base64Image: d.carRightB64,
+      existingPath: paths['carRight'],
+    );
+
+    final f = d.flow;
+    final draft = DriverRegistrationDraft(
+      step: f.step,
+      userUuid: f.userUuid,
+      carUuid: f.carUuid,
+      selectedCountryName: f.selectedCountryName,
+      selectedCountryPhoneCode: f.selectedCountryPhoneCode,
+      selectedDepartmentName: f.selectedDepartmentName,
+      selectedLocalityId: f.selectedLocalityId,
+      selectedLocalityLabel: f.selectedLocalityLabel,
+      selectedCountryId: f.selectedCountryId,
+      firstName: d.firstName,
+      lastName: d.lastName,
+      email: d.email,
+      phoneLocal: d.phoneLocal,
+      birthDateIso: d.birthDateIso,
+      address: d.address,
+      genderValue: d.genderValue,
+      documentNumber: d.documentNumber,
+      documentExpireIso: d.documentExpireIso,
+      licenseExpireIso: d.licenseExpireIso,
+      licenseCategoryId: d.licenseCategoryId,
+      idFrontPath: paths['idFront'],
+      idBackPath: paths['idBack'],
+      facePath: paths['face'],
+      licenseFrontPath: paths['licenseFront'],
+      licenseBackPath: paths['licenseBack'],
+      vehicleBrand: d.vehicleBrand,
+      vehicleModel: d.vehicleModel,
+      vehicleYear: d.vehicleYear,
+      vehicleColor: d.vehicleColor,
+      vehicleVin: d.vehicleVin,
+      vehiclePlate: d.vehiclePlate,
+      vehicleInsurance: d.vehicleInsurance,
+      vehicleTitle: d.vehicleTitle,
+      carFrontPath: paths['carFront'],
+      carBackPath: paths['carBack'],
+      carLeftPath: paths['carLeft'],
+      carRightPath: paths['carRight'],
     );
     await DriverRegistrationDraftStore.save(draft);
+    if (mounted) {
+      _draftImagePaths
+        ..clear()
+        ..addAll(paths);
+    }
+  }
+
+  Future<void> _persistDraft() async {
+    if (_suppressDraftSave || !mounted) return;
+    try {
+      final snap = _captureDraftSnapshot();
+      await _commitDraftSnapshot(snap);
+    } catch (_) {}
   }
 
   Future<void> _restoreDraftIntoForm(DriverRegistrationDraft draft) async {
@@ -267,6 +450,7 @@ class _DriverRegistrationFlowScreenState
             draft.carRightPath,
           ) ??
           draft.carRightB64;
+      if (!mounted) return;
       final notifier = ref.read(driverRegistrationFlowControllerProvider.notifier);
       notifier.restoreDraftState(
         step: draft.step,
@@ -295,15 +479,29 @@ class _DriverRegistrationFlowScreenState
       ];
 
   List<String> _visibleStepLabels(AppLocalizations l10n) {
+    if (_galleryCompletionOnly) {
+      return [l10n.driverRegStepPhotos];
+    }
     if (widget.addVehicleOnly) {
       return [l10n.driverRegStepVehicle, l10n.driverRegStepPhotos];
     }
-    return _stepLabels(l10n);
+    if (_profileCompletionUx) {
+      return _stepLabels(l10n);
+    }
+    // Alta inicial: hasta activar cuenta (vehículo desde el menú de la app).
+    return [
+      l10n.driverRegStepData,
+      l10n.driverRegStepIdentity,
+      l10n.driverRegStepLicense,
+      l10n.driverRegStepAccess,
+    ];
   }
 
   int _visibleStepIndex(DriverRegistrationFlowState flow) {
+    if (_galleryCompletionOnly) return 0;
     if (widget.addVehicleOnly) return (flow.step - 4).clamp(0, 1);
-    return flow.step;
+    if (_profileCompletionUx) return flow.step.clamp(0, 5);
+    return flow.step.clamp(0, 3);
   }
 
   void _clearVehicleOnlyFields() {
@@ -422,8 +620,46 @@ class _DriverRegistrationFlowScreenState
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final notifier = ref.read(driverRegistrationFlowControllerProvider.notifier);
+      if (widget.openFromProfileStep != null) {
+        final ok = await notifier.openProfileRegistrationStep(
+          widget.openFromProfileStep!,
+          preselectedCountryId: widget.profilePreselectedCountryId,
+        );
+        if (!mounted) return;
+        if (ok) {
+          final flowAfter = ref.read(driverRegistrationFlowControllerProvider);
+          final redirectFrom = flowAfter.profileRedirectFromStep;
+          final redirectTo = flowAfter.profileRedirectToStep;
+          if (redirectFrom != null &&
+              redirectTo != null &&
+              redirectFrom != redirectTo) {
+            final l10nRedirect = AppLocalizations.of(context);
+            final labels = _stepLabels(l10nRedirect);
+            final maxI = labels.length - 1;
+            final fromLabel = labels[redirectFrom.clamp(0, maxI)];
+            final toLabel = labels[redirectTo.clamp(0, maxI)];
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  l10nRedirect.driverRegProfileRedirectSnackbar(
+                    fromLabel,
+                    toLabel,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            notifier.clearProfileRedirectNotice();
+          }
+          unawaited(_persistDraft());
+        }
+        setState(() {});
+      }
       final draft = await DriverRegistrationDraftStore.load();
-      if (draft != null && mounted) {
+      if (widget.openFromProfileStep == null &&
+          draft != null &&
+          mounted &&
+          !_galleryCompletionOnly) {
         await _restoreDraftIntoForm(draft);
         if (draft.licenseCategoryId != null) {
           for (final item in DriverLicenseCategory.legacyBoliviaFallback) {
@@ -435,7 +671,14 @@ class _DriverRegistrationFlowScreenState
         }
         setState(() {});
       }
-      if (widget.addVehicleOnly) {
+      if (_galleryCompletionOnly) {
+        _clearVehicleOnlyFields();
+        notifier.resetFlow();
+        await notifier.applyCompleteVehicleGalleryFromSession(
+          widget.completeVehicleGalleryForAssetId!.trim(),
+        );
+        if (!mounted) return;
+      } else if (widget.addVehicleOnly) {
         _clearVehicleOnlyFields();
         notifier.resetFlow();
         await notifier.applyAddVehicleOnlyFromSession();
@@ -448,7 +691,7 @@ class _DriverRegistrationFlowScreenState
           DriverRegistrationResumeGate.invalidate();
           context.goNamed(AppRouter.home);
         }
-      } else {
+      } else if (widget.openFromProfileStep == null) {
         notifier.loadCountries();
       }
       unawaited(_persistDraft());
@@ -457,7 +700,14 @@ class _DriverRegistrationFlowScreenState
 
   @override
   void dispose() {
-    unawaited(_persistDraft());
+    if (!_suppressDraftSave) {
+      try {
+        if (mounted) {
+          final snap = _captureDraftSnapshot();
+          unawaited(_commitDraftSnapshot(snap));
+        }
+      } catch (_) {}
+    }
     _firstNameCtrl.dispose();
     _lastNameCtrl.dispose();
     _emailCtrl.dispose();
@@ -629,6 +879,11 @@ class _DriverRegistrationFlowScreenState
           password: _passwordCtrl.text,
         );
         unawaited(_persistDraft());
+        if (!mounted) return;
+        final st0 = ref.read(driverRegistrationFlowControllerProvider);
+        if (st0.globalError == null && _profileCompletionUx) {
+          _dismissToProfileAfterSave(l10n);
+        }
         return;
       case 1:
         if (!_formId.currentState!.validate()) {
@@ -658,6 +913,11 @@ class _DriverRegistrationFlowScreenState
           expireDateIso: _docExpireCtrl.text.trim(),
         );
         unawaited(_persistDraft());
+        if (!mounted) return;
+        final st1 = ref.read(driverRegistrationFlowControllerProvider);
+        if (st1.globalError == null && _profileCompletionUx) {
+          _dismissToProfileAfterSave(l10n);
+        }
         return;
       case 2:
         if (!_formLicense.currentState!.validate()) {
@@ -689,17 +949,47 @@ class _DriverRegistrationFlowScreenState
           expireDateIso: _licenseExpireCtrl.text.trim(),
         );
         unawaited(_persistDraft());
+        if (!mounted) return;
+        final st2 = ref.read(driverRegistrationFlowControllerProvider);
+        if (st2.globalError == null && _profileCompletionUx) {
+          _dismissToProfileAfterSave(l10n);
+        }
         return;
       case 3:
         await notifier.completeLoginAndContinue(
           fullPhone: _composeFullPhone(flow),
           password: _passwordCtrl.text,
         );
+        if (!mounted) return;
+        final st3 = ref.read(driverRegistrationFlowControllerProvider);
+        if (st3.globalError == null && _profileCompletionUx) {
+          unawaited(_persistDraft());
+          _dismissToProfileAfterSave(l10n);
+          return;
+        }
+        if (st3.globalError == null && !widget.addVehicleOnly && !_galleryCompletionOnly) {
+          unawaited(DriverRegistrationDraftStore.clear());
+          unawaited(DriverRegistrationDraftMediaStore.clearAll());
+          await _onOnboardingActivationComplete(l10n);
+          return;
+        }
         unawaited(_persistDraft());
         return;
       case 4:
         if (!_formVehicle.currentState!.validate()) {
           _onInvalidStepValidation();
+          return;
+        }
+        if (_useIntegratedCatalogVehicleFields(flow) &&
+            (flow.catalogVehicleModelId == null ||
+                _vehicleBrandCtrl.text.trim().isEmpty ||
+                _vehicleModelCtrl.text.trim().isEmpty)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.driverRegSnackSelectCatalogBrandModel),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
           return;
         }
         if (flow.vehicleCatalogLoading ||
@@ -764,7 +1054,30 @@ class _DriverRegistrationFlowScreenState
         final st = ref.read(driverRegistrationFlowControllerProvider);
         if (st.globalError != null) return;
         HapticFeedback.mediumImpact();
-        if (widget.resumeAfterLogin || widget.addVehicleOnly) {
+        if (_profileCompletionUx) {
+          unawaited(DriverRegistrationDraftStore.clear());
+          unawaited(DriverRegistrationDraftMediaStore.clearAll());
+          _dismissToProfileAfterSave(l10n);
+          return;
+        }
+        if (_galleryCompletionOnly) {
+          unawaited(DriverRegistrationDraftStore.clear());
+          unawaited(DriverRegistrationDraftMediaStore.clearAll());
+          ref.invalidate(driverOperationalProfileProvider);
+          DriverRegistrationResumeGate.invalidate();
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.driverMyVehiclesPhotosSavedSnackbar),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.goNamed(AppRouter.home);
+          }
+        } else if (widget.resumeAfterLogin || widget.addVehicleOnly) {
           await showDialog<void>(
             context: context,
             builder: (ctx) => AlertDialog(
@@ -817,6 +1130,7 @@ class _DriverRegistrationFlowScreenState
                       await ref
                           .read(driverRealtimeProvider.notifier)
                           .setOnline(false, forceOffline: true);
+                      if (!mounted) return;
                       ref.invalidate(driverRealtimeProvider);
                       await ref.read(driverLoginControllerProvider.notifier).logout();
                       if (!mounted) return;
@@ -836,6 +1150,24 @@ class _DriverRegistrationFlowScreenState
   void _goBack() {
     final flow = ref.read(driverRegistrationFlowControllerProvider);
     final notifier = ref.read(driverRegistrationFlowControllerProvider.notifier);
+    if (_profileCompletionUx) {
+      unawaited(_persistDraft());
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.goNamed(AppRouter.profile);
+      }
+      return;
+    }
+    if (_galleryCompletionOnly) {
+      unawaited(_persistDraft());
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.goNamed(AppRouter.home);
+      }
+      return;
+    }
     if (widget.addVehicleOnly && flow.step <= 4) {
       unawaited(_persistDraft());
       context.goNamed(AppRouter.home);
@@ -868,56 +1200,61 @@ class _DriverRegistrationFlowScreenState
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
-          widget.addVehicleOnly
-              ? l10n.driverRegAddVehicleTitle
-              : l10n.driverRegTitle,
+          _galleryCompletionOnly
+              ? l10n.driverMyVehiclesCompletePhotosTitle
+              : widget.addVehicleOnly
+                  ? l10n.driverRegAddVehicleTitle
+                  : (_profileCompletionUx
+                      ? l10n.driverRegTitleProfileCompletion
+                      : l10n.driverRegTitle),
         ),
         centerTitle: true,
       ),
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        l10n.driverRegStepCounter(
-                          (visIdx + 1).toString(),
-                          steps.length.toString(),
+            if (!_profileCompletionUx)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          l10n.driverRegStepCounter(
+                            (visIdx + 1).toString(),
+                            steps.length.toString(),
+                          ),
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
+                        const Spacer(),
+                        Text(
+                          steps[visIdx.clamp(0, steps.length - 1)],
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        steps[visIdx.clamp(0, steps.length - 1)],
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      minHeight: 8,
-                      value: progressValue,
-                      backgroundColor: AppColors.border.withValues(alpha: 0.45),
-                      valueColor:
-                          const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        minHeight: 8,
+                        value: progressValue,
+                        backgroundColor: AppColors.border.withValues(alpha: 0.45),
+                        valueColor:
+                            const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
             AnimatedSwitcher(
               duration: AppMotion.stepSwitcher,
               switchInCurve: AppMotion.emphasized,
@@ -979,8 +1316,15 @@ class _DriverRegistrationFlowScreenState
             _RegistrationBottomBar(
               loading: flow.loading,
               step: flow.step,
-              lastStepIndex: widget.addVehicleOnly ? 5 : _stepLabels(l10n).length - 1,
-              exitStepIndex: widget.addVehicleOnly ? 4 : 0,
+              lastStepIndex: widget.addVehicleOnly || _galleryCompletionOnly
+                  ? 5
+                  : (_profileCompletionUx ? _stepLabels(l10n).length - 1 : 3),
+              exitStepIndex: widget.addVehicleOnly
+                  ? 4
+                  : (_galleryCompletionOnly
+                      ? 5
+                      : (_profileCompletionUx ? flow.step : 0)),
+              profileCompletionMode: _profileCompletionUx,
               onBack: _goBack,
               onContinue: _onPrimaryAction,
             ),
@@ -1413,6 +1757,10 @@ class _DriverRegistrationFlowScreenState
                     final b64 = await pickImageAsBase64(context);
                     _applyPickedImage(b64, (v) => _idFrontB64 = v);
                   },
+                  onLongPress: () async {
+                    final b64 = await pickImageAsBase64PickerPrefiltered(context);
+                    _applyPickedImage(b64, (v) => _idFrontB64 = v);
+                  },
                 ),
                 const SizedBox(height: 12),
                 _CarnetUploadTile(
@@ -1422,6 +1770,21 @@ class _DriverRegistrationFlowScreenState
                     final b64 = await pickImageAsBase64(context);
                     _applyPickedImage(b64, (v) => _idBackB64 = v);
                   },
+                  onLongPress: () async {
+                    final b64 = await pickImageAsBase64PickerPrefiltered(context);
+                    _applyPickedImage(b64, (v) => _idBackB64 = v);
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    l10n.driverRegImageLongPressLightHint,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      height: 1.35,
+                      color: AppColors.textSecondary.withValues(alpha: 0.9),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1440,6 +1803,25 @@ class _DriverRegistrationFlowScreenState
                     );
                     _applyPickedImage(b64, (v) => _faceB64 = v);
                   },
+                  onLongPress: () async {
+                    final b64 = await pickImageAsBase64PickerPrefiltered(
+                      context,
+                      kind: DriverRegistrationImageKind.facePortrait,
+                    );
+                    _applyPickedImage(b64, (v) => _faceB64 = v);
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    l10n.driverRegImageLongPressLightHint,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      height: 1.35,
+                      color: AppColors.textSecondary.withValues(alpha: 0.9),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1527,6 +1909,10 @@ class _DriverRegistrationFlowScreenState
                     final b64 = await pickImageAsBase64(context);
                     _applyPickedImage(b64, (v) => _licFrontB64 = v);
                   },
+                  onLongPress: () async {
+                    final b64 = await pickImageAsBase64PickerPrefiltered(context);
+                    _applyPickedImage(b64, (v) => _licFrontB64 = v);
+                  },
                 ),
                 const SizedBox(height: 12),
                 _CarnetUploadTile(
@@ -1536,6 +1922,21 @@ class _DriverRegistrationFlowScreenState
                     final b64 = await pickImageAsBase64(context);
                     _applyPickedImage(b64, (v) => _licBackB64 = v);
                   },
+                  onLongPress: () async {
+                    final b64 = await pickImageAsBase64PickerPrefiltered(context);
+                    _applyPickedImage(b64, (v) => _licBackB64 = v);
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    l10n.driverRegImageLongPressLightHint,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      height: 1.35,
+                      color: AppColors.textSecondary.withValues(alpha: 0.9),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1616,30 +2017,7 @@ class _DriverRegistrationFlowScreenState
     DriverRegistrationFlowState flow,
   ) {
     return [
-      if (flow.catalogVehicleModelId == null) ...[
-        const SizedBox(height: 14),
-        TextFormField(
-          controller: _vehicleBrandCtrl,
-          decoration: InputDecoration(
-            labelText: l10n.driverRegFieldBrand,
-            hintText: l10n.driverRegHintBrandExample,
-          ),
-          validator: (v) =>
-              v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
-        ),
-        const SizedBox(height: 10),
-        TextFormField(
-          controller: _vehicleModelCtrl,
-          decoration: InputDecoration(
-            labelText: l10n.driverRegFieldModel,
-            hintText: l10n.driverRegHintModelExample,
-          ),
-          validator: (v) =>
-              v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
-        ),
-        const SizedBox(height: 10),
-      ] else
-        const SizedBox(height: 14),
+      const SizedBox(height: 14),
       TextFormField(
         controller: _vehicleYearCtrl,
         decoration: InputDecoration(labelText: l10n.driverRegFieldYear),
@@ -1745,7 +2123,6 @@ class _DriverRegistrationFlowScreenState
               RegistrationSectionCard(
                 title: l10n.driverRegSectionVehicleData,
                 icon: Icons.directions_car_filled_rounded,
-                subtitle: l10n.driverRegCatalogBrandModelTitle,
                 children: [
                   if (flow.catalogVehicleModelId == null) ...[
                     TextFormField(
@@ -1983,6 +2360,7 @@ class _RegistrationBottomBar extends StatelessWidget {
     required this.step,
     required this.lastStepIndex,
     this.exitStepIndex = 0,
+    this.profileCompletionMode = false,
     required this.onBack,
     required this.onContinue,
   });
@@ -1992,6 +2370,8 @@ class _RegistrationBottomBar extends StatelessWidget {
   final int lastStepIndex;
   /// Paso en el que "Atrás" se comporta como salida (cancelar) del flujo.
   final int exitStepIndex;
+  /// Desde perfil: siempre cancelar + guardar (sin "Anterior" entre pasos).
+  final bool profileCompletionMode;
   final VoidCallback onBack;
   final VoidCallback onContinue;
 
@@ -2001,12 +2381,18 @@ class _RegistrationBottomBar extends StatelessWidget {
     final isFirst = step == exitStepIndex;
     final isLast = step == lastStepIndex;
     final isActivateStep = step == 3;
-    final primaryLabel = isActivateStep
-        ? l10n.driverRegActionActivate
-        : (isLast ? l10n.driverRegActionFinish : l10n.driverRegActionContinue);
-    final primaryIcon = isActivateStep
-        ? Icons.verified_rounded
-        : (isLast ? Icons.check_rounded : Icons.arrow_forward_rounded);
+    final primaryLabel = profileCompletionMode
+        ? (isActivateStep ? l10n.driverRegActionActivate : l10n.driverRegActionSave)
+        : (isActivateStep
+            ? l10n.driverRegActionActivate
+            : (isLast ? l10n.driverRegActionFinish : l10n.driverRegActionContinue));
+    final primaryIcon = profileCompletionMode
+        ? (isActivateStep
+            ? Icons.verified_rounded
+            : Icons.save_rounded)
+        : (isActivateStep
+            ? Icons.verified_rounded
+            : (isLast ? Icons.check_rounded : Icons.arrow_forward_rounded));
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -2060,11 +2446,17 @@ class _RegistrationBottomBar extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isFirst ? Icons.close_rounded : Icons.arrow_back_rounded,
+                        (isFirst || profileCompletionMode)
+                            ? Icons.close_rounded
+                            : Icons.arrow_back_rounded,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
-                      Text(isFirst ? l10n.commonCancel : l10n.driverRegActionBack),
+                      Text(
+                        (isFirst || profileCompletionMode)
+                            ? l10n.commonCancel
+                            : l10n.driverRegActionBack,
+                      ),
                     ],
                   ),
                 ),
@@ -2448,11 +2840,14 @@ class _CarnetUploadTile extends StatefulWidget {
     required this.kind,
     required this.isSet,
     required this.onTap,
+    this.onLongPress,
   });
 
   final _CarnetSlotKind kind;
   final bool isSet;
   final VoidCallback onTap;
+  /// Captura con `pickImageAsBase64PickerPrefiltered` (menos RAM / modo compatible).
+  final VoidCallback? onLongPress;
 
   @override
   State<_CarnetUploadTile> createState() => _CarnetUploadTileState();
@@ -2476,6 +2871,7 @@ class _CarnetUploadTileState extends State<_CarnetUploadTile> {
         elevation: 0,
         child: InkWell(
           onTap: widget.onTap,
+          onLongPress: widget.onLongPress,
           onHighlightChanged: (h) => setState(() => _pressed = h),
           borderRadius: BorderRadius.circular(14),
           splashColor: AppColors.primary.withValues(alpha: 0.12),
@@ -2664,10 +3060,12 @@ class _ProfilePhotoCircleSlot extends StatefulWidget {
   const _ProfilePhotoCircleSlot({
     required this.base64Image,
     required this.onTap,
+    this.onLongPress,
   });
 
   final String? base64Image;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   State<_ProfilePhotoCircleSlot> createState() => _ProfilePhotoCircleSlotState();
@@ -2717,6 +3115,7 @@ class _ProfilePhotoCircleSlotState extends State<_ProfilePhotoCircleSlot> {
                 child: InkWell(
                   customBorder: const CircleBorder(),
                   onTap: widget.onTap,
+                  onLongPress: widget.onLongPress,
                   onHighlightChanged: (h) => setState(() => _pressed = h),
                   splashColor: AppColors.primary.withValues(alpha: 0.15),
                   highlightColor: AppColors.primary.withValues(alpha: 0.06),

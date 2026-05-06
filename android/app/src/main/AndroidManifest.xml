@@ -1,21 +1,22 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+﻿<manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- Android 10+ (API 29+): ubicación cuando la app está en segundo plano.
-         Play exige divulgación en app antes del diálogo del sistema (ver DriverHomeScreen). -->
+    <!-- Android 10+ (API 29+): ubicaciÃ³n cuando la app estÃ¡ en segundo plano.
+         Play exige divulgaciÃ³n en app antes del diÃ¡logo del sistema (ver DriverHomeScreen). -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
     <!-- Notificaciones locales (ofertas de viaje en segundo plano); Android 13+ -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Foreground service: conductor en línea (ubicación + sesión activa). Android 14+ -->
+    <!-- Foreground service: conductor en lÃ­nea (ubicaciÃ³n + sesiÃ³n activa). Android 14+ -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <application
         android:label="texi_driver_app"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true">
         <!-- Google Maps API Key inyectada por Gradle (GOOGLE_MAPS_API_KEY) -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
@@ -23,7 +24,7 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="texi_driver_trip_offers" />
-        <!-- Icono de la notificación del foreground service (flutter_foreground_task). -->
+        <!-- Icono de la notificaciÃ³n del foreground service (flutter_foreground_task). -->
         <meta-data
             android:name="com.taxitexi.texi_driver_app.service.FG_NOTIFICATION_ICON"
             android:resource="@drawable/ic_stat_texi_driver" />
@@ -49,6 +50,11 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- image_cropper (uCrop): obligatorio; sin esto ActivityNotFoundException UCropActivity + Reply already submitted. -->
+        <activity
+            android:name="vn.hunghd.flutter.plugins.imagecropper.TexiUCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.TexiUcrop" />
         <!-- flutter_foreground_task: no cambiar el nombre de la clase. -->
         <service
             android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
@@ -73,3 +79,4 @@
         </intent>
     </queries>
 </manifest>
+

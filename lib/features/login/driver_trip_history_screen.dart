@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../core/config/driver_backend_config.dart';
+import '../../core/network/driver_http_resilience.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/money_formatter.dart';
 import '../../gen_l10n/app_localizations.dart';
@@ -38,6 +39,7 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
   DateTimeRange? _customRange;
   int _offset = 0;
   DriverTripHistoryResponse? _response;
+  int _activeLoadRequestId = 0;
   late final PageController _timePageController;
 
   Future<String?> _token() => _storage.read(key: 'driver_token');
@@ -110,6 +112,8 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
+    final requestId = ++_activeLoadRequestId;
     setState(() {
       _loading = true;
       _error = null;
@@ -117,46 +121,47 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
     try {
       final token = await _token();
       if (token == null || token.isEmpty) {
+        if (!mounted || requestId != _activeLoadRequestId) return;
         setState(() {
           _error = 'NO_SESSION';
           _loading = false;
         });
         return;
       }
-      final dio = Dio(
-        BaseOptions(
-          baseUrl: DriverBackendConfig.baseUrl,
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Accept': 'application/json',
-          },
-          connectTimeout: const Duration(seconds: 15),
-          receiveTimeout: const Duration(seconds: 20),
-        ),
+      final dio = buildDriverAuthedDio(
+        token: token,
+        baseUrl: DriverBackendConfig.baseUrl,
       );
-      final res = await dio.get<Map<String, dynamic>>(
-        '/drivers/me/trips',
-        queryParameters: {
-          if (_status != null && _status!.isNotEmpty) 'status': _status,
-          if (_fromDateForRange(_dateRange) != null)
-            'from': _fromDateForRange(_dateRange)!.toIso8601String(),
-          if (_toDateForRange(_dateRange) != null)
-            'to': _toDateForRange(_dateRange)!.toIso8601String(),
-          'limit': _pageSize,
-          'offset': _offset,
-        },
+      final status = _status;
+      final from = _fromDateForRange(_dateRange);
+      final to = _toDateForRange(_dateRange);
+      final offset = _offset;
+      final res = await requestWithRetry<Response<Map<String, dynamic>>>(
+        flow: 'driver_trip_history',
+        endpoint: '/drivers/me/trips',
+        maxAttempts: 3,
+        operation: () => dio.get<Map<String, dynamic>>(
+          '/drivers/me/trips',
+          queryParameters: {
+            if (status != null && status.isNotEmpty) 'status': status,
+            if (from != null) 'from': from.toIso8601String(),
+            if (to != null) 'to': to.toIso8601String(),
+            'limit': _pageSize,
+            'offset': offset,
+          },
+        ),
       );
       final root = res.data ?? <String, dynamic>{};
       final data = root['data'] is Map
           ? Map<String, dynamic>.from(root['data'])
           : <String, dynamic>{};
-      if (!mounted) return;
+      if (!mounted || requestId != _activeLoadRequestId) return;
       setState(() {
         _response = DriverTripHistoryResponse.fromJson(data);
         _loading = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || requestId != _activeLoadRequestId) return;
       setState(() {
         _error = 'LOAD_FAILED';
         _loading = false;

@@ -4,10 +4,13 @@ import 'package:go_router/go_router.dart';
 import '../../features/login/driver_login_screen.dart';
 import '../../features/login/driver_home_screen.dart';
 import '../../features/login/driver_trip_history_screen.dart';
+import '../../features/earnings/driver_earnings_credits_screen.dart';
 import '../session/driver_registration_resume_gate.dart';
 import '../../features/profile/driver_profile_screen.dart';
 import '../../features/profile/driver_registered_images_screen.dart';
+import '../../features/registration/driver_my_vehicles_screen.dart';
 import '../../features/registration/driver_registration_flow_screen.dart';
+import '../../features/settings/driver_app_settings_screen.dart';
 import '../session/driver_internal_tools_gate.dart';
 
 /// Clave de almacenamiento del token de conductor (misma que login).
@@ -25,6 +28,9 @@ class AppRouter {
   static const String profile = 'driver_profile';
   static const String registeredImages = 'driver_registered_images';
   static const String tripHistory = 'driver_trip_history';
+  static const String earningsCredits = 'driver_earnings_credits';
+  static const String myVehicles = 'driver_my_vehicles';
+  static const String settings = 'driver_settings';
 
   static const _storage = FlutterSecureStorage();
 
@@ -65,6 +71,9 @@ class AppRouter {
       }
       if (location == '/home' && !hasToken) return '/login';
       if (location == '/profile' && !hasToken) return '/login';
+      if (location == '/my-vehicles' && !hasToken) return '/login';
+      if (location == '/settings' && !hasToken) return '/login';
+      if (location == '/earnings-credits' && !hasToken) return '/login';
       if (location == '/registered-images') {
         if (!hasToken) return '/login';
         try {
@@ -95,16 +104,38 @@ class AppRouter {
           final qpResume = state.uri.queryParameters['resumeAfterLogin'] == '1';
           var resumeAfterLogin = qpResume;
           var addVehicleOnly = false;
+          String? completeVehicleGalleryForAssetId;
+          int? openFromProfileStep;
+          int? profilePreselectedCountryId;
           if (extra is bool && extra) {
             resumeAfterLogin = true;
           } else if (extra is Map) {
             final m = Map<String, dynamic>.from(extra);
             if (m['resumeAfterLogin'] == true) resumeAfterLogin = true;
             if (m['addVehicleOnly'] == true) addVehicleOnly = true;
+            final gid = m['completeVehicleGalleryForAssetId'];
+            if (gid is String && gid.trim().isNotEmpty) {
+              completeVehicleGalleryForAssetId = gid.trim();
+            }
+            final s = m['openFromProfileStep'] ?? m['profileOpenStep'];
+            if (s is int) {
+              openFromProfileStep = s;
+            } else if (s is num) {
+              openFromProfileStep = s.toInt();
+            }
+            final cid = m['profilePreselectedCountryId'] ?? m['profileCountryId'];
+            if (cid is int) {
+              profilePreselectedCountryId = cid;
+            } else if (cid is num) {
+              profilePreselectedCountryId = cid.toInt();
+            }
           }
           return DriverRegistrationFlowScreen(
             resumeAfterLogin: resumeAfterLogin,
             addVehicleOnly: addVehicleOnly,
+            completeVehicleGalleryForAssetId: completeVehicleGalleryForAssetId,
+            openFromProfileStep: openFromProfileStep,
+            profilePreselectedCountryId: profilePreselectedCountryId,
           );
         },
       ),
@@ -114,14 +145,29 @@ class AppRouter {
         builder: (context, state) => const DriverHomeScreen(),
       ),
       GoRoute(
+        path: '/my-vehicles',
+        name: myVehicles,
+        builder: (context, state) => const DriverMyVehiclesScreen(),
+      ),
+      GoRoute(
         path: '/trip-history',
         name: tripHistory,
         builder: (context, state) => const DriverTripHistoryScreen(),
       ),
       GoRoute(
+        path: '/earnings-credits',
+        name: earningsCredits,
+        builder: (context, state) => const DriverEarningsCreditsScreen(),
+      ),
+      GoRoute(
         path: '/profile',
         name: profile,
         builder: (context, state) => const DriverProfileScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        name: settings,
+        builder: (context, state) => const DriverAppSettingsScreen(),
       ),
       GoRoute(
         path: '/registered-images',

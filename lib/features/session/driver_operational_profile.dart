@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../core/config/driver_backend_config.dart';
+import '../../core/network/driver_http_resilience.dart';
+import '../../core/network/request_policy_cache.dart';
 
 /// Snapshot mínimo del perfil conductor para gating operativo (viajes / registro vehículo).
 class DriverOperationalProfile {
@@ -24,6 +26,11 @@ class DriverOperationalProfile {
 
   /// `true` si falta al menos un paso del alta (KYC, activación o vehículo) según backend.
   final bool needsResumeRegistration;
+
+  /// Forzar asistente `/register?resumeAfterLogin=1` (documentos / activación). Si solo falta vehículo (`suggested_client_step` ≥ 4), el conductor completa desde el menú.
+  bool get shouldForceRegistrationWizard =>
+      needsResumeRegistration &&
+      (suggestedClientStep == null || suggestedClientStep! < 4);
 
   /// Fase canónica del flujo: `identity` | `license` | `activation` | `vehicle_registration` | `complete`.
   final String registrationFlowPhase;
@@ -76,33 +83,45 @@ class DriverOperationalProfile {
   }
 
   static Future<DriverOperationalProfile> fetch() async {
-    const storage = FlutterSecureStorage();
-    final token = await storage.read(key: 'driver_token');
-    if (token == null || token.isEmpty) {
-      throw StateError('no_token');
-    }
-    final dio = Dio(
-      BaseOptions(
-        baseUrl: DriverBackendConfig.baseUrl,
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 20),
-        headers: <String, String>{
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      ),
+    return _operationalProfileCache.run(
+      key: _operationalProfileCacheKey,
+      fetcher: _fetchFromApi,
+      ttl: const Duration(seconds: 15),
     );
-    final response = await dio.get<Map<String, dynamic>>('/api/v2/driver/me-profile');
-    final root = response.data;
-    if (root == null || root['success'] != true) {
-      throw StateError('profile_fail');
-    }
-    final data = root['data'];
-    if (data is! Map) {
-      throw StateError('bad_format');
-    }
-    return DriverOperationalProfile.fromJson(Map<String, dynamic>.from(data));
   }
+}
+
+const String _operationalProfileCacheKey = 'driver_me_profile';
+final RequestPolicyCache<DriverOperationalProfile> _operationalProfileCache =
+    RequestPolicyCache<DriverOperationalProfile>(
+      defaultTtl: const Duration(seconds: 15),
+    );
+
+Future<DriverOperationalProfile> _fetchFromApi() async {
+  const storage = FlutterSecureStorage();
+  final token = await storage.read(key: 'driver_token');
+  if (token == null || token.isEmpty) {
+    throw StateError('no_token');
+  }
+  final dio = buildDriverAuthedDio(
+    token: token,
+    baseUrl: DriverBackendConfig.baseUrl,
+  );
+  final response = await requestWithRetry<Response<Map<String, dynamic>>>(
+    flow: 'driver_operational_profile',
+    endpoint: '/api/v2/driver/me-profile',
+    maxAttempts: 3,
+    operation: () => dio.get<Map<String, dynamic>>('/api/v2/driver/me-profile'),
+  );
+  final root = response.data;
+  if (root == null || root['success'] != true) {
+    throw StateError('profile_fail');
+  }
+  final data = root['data'];
+  if (data is! Map) {
+    throw StateError('bad_format');
+  }
+  return DriverOperationalProfile.fromJson(Map<String, dynamic>.from(data));
 }
 
 final driverOperationalProfileProvider =

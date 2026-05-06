@@ -62,6 +62,9 @@ dependencies:
   local_auth: ^3.0.1
   url_launcher: ^6.3.2
   image_picker: ^1.2.1
+  # Fork local: parche Android API 31+ (no mutar MainActivity; status bar via UCrop.Options).
+  image_cropper:
+    path: packages/image_cropper_patched
   flutter_image_compress: ^2.3.0
   intl: ^0.20.2
   wakelock_plus: ^1.5.1

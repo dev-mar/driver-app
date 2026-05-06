@@ -358,25 +358,6 @@ class DriverVehicleCatalogSection extends StatelessWidget {
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 6),
-          if (cat.catalogExtensionsSource == 'fallback')
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: RegistrationSoftInfoRow(
-                text: l10n.driverRegCatalogSourceFallback,
-              ),
-            )
-          else if (cat.catalogExtensionsSource == 'database')
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Text(
-                l10n.driverRegCatalogSourceDatabase,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary.withValues(alpha: 0.9),
-                ),
-              ),
-            ),
           const SizedBox(height: 12),
           ..._brandModelFields(cat, mode, selectedVehicleTypeId),
           ...afterCatalogBrandModelFields,

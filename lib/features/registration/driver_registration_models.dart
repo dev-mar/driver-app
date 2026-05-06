@@ -784,6 +784,42 @@ class VehicleCatalog {
       measurementUnitConversions: measurementUnitConversions,
     );
   }
+
+  /// Une `?scope=registration` (tipo/categoría/servicios) con `?scope=extensions` (marcas/modelos).
+  static VehicleCatalog mergeRegistrationSlices(
+    VehicleCatalog core,
+    VehicleCatalog ext,
+  ) {
+    final extExtensions =
+        ext.manufacturers.isNotEmpty && ext.vehicleModels.isNotEmpty;
+    final extAvail = ext.catalogExtensionsAvailable || extExtensions;
+    return VehicleCatalog(
+      compatibilityMode: core.compatibilityMode,
+      vehicleTypes: core.vehicleTypes,
+      vehicleCategories: core.vehicleCategories,
+      serviceTypes: core.serviceTypes,
+      catalogExtensionsAvailable: extAvail,
+      catalogExtensionsSource:
+          ext.catalogExtensionsSource ?? core.catalogExtensionsSource,
+      modelSegmentTypes: ext.modelSegmentTypes.isNotEmpty
+          ? ext.modelSegmentTypes
+          : core.modelSegmentTypes,
+      manufacturers: ext.manufacturers,
+      vehicleModels: ext.vehicleModels,
+      emissionNorms:
+          ext.emissionNorms.isNotEmpty ? ext.emissionNorms : core.emissionNorms,
+      axleConfigurations: ext.axleConfigurations.isNotEmpty
+          ? ext.axleConfigurations
+          : core.axleConfigurations,
+      bodyTypes: ext.bodyTypes.isNotEmpty ? ext.bodyTypes : core.bodyTypes,
+      measurementUnits: ext.measurementUnits.isNotEmpty
+          ? ext.measurementUnits
+          : core.measurementUnits,
+      measurementUnitConversions: ext.measurementUnitConversions.isNotEmpty
+          ? ext.measurementUnitConversions
+          : core.measurementUnitConversions,
+    );
+  }
 }
 
 // --- Registro vehículo: ocultar servicio "exclusivo"; solo Estándar / Confort en UI ---
@@ -855,6 +891,29 @@ int? registrationDefaultCompatServiceTypeId(
   return visible.first.id;
 }
 
+/// Ítem de checklist de registro (misma forma que `registration_checklist` en `me-profile`).
+class DriverRegistrationChecklistItem {
+  const DriverRegistrationChecklistItem({
+    required this.key,
+    required this.uiStatus,
+    this.complianceStatus,
+  });
+
+  final String key;
+  final String uiStatus;
+  final String? complianceStatus;
+
+  static DriverRegistrationChecklistItem? fromJson(Map<String, dynamic> json) {
+    final k = json['key']?.toString() ?? '';
+    if (k.isEmpty) return null;
+    return DriverRegistrationChecklistItem(
+      key: k,
+      uiStatus: json['ui_status']?.toString() ?? 'incomplete',
+      complianceStatus: json['compliance_status']?.toString(),
+    );
+  }
+}
+
 /// Estado de reanudación: `GET /api/v2/driver/registration` (data incluye `schema_version` y campos de flujo del backend).
 class DriverRegistrationStatusDto {
   const DriverRegistrationStatusDto({
@@ -863,6 +922,8 @@ class DriverRegistrationStatusDto {
     required this.phase,
     required this.userStatus,
     required this.hasVehicle,
+    this.registrationChecklist,
+    this.missingRegistrationKeys = const [],
   });
 
   final String uuid;
@@ -870,10 +931,33 @@ class DriverRegistrationStatusDto {
   final String phase;
   final String userStatus;
   final bool hasVehicle;
+  final List<DriverRegistrationChecklistItem>? registrationChecklist;
+  final List<String> missingRegistrationKeys;
 
   factory DriverRegistrationStatusDto.fromJson(Map<String, dynamic> json) {
     final uuid = json['uuid']?.toString() ?? json['registration_session_id']?.toString() ?? '';
     final step = _parsePositiveInt(json['suggested_client_step']) ?? 1;
+    List<DriverRegistrationChecklistItem>? checklist;
+    final rawList = json['registration_checklist'];
+    if (rawList is List) {
+      final list = <DriverRegistrationChecklistItem>[];
+      for (final e in rawList) {
+        if (e is! Map) continue;
+        final it = DriverRegistrationChecklistItem.fromJson(
+          Map<String, dynamic>.from(e),
+        );
+        if (it != null) list.add(it);
+      }
+      checklist = list.isEmpty ? null : list;
+    }
+    final rawMissing = json['missing_registration_keys'];
+    final missing = <String>[];
+    if (rawMissing is List) {
+      for (final e in rawMissing) {
+        final s = e?.toString().trim() ?? '';
+        if (s.isNotEmpty) missing.add(s);
+      }
+    }
     return DriverRegistrationStatusDto(
       uuid: uuid,
       suggestedClientStep: step < 1
@@ -882,6 +966,202 @@ class DriverRegistrationStatusDto {
       phase: json['phase']?.toString() ?? '',
       userStatus: json['user_status']?.toString() ?? '',
       hasVehicle: json['has_vehicle'] == true,
+      registrationChecklist: checklist,
+      missingRegistrationKeys: missing,
     );
+  }
+}
+
+/// Orden de bloques de onboarding alineado al checklist del backend (`missing_registration_keys`).
+const List<String> kDriverRegistrationGapKeyOrder = [
+  'personal_info',
+  'identity',
+  'license',
+  'vehicle',
+];
+
+/// Fila de `GET /api/v2/vehicles` (resumen; sin imágenes).
+class DriverVehicleSummary {
+  const DriverVehicleSummary({
+    required this.vehicleAssetId,
+    required this.status,
+    required this.brand,
+    required this.model,
+    this.year,
+    this.color,
+    this.vin,
+    this.licensePlate,
+    this.registrationCountryName,
+    this.vehicleTypeLabel,
+    this.vehicleCategoryLabel,
+    this.enabledServiceLabels,
+    this.createdAt,
+    this.galleryUploadedCount = 0,
+    this.galleryRequiredCount = 4,
+    this.galleryComplete = false,
+  });
+
+  final String vehicleAssetId;
+  final String status;
+  final String brand;
+  final String model;
+  final int? year;
+  final String? color;
+  final String? vin;
+  final String? licensePlate;
+  final String? registrationCountryName;
+  final String? vehicleTypeLabel;
+  final String? vehicleCategoryLabel;
+  final String? enabledServiceLabels;
+  final String? createdAt;
+
+  /// Fotos de galería requeridas (`GET /api/v2/vehicles`); 0 si el backend no envía el bloque.
+  final int galleryUploadedCount;
+  final int galleryRequiredCount;
+  final bool galleryComplete;
+
+  /// Hay fila de vehículo pero aún faltan las cuatro vistas obligatorias en `fleet.vehicle_images`.
+  bool get needsGalleryCompletion =>
+      !galleryComplete && galleryRequiredCount > 0 && galleryUploadedCount < galleryRequiredCount;
+
+  static DriverVehicleSummary? fromApiJson(Map<String, dynamic> json) {
+    final id = json['vehicle_asset_id']?.toString() ?? json['vehicleAssetId']?.toString();
+    if (id == null || id.isEmpty) return null;
+    final status = json['status']?.toString() ?? '';
+    final brand = json['brand']?.toString() ?? '';
+    final model = json['model']?.toString() ?? '';
+    final hasGalleryPayload = json.containsKey('gallery_complete') ||
+        json.containsKey('gallery_uploaded_count') ||
+        json.containsKey('gallery_required_count') ||
+        json.containsKey('galleryComplete') ||
+        json.containsKey('galleryUploadedCount') ||
+        json.containsKey('galleryRequiredCount');
+    final gu = json['gallery_uploaded_count'] ?? json['galleryUploadedCount'];
+    final gr = json['gallery_required_count'] ?? json['galleryRequiredCount'];
+    final gc = json['gallery_complete'] ?? json['galleryComplete'];
+    final uploaded = gu is num ? gu.toInt() : int.tryParse(gu?.toString() ?? '') ?? 0;
+    final required = gr is num ? gr.toInt() : int.tryParse(gr?.toString() ?? '') ?? 4;
+    final complete = !hasGalleryPayload
+        ? true
+        : (gc == true || (required > 0 && uploaded >= required));
+    final effUploaded = !hasGalleryPayload ? 4 : uploaded;
+    final effRequired = !hasGalleryPayload ? 4 : (required > 0 ? required : 4);
+    return DriverVehicleSummary(
+      vehicleAssetId: id,
+      status: status,
+      brand: brand,
+      model: model,
+      year: _parsePositiveInt(json['year']),
+      color: json['color']?.toString(),
+      vin: json['vin']?.toString(),
+      licensePlate: json['license_plate']?.toString() ?? json['licensePlate']?.toString(),
+      registrationCountryName:
+          json['registration_country_name']?.toString() ?? json['registrationCountryName']?.toString(),
+      vehicleTypeLabel: json['vehicle_type_label']?.toString() ?? json['vehicleTypeLabel']?.toString(),
+      vehicleCategoryLabel:
+          json['vehicle_category_label']?.toString() ?? json['vehicleCategoryLabel']?.toString(),
+      enabledServiceLabels:
+          json['enabled_service_labels']?.toString() ?? json['enabledServiceLabels']?.toString(),
+      createdAt: json['created_at']?.toString() ?? json['createdAt']?.toString(),
+      galleryUploadedCount: effUploaded,
+      galleryRequiredCount: effRequired,
+      galleryComplete: complete,
+    );
+  }
+}
+
+extension DriverRegistrationStatusProfileRouting on DriverRegistrationStatusDto {
+  /// Clave de checklist asociada a un paso del flujo en la app (0–5).
+  static String? checklistKeyForFlowStep(int step) {
+    switch (step.clamp(0, 5)) {
+      case 0:
+        return 'personal_info';
+      case 1:
+        return 'identity';
+      case 2:
+        return 'license';
+      case 3:
+        return null;
+      case 4:
+      case 5:
+        return 'vehicle';
+      default:
+        return null;
+    }
+  }
+
+  String? _uiStatusForChecklistKey(String key) {
+    for (final it in registrationChecklist ?? const []) {
+      if (it.key == key) return it.uiStatus;
+    }
+    return null;
+  }
+
+  List<String> _missingKeysSorted() {
+    final keys = List<String>.from(missingRegistrationKeys);
+    keys.sort((a, b) {
+      final ia = kDriverRegistrationGapKeyOrder.indexOf(a);
+      final ib = kDriverRegistrationGapKeyOrder.indexOf(b);
+      final va = ia == -1 ? 999 : ia;
+      final vb = ib == -1 ? 999 : ib;
+      if (va != vb) return va.compareTo(vb);
+      return a.compareTo(b);
+    });
+    return keys;
+  }
+
+  /// Paso UI (0–5) coherente con [registration_checklist], [missing_registration_keys] y [suggestedClientStep].
+  ///
+  /// Si el usuario eligió una sección ya verificada pero hay huecos antes en la tubería, se dirige al primer gap.
+  /// Para `vehicle`, usa [hasVehicle] y [suggestedClientStep] para distinguir datos (4) vs fotos (5).
+  int resolveProfileFlowStep(int requestedStep) {
+    final step = requestedStep.clamp(0, 5);
+    final missing = _missingKeysSorted();
+    final reqKey = DriverRegistrationStatusProfileRouting.checklistKeyForFlowStep(step);
+
+    int vehicleStepFromServer() {
+      if (!hasVehicle) return 4;
+      return suggestedClientStep >= 5 ? 5 : 4;
+    }
+
+    int stepForMissingKey(String key) {
+      switch (key) {
+        case 'personal_info':
+          return 0;
+        case 'identity':
+          return 1;
+        case 'license':
+          return 2;
+        case 'vehicle':
+          return vehicleStepFromServer();
+        default:
+          return step;
+      }
+    }
+
+    if (missing.isEmpty) {
+      return step;
+    }
+
+    if (reqKey != null && missing.contains(reqKey)) {
+      if (reqKey == 'vehicle') {
+        return vehicleStepFromServer();
+      }
+      return step;
+    }
+
+    if (reqKey != null) {
+      final ui = (_uiStatusForChecklistKey(reqKey) ?? '').toLowerCase();
+      if (ui == 'pending_review' || ui == 'needs_attention') {
+        return step;
+      }
+      return stepForMissingKey(missing.first);
+    }
+
+    if (step == 3) {
+      return stepForMissingKey(missing.first);
+    }
+
+    return step;
   }
 }

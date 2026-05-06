@@ -115,14 +115,9 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
       ref.invalidate(driverRealtimeProvider);
       try {
         final profile = await ref.read(driverOperationalProfileProvider.future);
-        if (profile.needsResumeRegistration) {
+        if (profile.shouldForceRegistrationWizard) {
           if (!mounted) return;
           context.go('/register?resumeAfterLogin=1');
-          return;
-        }
-        if (profile.needsVehicleRegistration) {
-          if (!mounted) return;
-          context.goNamed(AppRouter.register, extra: true);
           return;
         }
       } catch (_) {
@@ -143,6 +138,7 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
           'CLIENT_EMPTY_DATA' => l10n.driverLoginErrorInvalidResponse,
           'CLIENT_TOKEN_MISSING' => l10n.driverLoginErrorTokenMissing,
           'CLIENT_UNEXPECTED' => l10n.driverLoginErrorUnexpected,
+          'AUTH_ACCOUNT_BLOCKED' => l10n.driverLoginErrorAccountBlocked,
           _ => loginState.errorMessage ?? l10n.driverLoginErrorGeneric,
         };
       });

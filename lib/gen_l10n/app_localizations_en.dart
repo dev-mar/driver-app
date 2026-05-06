@@ -207,6 +207,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverLoginErrorGeneric => 'Could not sign in';
 
   @override
+  String get driverLoginErrorAccountBlocked =>
+      'Your account is blocked. Contact support to review your case.';
+
+  @override
   String get driverLoginErrorNetwork =>
       'Could not connect. Check your internet and try again.';
 
@@ -308,6 +312,65 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverLogout => 'Sign out';
 
   @override
+  String get driverEarningsCreditsMenu => 'Earnings & credits';
+
+  @override
+  String get driverEarningsCreditsTitle => 'Earnings & credits';
+
+  @override
+  String get driverEarningsCreditsFilterHint =>
+      'Filter by period. Totals and lists match the selected range.';
+
+  @override
+  String get driverEarningsCreditsLoadError =>
+      'Could not load data. Pull to refresh.';
+
+  @override
+  String get driverEarningsCreditsStatTrips => 'Completed trips';
+
+  @override
+  String get driverEarningsCreditsStatTripsHint => 'In the selected period';
+
+  @override
+  String get driverEarningsCreditsStatGross => 'Trip total';
+
+  @override
+  String get driverEarningsCreditsStatGrossHint =>
+      'Sum of completed trip fares';
+
+  @override
+  String get driverEarningsCreditsStatBalance => 'Credit balance';
+
+  @override
+  String get driverEarningsCreditsStatCommission => 'Credit commission';
+
+  @override
+  String get driverEarningsCreditsStatCommissionHint =>
+      'Deducted from balance in period';
+
+  @override
+  String get driverEarningsCreditsLedgerSection => 'Credit activity';
+
+  @override
+  String get driverEarningsCreditsLedgerEmpty => 'No movements in this period.';
+
+  @override
+  String get driverEarningsCreditsLedgerGrant => 'Top-up';
+
+  @override
+  String get driverEarningsCreditsLedgerCommission => 'Trip commission';
+
+  @override
+  String get driverEarningsCreditsTripsSection => 'Trips in period';
+
+  @override
+  String get driverEarningsCreditsTripsEmpty =>
+      'No completed trips in this period.';
+
+  @override
+  String get driverEarningsCreditsTripIdShort => 'Trip';
+
+  @override
   String get driverTripHistoryMenu => 'Trip history';
 
   @override
@@ -388,7 +451,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverTripHistoryPricePending => 'No amount';
 
   @override
-  String get driverHomeMenuAddVehicle => 'Add another vehicle';
+  String get driverHomeMenuAddVehicle => 'My vehicles';
+
+  @override
+  String get driverMyVehiclesTitle => 'My vehicles';
+
+  @override
+  String get driverMyVehiclesRefreshTooltip => 'Refresh list';
+
+  @override
+  String get driverMyVehiclesAddFab => 'Add vehicle';
+
+  @override
+  String get driverMyVehiclesEmpty =>
+      'You have no registered vehicles yet. Add one to offer service.';
+
+  @override
+  String get driverMyVehiclesRetry => 'Try again';
+
+  @override
+  String driverMyVehiclesPhotosPendingBadge(int uploaded, int required) {
+    return 'Gallery incomplete: $uploaded of $required required photos';
+  }
+
+  @override
+  String get driverMyVehiclesCompletePhotosCta => 'Complete photos';
+
+  @override
+  String get driverMyVehiclesCompletePhotosTitle => 'Vehicle photos';
+
+  @override
+  String get driverMyVehiclesPhotosSavedSnackbar => 'Photos saved successfully';
 
   @override
   String get driverOnlineAuthTitle => 'Confirm your identity';
@@ -456,6 +549,40 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your documents were received successfully. Our team is validating them so we can enable your service as soon as possible.';
 
   @override
+  String get driverProfileOnboardingTitle => 'Uploads and checks';
+
+  @override
+  String get driverProfileOnboardingBody =>
+      'Review the status of each item. You can complete or resubmit as needed.';
+
+  @override
+  String get driverProfileSectionOnboardingPersonal => 'Personal information';
+
+  @override
+  String get driverProfileSectionOnboardingIdentity => 'Identity document';
+
+  @override
+  String get driverProfileSectionOnboardingLicense => 'Driver license';
+
+  @override
+  String get driverProfileSectionOnboardingVehicle => 'Vehicle and photos';
+
+  @override
+  String get driverProfileOnboardingStatusIncomplete => 'Pending';
+
+  @override
+  String get driverProfileOnboardingStatusPending => 'In review';
+
+  @override
+  String get driverProfileOnboardingStatusVerified => 'Verified';
+
+  @override
+  String get driverProfileOnboardingStatusAction => 'Update requested';
+
+  @override
+  String get driverProfileOnboardingTapToContinue => 'Tap to open or update';
+
+  @override
   String get driverProfileSectionPersonal => 'Personal information';
 
   @override
@@ -467,6 +594,34 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get driverProfileReadOnlyFooter =>
       'These details are read-only for now. Editing from the app will be available soon.';
+
+  @override
+  String get driverAppCreditsTitle => 'Usage credits';
+
+  @override
+  String get driverAppCreditsUnavailable =>
+      'Could not load balance. Pull to refresh.';
+
+  @override
+  String driverAppCreditsBalance(String balance) {
+    return 'Balance: $balance';
+  }
+
+  @override
+  String get driverAppCreditsProgramOn => 'Per-trip commission active';
+
+  @override
+  String get driverAppCreditsProgramOff => 'No automatic per-trip commission';
+
+  @override
+  String driverAppCreditsDetailPercent(String percent) {
+    return '$percent% of trip fare';
+  }
+
+  @override
+  String driverAppCreditsDetailFixed(String amount) {
+    return '$amount per completed trip';
+  }
 
   @override
   String get driverProfileFieldName => 'Name';
@@ -535,6 +690,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get driverOnlineErrorVehicleRequired =>
       'You need a registered vehicle to connect. Complete vehicle registration or use “Add another vehicle” in the menu.';
+
+  @override
+  String get driverOnlineErrorGoOnlineBlocked =>
+      'Your account cannot go available for trips from the app. Contact support if you think this is a mistake.';
+
+  @override
+  String driverOnlineErrorCreditsBelowMin(Object minCredits, Object balance) {
+    return 'Insufficient credits to enable online mode. Minimum required: $minCredits; current balance: $balance.';
+  }
+
+  @override
+  String get driverOnlineErrorAccountBlocked =>
+      'Your driver account is blocked. Your session was closed for safety.';
 
   @override
   String get driverOnlineErrorUnknown =>
@@ -864,6 +1032,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverRegImageReadError => 'Could not read image.';
 
   @override
+  String get driverRegImageCompatibleCaptureUsed =>
+      'Optimized camera capture was used to reduce file size.';
+
+  @override
+  String get driverRegImageLongPressLightHint =>
+      'Long-press a slot to retake with optimized capture (lower initial resolution).';
+
+  @override
+  String get driverRegCropSelfieTitle => 'Adjust selfie';
+
+  @override
+  String get driverRegCropDocumentTitle => 'Adjust document';
+
+  @override
+  String get driverRegCropVehicleTitle => 'Frame the vehicle';
+
+  @override
+  String get driverRegPhotoReviewTitle => 'Review your photo';
+
+  @override
+  String get driverRegPhotoReviewSubtitle =>
+      'You can confirm it, take another one, or crop before continuing.';
+
+  @override
+  String get driverRegPhotoReviewUse => 'Use this photo';
+
+  @override
+  String get driverRegPhotoReviewChange => 'Change photo';
+
+  @override
+  String get driverRegPhotoReviewEdit => 'Crop or adjust';
+
+  @override
+  String get driverRegPhotoReviewCancel => 'Cancel';
+
+  @override
   String get driverRegStepData => 'Data';
 
   @override
@@ -915,6 +1119,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverRegSnackVehicleYearInvalid => 'Invalid vehicle year.';
 
   @override
+  String get driverRegSnackSelectCatalogBrandModel =>
+      'Select make and model from the lists before continuing.';
+
+  @override
+  String get driverSettingsTitle => 'Settings';
+
+  @override
   String get driverRegSnackVehiclePhotosIncomplete =>
       'We need all four views: front, rear, and both sides of the vehicle.';
 
@@ -929,7 +1140,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverRegDoneGoLogin => 'Go to sign in';
 
   @override
-  String get driverRegAddVehicleTitle => 'Add vehicle';
+  String get driverRegAddVehicleTitle => 'Register service vehicle';
 
   @override
   String get driverRegAddVehicleDoneTitle => 'Vehicle registered';
@@ -950,6 +1161,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverRegResumeDoneCta => 'Go to home';
+
+  @override
+  String get driverRegOnboardingDoneTitle => 'Account active';
+
+  @override
+  String get driverRegOnboardingDoneBody =>
+      'Your account is active. To register your service vehicle, open the menu (⋮) on the home screen and tap “Register service vehicle”. There you can see vehicles you already added or register your first one.';
+
+  @override
+  String get driverRegOnboardingDoneCta => 'Go to home';
 
   @override
   String get driverRegRetryLoadCountries => 'Retry loading countries';
@@ -1161,18 +1382,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverRegCatalogRetry => 'Retry catalog';
 
   @override
-  String get driverRegCatalogBrandModelTitle => 'Brand & model (catalog)';
+  String get driverRegCatalogBrandModelTitle => 'Make and model';
 
   @override
   String get driverRegCatalogTransportStepTitle => '1. What will you drive?';
 
   @override
-  String get driverRegCatalogModelLockedTitle =>
-      'Brand and model (from catalog)';
+  String get driverRegCatalogModelLockedTitle => 'Make and model';
 
   @override
   String get driverRegCatalogModelLockedHint =>
-      'Taken from your selection above. Change brand or model in the catalog section if needed.';
+      'Taken from your selection above. You can change make or model in the same section if needed.';
 
   @override
   String get serviceTypeNameStandard => 'Standard';
@@ -1397,6 +1617,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverRegActionBack => 'Back';
+
+  @override
+  String get driverRegActionSave => 'Save';
+
+  @override
+  String get driverRegTitleProfileCompletion => 'Complete registration';
+
+  @override
+  String get driverRegProfileStepSaved => 'Changes saved.';
+
+  @override
+  String driverRegProfileRedirectSnackbar(String stepFrom, String stepTo) {
+    return 'Based on your registration status, we opened «$stepTo» instead of «$stepFrom».';
+  }
 
   @override
   String get driverRegImageReady => 'Image ready';

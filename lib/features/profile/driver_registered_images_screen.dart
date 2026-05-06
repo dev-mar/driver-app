@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../core/config/driver_backend_config.dart';
+import '../../core/network/driver_http_resilience.dart';
 import '../../core/theme/app_colors.dart';
 
 class DriverRegisteredImagesScreen extends StatefulWidget {
@@ -30,18 +31,16 @@ class _DriverRegisteredImagesScreenState extends State<DriverRegisteredImagesScr
     if (token == null || token.isEmpty) {
       throw Exception('Sesión no disponible');
     }
-    final dio = Dio(
-      BaseOptions(
-        baseUrl: DriverBackendConfig.baseUrl,
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 20),
-        headers: <String, String>{
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      ),
+    final dio = buildDriverAuthedDio(
+      token: token,
+      baseUrl: DriverBackendConfig.baseUrl,
     );
-    final res = await dio.get<Map<String, dynamic>>('/api/v2/driver/registered-images');
+    final res = await requestWithRetry<Response<Map<String, dynamic>>>(
+      flow: 'driver_registered_images',
+      endpoint: '/api/v2/driver/registered-images',
+      maxAttempts: 3,
+      operation: () => dio.get<Map<String, dynamic>>('/api/v2/driver/registered-images'),
+    );
     final root = res.data;
     if (root == null || root['success'] != true) {
       throw Exception(root?['message']?.toString() ?? 'No se pudo cargar imágenes');

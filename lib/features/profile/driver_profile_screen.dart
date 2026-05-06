@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/config/driver_backend_config.dart';
+import '../../core/network/driver_http_resilience.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_motion.dart';
 import '../../core/ui/texi_circular_avatar.dart';
@@ -53,35 +54,33 @@ class DriverProfileScreen extends StatefulWidget {
 }
 
 class _DriverProfileScreenState extends State<DriverProfileScreen> {
-  late Future<_DriverProfileViewModel> _futureProfile;
+  late Future<_ProfileScreenData> _futureProfile;
 
   @override
   void initState() {
     super.initState();
-    _futureProfile = _fetchProfile();
+    _futureProfile = _fetchProfileAndCredits();
   }
 
-  Future<_DriverProfileViewModel> _fetchProfile() async {
+  Future<_ProfileScreenData> _fetchProfileAndCredits() async {
     const storage = FlutterSecureStorage();
     final token = await storage.read(key: 'driver_token');
     if (token == null || token.isEmpty) {
       throw _ProfileLoadError.noSession;
     }
 
-    final dio = Dio(
-      BaseOptions(
-        baseUrl: DriverBackendConfig.baseUrl,
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 20),
-        headers: <String, String>{
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      ),
+    final dio = buildDriverAuthedDio(
+      token: token,
+      baseUrl: DriverBackendConfig.baseUrl,
     );
 
     try {
-      final response = await dio.get<Map<String, dynamic>>('/api/v2/driver/me-profile');
+      final response = await requestWithRetry<Response<Map<String, dynamic>>>(
+        flow: 'driver_profile',
+        endpoint: '/api/v2/driver/me-profile',
+        maxAttempts: 3,
+        operation: () => dio.get<Map<String, dynamic>>('/api/v2/driver/me-profile'),
+      );
       final root = response.data;
       if (root == null) {
         throw _ProfileLoadError.emptyResponse;
@@ -97,7 +96,29 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
       if (data is! Map) {
         throw _ProfileLoadError.badFormat;
       }
-      return _DriverProfileViewModel.fromJson(Map<String, dynamic>.from(data));
+      final profile = _DriverProfileViewModel.fromJson(Map<String, dynamic>.from(data));
+
+      _DriverAppCreditsVm? credits;
+      try {
+        final creditsRes = await requestWithRetry<Response<Map<String, dynamic>>>(
+          flow: 'driver_app_credits',
+          endpoint: '/api/v2/driver/app-credits',
+          maxAttempts: 2,
+          operation: () => dio.get<Map<String, dynamic>>('/api/v2/driver/app-credits'),
+        );
+        final cr = creditsRes.data;
+        if (cr != null &&
+            cr['success'] == true &&
+            cr['data'] is Map<String, dynamic>) {
+          credits = _DriverAppCreditsVm.fromJson(
+            Map<String, dynamic>.from(cr['data'] as Map),
+          );
+        }
+      } catch (_) {
+        credits = null;
+      }
+
+      return _ProfileScreenData(profile: profile, credits: credits);
     } on DioException catch (e) {
       final body = e.response?.data;
       final msg = body is Map ? body['message']?.toString() : null;
@@ -107,7 +128,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
 
   Future<void> _reload() async {
     setState(() {
-      _futureProfile = _fetchProfile();
+      _futureProfile = _fetchProfileAndCredits();
     });
     await _futureProfile;
   }
@@ -144,7 +165,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           ),
         ],
       ),
-      body: FutureBuilder<_DriverProfileViewModel>(
+      body: FutureBuilder<_ProfileScreenData>(
         future: _futureProfile,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -174,7 +195,8 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
               ),
             );
           }
-          final p = snapshot.data!;
+          final bundle = snapshot.data!;
+          final p = bundle.profile;
           return RefreshIndicator(
             onRefresh: _reload,
             child: ListView(
@@ -187,11 +209,35 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 const SizedBox(height: 14),
                 _StaggeredFadeSlide(
                   index: 1,
-                  child: _VerificationStatusCard(l10n: l10n),
+                  child: _DriverAppCreditsCard(
+                    credits: bundle.credits,
+                    l10n: l10n,
+                    locale: locale,
+                  ),
                 ),
                 const SizedBox(height: 14),
                 _StaggeredFadeSlide(
                   index: 2,
+                  child: p.registrationChecklist == null || p.registrationChecklist!.isEmpty
+                      ? _VerificationStatusCard(l10n: l10n)
+                      : _RegistrationOnboardingChecklist(
+                          l10n: l10n,
+                          items: p.registrationChecklist!,
+                          onOpenStep: (flowStep) {
+                            context.pushNamed(
+                              AppRouter.register,
+                              extra: <String, dynamic>{
+                                'openFromProfileStep': flowStep,
+                                if (p.registrationCountryId != null)
+                                  'profilePreselectedCountryId': p.registrationCountryId,
+                              },
+                            );
+                          },
+                        ),
+                ),
+                const SizedBox(height: 14),
+                _StaggeredFadeSlide(
+                  index: 3,
                   child: _ProfileInfoCard(
                     title: l10n.driverProfileSectionPersonal,
                     children: [
@@ -219,7 +265,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 ),
                 const SizedBox(height: 12),
                 _StaggeredFadeSlide(
-                  index: 3,
+                  index: 4,
                   child: _ProfileInfoCard(
                     title: l10n.driverProfileSectionContact,
                     children: [
@@ -238,7 +284,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 ),
                 const SizedBox(height: 12),
                 _StaggeredFadeSlide(
-                  index: 4,
+                  index: 5,
                   child: _ProfileInfoCard(
                     title: l10n.driverProfileSectionLocation,
                     children: [
@@ -257,7 +303,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 ),
                 const SizedBox(height: 12),
                 _StaggeredFadeSlide(
-                  index: 5,
+                  index: 6,
                   child: Container(
                     margin: const EdgeInsets.only(top: 4),
                     padding: const EdgeInsets.symmetric(
@@ -287,6 +333,123 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           );
         },
       ),
+      ),
+    );
+  }
+}
+
+class _ProfileScreenData {
+  const _ProfileScreenData({required this.profile, this.credits});
+
+  final _DriverProfileViewModel profile;
+  final _DriverAppCreditsVm? credits;
+}
+
+class _DriverAppCreditsVm {
+  const _DriverAppCreditsVm({
+    required this.balance,
+    required this.programEnabled,
+    required this.deductionMode,
+    required this.percentValue,
+    required this.fixedAmount,
+  });
+
+  final double balance;
+  final bool programEnabled;
+  final String deductionMode;
+  final double percentValue;
+  final double fixedAmount;
+
+  factory _DriverAppCreditsVm.fromJson(Map<String, dynamic> json) {
+    final modeRaw = json['deductionMode']?.toString() ?? 'percent';
+    return _DriverAppCreditsVm(
+      balance: (json['balance'] as num?)?.toDouble() ?? 0,
+      programEnabled: json['programEnabled'] == true,
+      deductionMode: modeRaw == 'fixed' ? 'fixed' : 'percent',
+      percentValue: (json['percentValue'] as num?)?.toDouble() ?? 0,
+      fixedAmount: (json['fixedAmount'] as num?)?.toDouble() ?? 0,
+    );
+  }
+}
+
+class _DriverAppCreditsCard extends StatelessWidget {
+  const _DriverAppCreditsCard({
+    required this.credits,
+    required this.l10n,
+    required this.locale,
+  });
+
+  final _DriverAppCreditsVm? credits;
+  final AppLocalizations l10n;
+  final Locale locale;
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = NumberFormat.decimalPattern(locale.toString());
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.driverAppCreditsTitle,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (credits == null)
+            Text(
+              l10n.driverAppCreditsUnavailable,
+              style: TextStyle(
+                color: AppColors.textSecondary.withValues(alpha: 0.9),
+                fontSize: 13,
+              ),
+            )
+          else ...[
+            Text(
+              l10n.driverAppCreditsBalance(fmt.format(credits!.balance)),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              credits!.programEnabled
+                  ? l10n.driverAppCreditsProgramOn
+                  : l10n.driverAppCreditsProgramOff,
+              style: TextStyle(
+                fontSize: 12.5,
+                color: credits!.programEnabled
+                    ? AppColors.success
+                    : AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (credits!.programEnabled) ...[
+              const SizedBox(height: 6),
+              Text(
+                credits!.deductionMode == 'fixed'
+                    ? l10n.driverAppCreditsDetailFixed(fmt.format(credits!.fixedAmount))
+                    : l10n.driverAppCreditsDetailPercent(fmt.format(credits!.percentValue)),
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: AppColors.textSecondary.withValues(alpha: 0.92),
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ],
+        ],
       ),
     );
   }
@@ -604,6 +767,248 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
+class _ProfileRegistrationChecklistItem {
+  const _ProfileRegistrationChecklistItem({
+    required this.key,
+    required this.uiStatus,
+    this.complianceStatus,
+  });
+
+  final String key;
+  final String uiStatus;
+  final String? complianceStatus;
+}
+
+int _flowStepForChecklistKey(String key) {
+  switch (key) {
+    case 'personal_info':
+      return 0;
+    case 'identity':
+      return 1;
+    case 'license':
+      return 2;
+    case 'vehicle':
+      return 4;
+    default:
+      return 0;
+  }
+}
+
+String _checklistKeyTitle(AppLocalizations l10n, String key) {
+  switch (key) {
+    case 'personal_info':
+      return l10n.driverProfileSectionOnboardingPersonal;
+    case 'identity':
+      return l10n.driverProfileSectionOnboardingIdentity;
+    case 'license':
+      return l10n.driverProfileSectionOnboardingLicense;
+    case 'vehicle':
+      return l10n.driverProfileSectionOnboardingVehicle;
+    default:
+      return key;
+  }
+}
+
+String _checklistStatusLabel(AppLocalizations l10n, String ui) {
+  switch (ui) {
+    case 'incomplete':
+      return l10n.driverProfileOnboardingStatusIncomplete;
+    case 'pending_review':
+      return l10n.driverProfileOnboardingStatusPending;
+    case 'verified':
+      return l10n.driverProfileOnboardingStatusVerified;
+    case 'needs_attention':
+      return l10n.driverProfileOnboardingStatusAction;
+    default:
+      return l10n.driverProfileOnboardingStatusPending;
+  }
+}
+
+({Color bg, Color fg, IconData icon}) _checklistStatusStyle(String ui) {
+  switch (ui) {
+    case 'verified':
+      return (
+        bg: const Color(0xFF1B5E20).withValues(alpha: 0.22),
+        fg: const Color(0xFFA5D6A7),
+        icon: Icons.verified_outlined
+      );
+    case 'incomplete':
+      return (
+        bg: const Color(0xFF6D4C41).withValues(alpha: 0.2),
+        fg: const Color(0xFFFFCC80),
+        icon: Icons.edit_note_rounded
+      );
+    case 'needs_attention':
+      return (
+        bg: const Color(0xFFB71C1C).withValues(alpha: 0.22),
+        fg: const Color(0xFFFFAB91),
+        icon: Icons.info_outline_rounded
+      );
+    case 'pending_review':
+    default:
+      return (
+        bg: const Color(0xFF1565C0).withValues(alpha: 0.22),
+        fg: const Color(0xFF90CAF9),
+        icon: Icons.schedule_rounded
+      );
+  }
+}
+
+class _RegistrationOnboardingChecklist extends StatelessWidget {
+  const _RegistrationOnboardingChecklist({
+    required this.l10n,
+    required this.items,
+    required this.onOpenStep,
+  });
+
+  final AppLocalizations l10n;
+  final List<_ProfileRegistrationChecklistItem> items;
+  final void Function(int flowStep) onOpenStep;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.driverProfileOnboardingTitle,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.driverProfileOnboardingBody,
+            style: TextStyle(
+              color: AppColors.textSecondary.withValues(alpha: 0.95),
+              fontSize: 12.5,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          for (var i = 0; i < items.length; i++) ...[
+            if (i > 0) const SizedBox(height: 8),
+            _ChecklistRow(
+              l10n: l10n,
+              item: items[i],
+              onOpenStep: onOpenStep,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ChecklistRow extends StatelessWidget {
+  const _ChecklistRow({
+    required this.l10n,
+    required this.item,
+    required this.onOpenStep,
+  });
+
+  final AppLocalizations l10n;
+  final _ProfileRegistrationChecklistItem item;
+  final void Function(int flowStep) onOpenStep;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = _checklistKeyTitle(l10n, item.key);
+    final st = _checklistStatusStyle(item.uiStatus);
+    final label = _checklistStatusLabel(l10n, item.uiStatus);
+    final step = _flowStepForChecklistKey(item.key);
+    return Material(
+      color: AppColors.surface.withValues(alpha: 0.4),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => onOpenStep(step),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: st.bg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(st.icon, size: 20, color: st.fg),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.driverProfileOnboardingTapToContinue,
+                      style: TextStyle(
+                        color: AppColors.textSecondary.withValues(alpha: 0.9),
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: st.bg,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.35),
+                  ),
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: st.fg,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 2),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 22,
+                color: AppColors.textSecondary.withValues(alpha: 0.75),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _VerificationStatusCard extends StatelessWidget {
   const _VerificationStatusCard({required this.l10n});
 
@@ -861,6 +1266,8 @@ class _DriverProfileViewModel {
     required this.gender,
     required this.birthDate,
     required this.pictureProfile,
+    this.registrationChecklist,
+    this.registrationCountryId,
   });
 
   final String firstName;
@@ -872,6 +1279,8 @@ class _DriverProfileViewModel {
   final String gender;
   final String birthDate;
   final String? pictureProfile;
+  final List<_ProfileRegistrationChecklistItem>? registrationChecklist;
+  final int? registrationCountryId;
 
   String displayName(AppLocalizations l10n) {
     final f = firstName.trim();
@@ -892,6 +1301,36 @@ class _DriverProfileViewModel {
   factory _DriverProfileViewModel.fromJson(Map<String, dynamic> json) {
     String read(String key) => json[key]?.toString() ?? '';
     final picture = json['picture_profile']?.toString();
+    int? countryId;
+    final rc = json['registration_country_id'];
+    if (rc is int) {
+      countryId = rc;
+    } else if (rc is num) {
+      countryId = rc.toInt();
+    } else {
+      final s = read('registration_country_id');
+      if (s.isNotEmpty) {
+        countryId = int.tryParse(s);
+      }
+    }
+
+    List<_ProfileRegistrationChecklistItem>? checklist;
+    final rawList = json['registration_checklist'];
+    if (rawList is List) {
+      final list = <_ProfileRegistrationChecklistItem>[];
+      for (final e in rawList) {
+        if (e is! Map) continue;
+        final m = Map<String, dynamic>.from(e);
+        list.add(
+          _ProfileRegistrationChecklistItem(
+            key: m['key']?.toString() ?? '',
+            uiStatus: m['ui_status']?.toString() ?? 'incomplete',
+            complianceStatus: m['compliance_status']?.toString(),
+          ),
+        );
+      }
+      checklist = list;
+    }
     return _DriverProfileViewModel(
       firstName: read('first_name'),
       lastName: read('last_name'),
@@ -902,6 +1341,8 @@ class _DriverProfileViewModel {
       gender: read('gender'),
       birthDate: read('birth_date'),
       pictureProfile: (picture == null || picture.isEmpty) ? null : picture,
+      registrationChecklist: checklist,
+      registrationCountryId: countryId,
     );
   }
 }

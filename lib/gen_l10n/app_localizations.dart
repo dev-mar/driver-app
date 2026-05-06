@@ -470,6 +470,12 @@ abstract class AppLocalizations {
   /// **'Could not sign in'**
   String get driverLoginErrorGeneric;
 
+  /// No description provided for @driverLoginErrorAccountBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is blocked. Contact support to review your case.'**
+  String get driverLoginErrorAccountBlocked;
+
   /// No description provided for @driverLoginErrorNetwork.
   ///
   /// In en, this message translates to:
@@ -638,6 +644,114 @@ abstract class AppLocalizations {
   /// **'Sign out'**
   String get driverLogout;
 
+  /// No description provided for @driverEarningsCreditsMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Earnings & credits'**
+  String get driverEarningsCreditsMenu;
+
+  /// No description provided for @driverEarningsCreditsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Earnings & credits'**
+  String get driverEarningsCreditsTitle;
+
+  /// No description provided for @driverEarningsCreditsFilterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by period. Totals and lists match the selected range.'**
+  String get driverEarningsCreditsFilterHint;
+
+  /// No description provided for @driverEarningsCreditsLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load data. Pull to refresh.'**
+  String get driverEarningsCreditsLoadError;
+
+  /// No description provided for @driverEarningsCreditsStatTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed trips'**
+  String get driverEarningsCreditsStatTrips;
+
+  /// No description provided for @driverEarningsCreditsStatTripsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'In the selected period'**
+  String get driverEarningsCreditsStatTripsHint;
+
+  /// No description provided for @driverEarningsCreditsStatGross.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip total'**
+  String get driverEarningsCreditsStatGross;
+
+  /// No description provided for @driverEarningsCreditsStatGrossHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sum of completed trip fares'**
+  String get driverEarningsCreditsStatGrossHint;
+
+  /// No description provided for @driverEarningsCreditsStatBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit balance'**
+  String get driverEarningsCreditsStatBalance;
+
+  /// No description provided for @driverEarningsCreditsStatCommission.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit commission'**
+  String get driverEarningsCreditsStatCommission;
+
+  /// No description provided for @driverEarningsCreditsStatCommissionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Deducted from balance in period'**
+  String get driverEarningsCreditsStatCommissionHint;
+
+  /// No description provided for @driverEarningsCreditsLedgerSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit activity'**
+  String get driverEarningsCreditsLedgerSection;
+
+  /// No description provided for @driverEarningsCreditsLedgerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No movements in this period.'**
+  String get driverEarningsCreditsLedgerEmpty;
+
+  /// No description provided for @driverEarningsCreditsLedgerGrant.
+  ///
+  /// In en, this message translates to:
+  /// **'Top-up'**
+  String get driverEarningsCreditsLedgerGrant;
+
+  /// No description provided for @driverEarningsCreditsLedgerCommission.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip commission'**
+  String get driverEarningsCreditsLedgerCommission;
+
+  /// No description provided for @driverEarningsCreditsTripsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Trips in period'**
+  String get driverEarningsCreditsTripsSection;
+
+  /// No description provided for @driverEarningsCreditsTripsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No completed trips in this period.'**
+  String get driverEarningsCreditsTripsEmpty;
+
+  /// No description provided for @driverEarningsCreditsTripIdShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip'**
+  String get driverEarningsCreditsTripIdShort;
+
   /// No description provided for @driverTripHistoryMenu.
   ///
   /// In en, this message translates to:
@@ -797,8 +911,62 @@ abstract class AppLocalizations {
   /// No description provided for @driverHomeMenuAddVehicle.
   ///
   /// In en, this message translates to:
-  /// **'Add another vehicle'**
+  /// **'My vehicles'**
   String get driverHomeMenuAddVehicle;
+
+  /// No description provided for @driverMyVehiclesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My vehicles'**
+  String get driverMyVehiclesTitle;
+
+  /// No description provided for @driverMyVehiclesRefreshTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh list'**
+  String get driverMyVehiclesRefreshTooltip;
+
+  /// No description provided for @driverMyVehiclesAddFab.
+  ///
+  /// In en, this message translates to:
+  /// **'Add vehicle'**
+  String get driverMyVehiclesAddFab;
+
+  /// No description provided for @driverMyVehiclesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You have no registered vehicles yet. Add one to offer service.'**
+  String get driverMyVehiclesEmpty;
+
+  /// No description provided for @driverMyVehiclesRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get driverMyVehiclesRetry;
+
+  /// No description provided for @driverMyVehiclesPhotosPendingBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery incomplete: {uploaded} of {required} required photos'**
+  String driverMyVehiclesPhotosPendingBadge(int uploaded, int required);
+
+  /// No description provided for @driverMyVehiclesCompletePhotosCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete photos'**
+  String get driverMyVehiclesCompletePhotosCta;
+
+  /// No description provided for @driverMyVehiclesCompletePhotosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle photos'**
+  String get driverMyVehiclesCompletePhotosTitle;
+
+  /// No description provided for @driverMyVehiclesPhotosSavedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos saved successfully'**
+  String get driverMyVehiclesPhotosSavedSnackbar;
 
   /// No description provided for @driverOnlineAuthTitle.
   ///
@@ -920,6 +1088,72 @@ abstract class AppLocalizations {
   /// **'Your documents were received successfully. Our team is validating them so we can enable your service as soon as possible.'**
   String get driverProfileVerificationBody;
 
+  /// No description provided for @driverProfileOnboardingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploads and checks'**
+  String get driverProfileOnboardingTitle;
+
+  /// No description provided for @driverProfileOnboardingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the status of each item. You can complete or resubmit as needed.'**
+  String get driverProfileOnboardingBody;
+
+  /// No description provided for @driverProfileSectionOnboardingPersonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal information'**
+  String get driverProfileSectionOnboardingPersonal;
+
+  /// No description provided for @driverProfileSectionOnboardingIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity document'**
+  String get driverProfileSectionOnboardingIdentity;
+
+  /// No description provided for @driverProfileSectionOnboardingLicense.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver license'**
+  String get driverProfileSectionOnboardingLicense;
+
+  /// No description provided for @driverProfileSectionOnboardingVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle and photos'**
+  String get driverProfileSectionOnboardingVehicle;
+
+  /// No description provided for @driverProfileOnboardingStatusIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get driverProfileOnboardingStatusIncomplete;
+
+  /// No description provided for @driverProfileOnboardingStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'In review'**
+  String get driverProfileOnboardingStatusPending;
+
+  /// No description provided for @driverProfileOnboardingStatusVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get driverProfileOnboardingStatusVerified;
+
+  /// No description provided for @driverProfileOnboardingStatusAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Update requested'**
+  String get driverProfileOnboardingStatusAction;
+
+  /// No description provided for @driverProfileOnboardingTapToContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to open or update'**
+  String get driverProfileOnboardingTapToContinue;
+
   /// No description provided for @driverProfileSectionPersonal.
   ///
   /// In en, this message translates to:
@@ -943,6 +1177,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'These details are read-only for now. Editing from the app will be available soon.'**
   String get driverProfileReadOnlyFooter;
+
+  /// No description provided for @driverAppCreditsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage credits'**
+  String get driverAppCreditsTitle;
+
+  /// No description provided for @driverAppCreditsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load balance. Pull to refresh.'**
+  String get driverAppCreditsUnavailable;
+
+  /// No description provided for @driverAppCreditsBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance: {balance}'**
+  String driverAppCreditsBalance(String balance);
+
+  /// No description provided for @driverAppCreditsProgramOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Per-trip commission active'**
+  String get driverAppCreditsProgramOn;
+
+  /// No description provided for @driverAppCreditsProgramOff.
+  ///
+  /// In en, this message translates to:
+  /// **'No automatic per-trip commission'**
+  String get driverAppCreditsProgramOff;
+
+  /// No description provided for @driverAppCreditsDetailPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% of trip fare'**
+  String driverAppCreditsDetailPercent(String percent);
+
+  /// No description provided for @driverAppCreditsDetailFixed.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} per completed trip'**
+  String driverAppCreditsDetailFixed(String amount);
 
   /// No description provided for @driverProfileFieldName.
   ///
@@ -1063,6 +1339,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You need a registered vehicle to connect. Complete vehicle registration or use “Add another vehicle” in the menu.'**
   String get driverOnlineErrorVehicleRequired;
+
+  /// No description provided for @driverOnlineErrorGoOnlineBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account cannot go available for trips from the app. Contact support if you think this is a mistake.'**
+  String get driverOnlineErrorGoOnlineBlocked;
+
+  /// No description provided for @driverOnlineErrorCreditsBelowMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Insufficient credits to enable online mode. Minimum required: {minCredits}; current balance: {balance}.'**
+  String driverOnlineErrorCreditsBelowMin(Object minCredits, Object balance);
+
+  /// No description provided for @driverOnlineErrorAccountBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Your driver account is blocked. Your session was closed for safety.'**
+  String get driverOnlineErrorAccountBlocked;
 
   /// No description provided for @driverOnlineErrorUnknown.
   ///
@@ -1610,6 +1904,72 @@ abstract class AppLocalizations {
   /// **'Could not read image.'**
   String get driverRegImageReadError;
 
+  /// No description provided for @driverRegImageCompatibleCaptureUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Optimized camera capture was used to reduce file size.'**
+  String get driverRegImageCompatibleCaptureUsed;
+
+  /// No description provided for @driverRegImageLongPressLightHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-press a slot to retake with optimized capture (lower initial resolution).'**
+  String get driverRegImageLongPressLightHint;
+
+  /// No description provided for @driverRegCropSelfieTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust selfie'**
+  String get driverRegCropSelfieTitle;
+
+  /// No description provided for @driverRegCropDocumentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust document'**
+  String get driverRegCropDocumentTitle;
+
+  /// No description provided for @driverRegCropVehicleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Frame the vehicle'**
+  String get driverRegCropVehicleTitle;
+
+  /// No description provided for @driverRegPhotoReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review your photo'**
+  String get driverRegPhotoReviewTitle;
+
+  /// No description provided for @driverRegPhotoReviewSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You can confirm it, take another one, or crop before continuing.'**
+  String get driverRegPhotoReviewSubtitle;
+
+  /// No description provided for @driverRegPhotoReviewUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this photo'**
+  String get driverRegPhotoReviewUse;
+
+  /// No description provided for @driverRegPhotoReviewChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get driverRegPhotoReviewChange;
+
+  /// No description provided for @driverRegPhotoReviewEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop or adjust'**
+  String get driverRegPhotoReviewEdit;
+
+  /// No description provided for @driverRegPhotoReviewCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get driverRegPhotoReviewCancel;
+
   /// No description provided for @driverRegStepData.
   ///
   /// In en, this message translates to:
@@ -1700,6 +2060,18 @@ abstract class AppLocalizations {
   /// **'Invalid vehicle year.'**
   String get driverRegSnackVehicleYearInvalid;
 
+  /// No description provided for @driverRegSnackSelectCatalogBrandModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select make and model from the lists before continuing.'**
+  String get driverRegSnackSelectCatalogBrandModel;
+
+  /// No description provided for @driverSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get driverSettingsTitle;
+
   /// No description provided for @driverRegSnackVehiclePhotosIncomplete.
   ///
   /// In en, this message translates to:
@@ -1727,7 +2099,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegAddVehicleTitle.
   ///
   /// In en, this message translates to:
-  /// **'Add vehicle'**
+  /// **'Register service vehicle'**
   String get driverRegAddVehicleTitle;
 
   /// No description provided for @driverRegAddVehicleDoneTitle.
@@ -1765,6 +2137,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Go to home'**
   String get driverRegResumeDoneCta;
+
+  /// No description provided for @driverRegOnboardingDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account active'**
+  String get driverRegOnboardingDoneTitle;
+
+  /// No description provided for @driverRegOnboardingDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is active. To register your service vehicle, open the menu (⋮) on the home screen and tap “Register service vehicle”. There you can see vehicles you already added or register your first one.'**
+  String get driverRegOnboardingDoneBody;
+
+  /// No description provided for @driverRegOnboardingDoneCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to home'**
+  String get driverRegOnboardingDoneCta;
 
   /// No description provided for @driverRegRetryLoadCountries.
   ///
@@ -2165,7 +2555,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegCatalogBrandModelTitle.
   ///
   /// In en, this message translates to:
-  /// **'Brand & model (catalog)'**
+  /// **'Make and model'**
   String get driverRegCatalogBrandModelTitle;
 
   /// No description provided for @driverRegCatalogTransportStepTitle.
@@ -2177,13 +2567,13 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegCatalogModelLockedTitle.
   ///
   /// In en, this message translates to:
-  /// **'Brand and model (from catalog)'**
+  /// **'Make and model'**
   String get driverRegCatalogModelLockedTitle;
 
   /// No description provided for @driverRegCatalogModelLockedHint.
   ///
   /// In en, this message translates to:
-  /// **'Taken from your selection above. Change brand or model in the catalog section if needed.'**
+  /// **'Taken from your selection above. You can change make or model in the same section if needed.'**
   String get driverRegCatalogModelLockedHint;
 
   /// No description provided for @serviceTypeNameStandard.
@@ -2587,6 +2977,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back'**
   String get driverRegActionBack;
+
+  /// No description provided for @driverRegActionSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get driverRegActionSave;
+
+  /// No description provided for @driverRegTitleProfileCompletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete registration'**
+  String get driverRegTitleProfileCompletion;
+
+  /// No description provided for @driverRegProfileStepSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes saved.'**
+  String get driverRegProfileStepSaved;
+
+  /// No description provided for @driverRegProfileRedirectSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Based on your registration status, we opened «{stepTo}» instead of «{stepFrom}».'**
+  String driverRegProfileRedirectSnackbar(String stepFrom, String stepTo);
 
   /// No description provided for @driverRegImageReady.
   ///

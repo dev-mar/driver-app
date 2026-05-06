@@ -20,7 +20,12 @@ class DriverRegistrationResumeGate {
     }
     try {
       final p = await DriverOperationalProfile.fetch();
-      final need = p.needsResumeRegistration;
+      var need = p.needsResumeRegistration;
+      // Documentación: vehículo se completa desde el menú; no forzar /register si solo falta flota (paso ≥4).
+      final s = p.suggestedClientStep;
+      if (need && s != null && s >= 4) {
+        need = false;
+      }
       _cached = need;
       _until = now.add(const Duration(seconds: 15));
       return need;

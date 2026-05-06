@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../login/driver_login_controller.dart';
@@ -29,6 +30,7 @@ class DriverRegistrationFlowState {
     this.identityFaceImageB64,
     this.boliviaOnlyMessage,
     this.registrationTokenSaved = false,
+    this.presignUploadAvailable = false,
     this.selectedCountryId,
     this.licenseCategories = const [],
     this.vehicleCatalog,
@@ -41,6 +43,9 @@ class DriverRegistrationFlowState {
     this.catalogTransportMode,
     this.catalogManufacturerId,
     this.catalogVehicleModelId,
+    this.singleStepFromProfile = false,
+    this.profileRedirectFromStep,
+    this.profileRedirectToStep,
   });
 
   /// 0 personal+geo, 1 documento identidad, 2 licencia, 3 login bridge, 4 vehículo, 5 fotos
@@ -69,6 +74,9 @@ class DriverRegistrationFlowState {
   /// True si algún `POST` de registro guardó `driver_token` (sesión antes del vehículo).
   final bool registrationTokenSaved;
 
+  /// `personal-info` puede devolver `presign_upload_available`; si es true, subimos fotos a S3 y mandamos `*_storage_key`.
+  final bool presignUploadAvailable;
+
   /// `public.countries.id` del país seleccionado (geo).
   final int? selectedCountryId;
 
@@ -90,6 +98,13 @@ class DriverRegistrationFlowState {
   final int? catalogManufacturerId;
   final int? catalogVehicleModelId;
 
+  /// Desde perfil: un solo bloque (sin asistente lineal); no avanzar de paso al guardar.
+  final bool singleStepFromProfile;
+
+  /// Snack de UX: perfil pidió paso [profileRedirectFromStep] y el servidor derivó [profileRedirectToStep].
+  final int? profileRedirectFromStep;
+  final int? profileRedirectToStep;
+
   DriverRegistrationFlowState copyWith({
     int? step,
     bool? loading,
@@ -106,6 +121,7 @@ class DriverRegistrationFlowState {
     String? identityFaceImageB64,
     String? boliviaOnlyMessage,
     bool? registrationTokenSaved,
+    bool? presignUploadAvailable,
     int? selectedCountryId,
     List<DriverLicenseCategory>? licenseCategories,
     VehicleCatalog? vehicleCatalog,
@@ -118,6 +134,10 @@ class DriverRegistrationFlowState {
     String? catalogTransportMode,
     int? catalogManufacturerId,
     int? catalogVehicleModelId,
+    bool? singleStepFromProfile,
+    int? profileRedirectFromStep,
+    int? profileRedirectToStep,
+    bool clearProfileRedirect = false,
     bool clearCatalogModelPicks = false,
     bool clearCatalogVehicleModelId = false,
     bool clearGlobalError = false,
@@ -153,6 +173,7 @@ class DriverRegistrationFlowState {
       boliviaOnlyMessage:
           clearBoliviaMessage ? null : (boliviaOnlyMessage ?? this.boliviaOnlyMessage),
       registrationTokenSaved: registrationTokenSaved ?? this.registrationTokenSaved,
+      presignUploadAvailable: presignUploadAvailable ?? this.presignUploadAvailable,
       selectedCountryId: clearCountryName ? null : (selectedCountryId ?? this.selectedCountryId),
       licenseCategories: clearCountryName || clearLicenseCategories
           ? const []
@@ -175,6 +196,12 @@ class DriverRegistrationFlowState {
       catalogVehicleModelId: clearCatalogModelPicks || clearCatalogVehicleModelId
           ? null
           : (catalogVehicleModelId ?? this.catalogVehicleModelId),
+      singleStepFromProfile: singleStepFromProfile ?? this.singleStepFromProfile,
+      profileRedirectFromStep: clearProfileRedirect
+          ? null
+          : (profileRedirectFromStep ?? this.profileRedirectFromStep),
+      profileRedirectToStep:
+          clearProfileRedirect ? null : (profileRedirectToStep ?? this.profileRedirectToStep),
     );
   }
 
@@ -192,11 +219,208 @@ class DriverRegistrationFlowController
   final Ref _ref;
   final DriverRegistrationRepository _repo;
 
+  /// Reintentos breves antes de caer a Base64 en JSON (reduce evidencias inline gigantes en DB).
+  static const List<Duration> _presignRetryDelays = [
+    Duration.zero,
+    Duration(milliseconds: 450),
+    Duration(milliseconds: 1100),
+  ];
+
+  /// Vehículo: un intento extra (S3 / red inestable en 4 PUT seguidos).
+  static const List<Duration> _vehiclePresignRetryDelays = [
+    Duration.zero,
+    Duration(milliseconds: 450),
+    Duration(milliseconds: 1100),
+    Duration(milliseconds: 2000),
+  ];
+
+  Future<String?> _registrationPresignWithRetries({
+    required String uuid,
+    required String purpose,
+    required String base64Raw,
+  }) async {
+    for (var i = 0; i < _presignRetryDelays.length; i++) {
+      final d = _presignRetryDelays[i];
+      if (d > Duration.zero) await Future<void>.delayed(d);
+      final sk = await _repo.uploadRegistrationImageViaPresign(
+        uuid: uuid,
+        purpose: purpose,
+        base64Raw: base64Raw,
+      );
+      if (sk != null) return sk;
+    }
+    return null;
+  }
+
+  Future<String?> _vehiclePresignWithRetries({
+    required String vehicleAssetId,
+    required String purpose,
+    required String base64Raw,
+  }) async {
+    for (var i = 0; i < _vehiclePresignRetryDelays.length; i++) {
+      final d = _vehiclePresignRetryDelays[i];
+      if (d > Duration.zero) await Future<void>.delayed(d);
+      final sk = await _repo.uploadVehicleImageViaPresign(
+        vehicleAssetId: vehicleAssetId,
+        purpose: purpose,
+        base64Raw: base64Raw,
+      );
+      if (sk != null) return sk;
+    }
+    return null;
+  }
+
   bool _isDocumentAlreadyRegisteredError(Object error) {
     final raw = error.toString().toLowerCase();
     return raw.contains('ya existe un documento') ||
         raw.contains('documento registrado para este tipo') ||
         (raw.contains('document') && raw.contains('already') && raw.contains('type'));
+  }
+
+  Future<Map<String, dynamic>> _identityDocumentPayload({
+    required String uuid,
+    required String documentNumber,
+    required String expireDateIso,
+    required String frontB64,
+    required String backB64,
+    required String faceB64,
+    int? countryId,
+  }) async {
+    final base = <String, dynamic>{
+      'uuid': uuid,
+      'document_type': 1,
+      'document_number': documentNumber,
+      'expire_date': expireDateIso,
+      if (countryId != null) 'country_id': countryId,
+    };
+    if (!state.presignUploadAvailable) {
+      base.addAll({
+        'front_document': frontB64,
+        'back_document': backB64,
+        'face_image': faceB64,
+      });
+      return base;
+    }
+    final fk = await _registrationPresignWithRetries(
+      uuid: uuid,
+      purpose: 'identity_front',
+      base64Raw: frontB64,
+    );
+    if (fk == null) {
+      if (kDebugMode) {
+        debugPrint('[DriverRegistration] identidad: presign frente falló; fallback Base64');
+      }
+      base.addAll({
+        'front_document': frontB64,
+        'back_document': backB64,
+        'face_image': faceB64,
+      });
+      return base;
+    }
+    final bk = await _registrationPresignWithRetries(
+      uuid: uuid,
+      purpose: 'identity_back',
+      base64Raw: backB64,
+    );
+    if (bk == null) {
+      if (kDebugMode) {
+        debugPrint('[DriverRegistration] identidad: presign dorso falló; fallback Base64');
+      }
+      base.addAll({
+        'front_document': frontB64,
+        'back_document': backB64,
+        'face_image': faceB64,
+      });
+      return base;
+    }
+    final fc = await _registrationPresignWithRetries(
+      uuid: uuid,
+      purpose: 'identity_face',
+      base64Raw: faceB64,
+    );
+    if (fc == null) {
+      if (kDebugMode) {
+        debugPrint('[DriverRegistration] identidad: presign rostro falló; fallback Base64');
+      }
+      base.addAll({
+        'front_document': frontB64,
+        'back_document': backB64,
+        'face_image': faceB64,
+      });
+      return base;
+    }
+    if (kDebugMode) {
+      debugPrint('[DriverRegistration] identidad: POST documentos con storage_key (presign OK)');
+    }
+    base.addAll({
+      'front_document_storage_key': fk,
+      'back_document_storage_key': bk,
+      'face_image_storage_key': fc,
+    });
+    return base;
+  }
+
+  Future<Map<String, dynamic>> _licenseDocumentPayload({
+    required String uuid,
+    required int licenseCategoryTypeId,
+    required String documentNumber,
+    required String expireDateIso,
+    required String frontB64,
+    required String backB64,
+    int? countryId,
+  }) async {
+    final base = <String, dynamic>{
+      'uuid': uuid,
+      'document_type': licenseCategoryTypeId,
+      'document_number': documentNumber,
+      'expire_date': expireDateIso,
+      if (countryId != null) 'country_id': countryId,
+    };
+    if (!state.presignUploadAvailable) {
+      base.addAll({
+        'front_document': frontB64,
+        'back_document': backB64,
+      });
+      return base;
+    }
+    final fk = await _registrationPresignWithRetries(
+      uuid: uuid,
+      purpose: 'license_front',
+      base64Raw: frontB64,
+    );
+    if (fk == null) {
+      if (kDebugMode) {
+        debugPrint('[DriverRegistration] licencia: presign frente falló; fallback Base64');
+      }
+      base.addAll({
+        'front_document': frontB64,
+        'back_document': backB64,
+      });
+      return base;
+    }
+    final bk = await _registrationPresignWithRetries(
+      uuid: uuid,
+      purpose: 'license_back',
+      base64Raw: backB64,
+    );
+    if (bk == null) {
+      if (kDebugMode) {
+        debugPrint('[DriverRegistration] licencia: presign dorso falló; fallback Base64');
+      }
+      base.addAll({
+        'front_document': frontB64,
+        'back_document': backB64,
+      });
+      return base;
+    }
+    if (kDebugMode) {
+      debugPrint('[DriverRegistration] licencia: POST documentos con storage_key (presign OK)');
+    }
+    base.addAll({
+      'front_document_storage_key': fk,
+      'back_document_storage_key': bk,
+    });
+    return base;
   }
 
   void clearError() {
@@ -245,7 +469,7 @@ class DriverRegistrationFlowController
         state = state.copyWith(
           loading: false,
           globalError:
-              'Iniciá sesión para registrar un vehículo.',
+              'Inicia sesión para registrar un vehículo.',
         );
         return;
       }
@@ -255,6 +479,8 @@ class DriverRegistrationFlowController
         registrationTokenSaved: true,
         carUuid: null,
         clearGlobalError: true,
+        singleStepFromProfile: false,
+        clearProfileRedirect: true,
       );
       await loadCountries();
       await _ensureCountryIdForVehicleOnly();
@@ -267,29 +493,143 @@ class DriverRegistrationFlowController
     }
   }
 
+  /// Solo paso 5 (galería) para un `vehicle_asset_id` ya creado (p. ej. falló la subida antes).
+  Future<void> applyCompleteVehicleGalleryFromSession(String vehicleAssetId) async {
+    state = state.copyWith(loading: true, clearGlobalError: true);
+    try {
+      final has = await _repo.hasDriverToken();
+      if (!has) {
+        state = state.copyWith(
+          loading: false,
+          globalError:
+              'Inicia sesión para completar las fotos del vehículo.',
+        );
+        return;
+      }
+      final id = vehicleAssetId.trim();
+      if (id.isEmpty) {
+        state = state.copyWith(loading: false, globalError: 'Identificador de vehículo inválido.');
+        return;
+      }
+      state = state.copyWith(
+        loading: false,
+        step: 5,
+        carUuid: id,
+        registrationTokenSaved: true,
+        clearGlobalError: true,
+        singleStepFromProfile: false,
+        clearProfileRedirect: true,
+      );
+      await loadCountries();
+      await _ensureCountryIdForVehicleOnly();
+      await loadVehicleCatalog();
+    } catch (e) {
+      state = state.copyWith(
+        loading: false,
+        globalError: e.toString().replaceFirst('DriverRegistrationException: ', ''),
+      );
+    }
+  }
+
+  /// Desde [DriverProfile]: abre un paso concreto del flujo (0–5) con sesión existente.
+  /// No cierra con “registro completo” — permite reenviar documentos aunque el fase global sea `complete`.
+  Future<bool> openProfileRegistrationStep(
+    int flowStep, {
+    int? preselectedCountryId,
+  }) async {
+    state = state.copyWith(loading: true, clearGlobalError: true);
+    try {
+      final has = await _repo.hasDriverToken();
+      if (!has) {
+        state = state.copyWith(
+          loading: false,
+          globalError: 'Inicia sesión para continuar el registro.',
+          singleStepFromProfile: false,
+        );
+        return false;
+      }
+      final st = await _repo.fetchRegistrationStatus();
+      final clamped = flowStep < 0 ? 0 : (flowStep > 5 ? 5 : flowStep);
+      final resolved = st.resolveProfileFlowStep(clamped);
+      if (kDebugMode && resolved != clamped) {
+        debugPrint(
+          '[DriverRegistration] openProfileRegistrationStep: '
+          '$clamped → $resolved (checklist/gaps)',
+        );
+      }
+      final step = resolved;
+      state = state.copyWith(
+        loading: false,
+        userUuid: st.uuid.isNotEmpty ? st.uuid : state.userUuid,
+        step: step,
+        registrationTokenSaved: true,
+        clearGlobalError: true,
+        singleStepFromProfile: true,
+        clearProfileRedirect: resolved == clamped,
+        profileRedirectFromStep: resolved != clamped ? clamped : null,
+        profileRedirectToStep: resolved != clamped ? resolved : null,
+      );
+      if (state.countries.isEmpty) {
+        await loadCountries();
+      }
+      if (preselectedCountryId != null) {
+        await _selectCountryByIdIfPossible(preselectedCountryId);
+      }
+      if (step >= 4) {
+        await _ensureCountryIdForVehicleOnly();
+        await loadVehicleCatalog();
+      } else if (step >= 1) {
+        final cname = state.selectedCountryName?.trim();
+        if (cname != null && cname.isNotEmpty) {
+          await selectCountry(cname);
+        }
+      }
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        loading: false,
+        globalError: e.toString().replaceFirst('DriverRegistrationException: ', ''),
+        singleStepFromProfile: false,
+      );
+      return false;
+    }
+  }
+
+  Future<void> _selectCountryByIdIfPossible(int countryId) async {
+    final list = state.countries;
+    if (list.isEmpty) return;
+    for (final c in list) {
+      if (c.id == countryId) {
+        await selectCountry(c.name);
+        return;
+      }
+    }
+  }
+
   /// `true` = registro ya completo según servidor (ir al home).
   Future<bool> applyResumeFromApi() async {
     state = state.copyWith(loading: true, clearGlobalError: true);
     try {
       final st = await _repo.fetchRegistrationStatus();
       if (st.phase == 'complete') {
-        state = state.copyWith(loading: false);
+        state = state.copyWith(loading: false, clearProfileRedirect: true);
         return true;
       }
       final step = st.suggestedClientStep;
+      // Solo falta vehículo/fotos: no reabrimos el asistente completo; el conductor usa menú → Registrar vehículo.
+      if (step >= 4) {
+        state = state.copyWith(loading: false, clearProfileRedirect: true);
+        return true;
+      }
       state = state.copyWith(
         loading: false,
         userUuid: st.uuid.isNotEmpty ? st.uuid : state.userUuid,
         step: step,
         registrationTokenSaved: true,
+        singleStepFromProfile: false,
+        clearProfileRedirect: true,
       );
-      if (step >= 4) {
-        await loadCountries();
-        await _ensureCountryIdForVehicleOnly();
-        await loadVehicleCatalog();
-      } else {
-        unawaited(loadCountries());
-      }
+      unawaited(loadCountries());
       return false;
     } catch (e) {
       state = state.copyWith(
@@ -803,6 +1143,7 @@ class DriverRegistrationFlowController
         'birth_date': birthDateIso,
         'phone_number': phoneNumber,
         'locality_id': localityId,
+        if (state.selectedCountryId != null) 'country_id': state.selectedCountryId,
         'profession': 'driver',
         'address': address,
         'gender': genderApiValue,
@@ -812,7 +1153,8 @@ class DriverRegistrationFlowController
         loading: false,
         userUuid: res.uuid,
         registrationTokenSaved: res.tokenSaved || state.registrationTokenSaved,
-        step: 1,
+        presignUploadAvailable: res.presignUploadAvailable,
+        step: state.singleStepFromProfile ? state.step : 1,
       );
     } catch (e) {
       state = state.copyWith(
@@ -832,23 +1174,20 @@ class DriverRegistrationFlowController
   }) async {
     state = state.copyWith(loading: true, clearGlobalError: true);
     try {
-      final payload = <String, dynamic>{
-        'uuid': uuid,
-        'document_type': 1,
-        'document_number': documentNumber,
-        'front_document': frontB64,
-        'back_document': backB64,
-        'face_image': faceB64,
-        'expire_date': expireDateIso,
-      };
       final cid = state.selectedCountryId;
-      if (cid != null) {
-        payload['country_id'] = cid;
-      }
+      final payload = await _identityDocumentPayload(
+        uuid: uuid,
+        documentNumber: documentNumber,
+        expireDateIso: expireDateIso,
+        frontB64: frontB64,
+        backB64: backB64,
+        faceB64: faceB64,
+        countryId: cid,
+      );
       final tok = await _repo.submitDocumentInfo(payload);
       state = state.copyWith(
         loading: false,
-        step: 2,
+        step: state.singleStepFromProfile ? state.step : 2,
         identityFaceImageB64: faceB64,
         registrationTokenSaved: tok || state.registrationTokenSaved,
       );
@@ -856,7 +1195,7 @@ class DriverRegistrationFlowController
       if (_isDocumentAlreadyRegisteredError(e)) {
         state = state.copyWith(
           loading: false,
-          step: 2,
+          step: state.singleStepFromProfile ? state.step : 2,
           identityFaceImageB64: faceB64,
           clearGlobalError: true,
         );
@@ -879,29 +1218,27 @@ class DriverRegistrationFlowController
   }) async {
     state = state.copyWith(loading: true, clearGlobalError: true);
     try {
-      final payload = <String, dynamic>{
-        'uuid': uuid,
-        'document_type': licenseCategoryTypeId,
-        'document_number': documentNumber,
-        'front_document': frontB64,
-        'back_document': backB64,
-        'expire_date': expireDateIso,
-      };
       final cid = state.selectedCountryId;
-      if (cid != null) {
-        payload['country_id'] = cid;
-      }
+      final payload = await _licenseDocumentPayload(
+        uuid: uuid,
+        licenseCategoryTypeId: licenseCategoryTypeId,
+        documentNumber: documentNumber,
+        expireDateIso: expireDateIso,
+        frontB64: frontB64,
+        backB64: backB64,
+        countryId: cid,
+      );
       final tok = await _repo.submitDocumentInfo(payload);
       state = state.copyWith(
         loading: false,
-        step: 3,
+        step: state.singleStepFromProfile ? state.step : 3,
         registrationTokenSaved: tok || state.registrationTokenSaved,
       );
     } catch (e) {
       if (_isDocumentAlreadyRegisteredError(e)) {
         state = state.copyWith(
           loading: false,
-          step: 3,
+          step: state.singleStepFromProfile ? state.step : 3,
           clearGlobalError: true,
         );
         return;
@@ -913,7 +1250,7 @@ class DriverRegistrationFlowController
     }
   }
 
-  /// Tras licencia: `PUT /api/v2/driver/registration/activate` → login → token para vehículo.
+  /// Tras licencia: `PUT /api/v2/driver/registration/activate` → login. El alta de vehículo sigue en menú → «Registrar vehículo de servicio».
   Future<void> completeLoginAndContinue({
     required String fullPhone,
     required String password,
@@ -924,7 +1261,7 @@ class DriverRegistrationFlowController
     if (uuid == null || uuid.isEmpty) {
       state = state.copyWith(
         loading: false,
-        globalError: 'No se encontró el identificador de usuario. Volvé al inicio del registro.',
+        globalError: 'No se encontró el identificador de usuario. Vuelve al inicio del registro.',
       );
       return;
     }
@@ -960,8 +1297,8 @@ class DriverRegistrationFlowController
       }
     }
 
-    state = state.copyWith(loading: false, step: 4);
-    await loadVehicleCatalog();
+    // Alta inicial: tras activar + login el vehículo se registra desde el menú de la app (no en este asistente).
+    state = state.copyWith(loading: false, clearGlobalError: true);
   }
 
   /// El backend suele devolver este texto cuando bloquea login hasta terminar el alta.
@@ -1007,7 +1344,7 @@ class DriverRegistrationFlowController
         state = state.copyWith(
           loading: false,
           globalError: 'El catálogo del servidor no incluye tipo/categoría de vehículo. '
-              'Verificá migraciones fleet en backend o contactá soporte.',
+              'Verifica las migraciones de fleet en el backend o contacta a soporte.',
         );
         return;
       }
@@ -1020,7 +1357,7 @@ class DriverRegistrationFlowController
         state = state.copyWith(
           loading: false,
           globalError:
-              'No se pudo obtener el país para la placa del vehículo. Completá país y localidad en tu perfil o contactá soporte.',
+              'No se pudo obtener el país para la placa del vehículo. Completa país y localidad en tu perfil o contacta a soporte.',
         );
         return;
       }
@@ -1090,7 +1427,7 @@ class DriverRegistrationFlowController
         if (c == null) {
           state = state.copyWith(
             loading: false,
-            globalError: 'El catálogo no trae código de servicio para el ID $e. Reintentá o actualizá la app.',
+            globalError: 'El catálogo no trae código de servicio para el ID $e. Reintenta o actualiza la app.',
           );
           return;
         }
@@ -1141,30 +1478,64 @@ class DriverRegistrationFlowController
   }) async {
     state = state.copyWith(loading: true, clearGlobalError: true);
     try {
-      await _repo.submitVehicleImages({
+      // Mismo criterio que documentos con presign: **siempre** intentar PUT por URL firmada
+      // (`/api/v2/vehicles/media/presign`). El flag `presign_upload_available` del personal-info
+      // solo refiere al relay de **registro conductor**; el vehículo puede tener presign activo
+      // aunque el flag sea false — antes omitíamos presign y mandábamos 4× Base64 (JSON enorme
+      // → 500 HTML en nginx).
+      Future<Map<String, dynamic>> slot({
+        required String purpose,
+        required String imageName,
+        required String b64,
+      }) async {
+        final sk = await _vehiclePresignWithRetries(
+          vehicleAssetId: carId,
+          purpose: purpose,
+          base64Raw: b64,
+        );
+        if (sk != null) {
+          if (kDebugMode && !state.presignUploadAvailable) {
+            debugPrint(
+              '[DriverRegistration] vehículo: presign OK ($purpose) '
+              '(presign_upload_available=false en personal-info; se usó presign de flota)',
+            );
+          }
+          return <String, dynamic>{
+            'image_storage_key': sk,
+            'image_name': imageName,
+            'purpose': purpose,
+          };
+        }
+        if (state.presignUploadAvailable) {
+          throw DriverRegistrationException(
+            'No se pudieron subir las fotos del vehículo al almacenamiento seguro. '
+            'Reintenta en unos minutos o con otra red. Si sigue igual, escríbenos a soporte.',
+          );
+        }
+        if (kDebugMode) {
+          debugPrint(
+            '[DriverRegistration] vehículo: presign $purpose falló; '
+            'inline Base64 (entorno sin presign en registro — cuerpo puede ser grande)',
+          );
+        }
+        return <String, dynamic>{
+          'image': b64,
+          'image_name': imageName,
+          'purpose': purpose,
+        };
+      }
+
+      // Secuencial: menos presión concurrente en presign/S3 que cuatro en paralelo.
+      final cars = <Map<String, dynamic>>[
+        await slot(purpose: 'vehicle_front', imageName: 'front_view.jpg', b64: frontB64),
+        await slot(purpose: 'vehicle_back', imageName: 'back_view.jpg', b64: backB64),
+        await slot(purpose: 'vehicle_left', imageName: 'left_side_view.jpg', b64: leftB64),
+        await slot(purpose: 'vehicle_right', imageName: 'rigth_side_view.jpg', b64: rightB64),
+      ];
+
+      await _repo.submitVehicleImages(<String, dynamic>{
         'vehicle_asset_id': carId,
-        'cars': [
-          {
-            'image': frontB64,
-            'image_name': 'front_view.jpg',
-            'purpose': 'vehicle_front',
-          },
-          {
-            'image': backB64,
-            'image_name': 'back_view.jpg',
-            'purpose': 'vehicle_back',
-          },
-          {
-            'image': leftB64,
-            'image_name': 'left_side_view.jpg',
-            'purpose': 'vehicle_left',
-          },
-          {
-            'image': rightB64,
-            'image_name': 'rigth_side_view.jpg',
-            'purpose': 'vehicle_right',
-          },
-        ],
+        'cars': cars,
       });
       state = state.copyWith(loading: false);
     } catch (e) {
@@ -1173,6 +1544,11 @@ class DriverRegistrationFlowController
         globalError: e.toString().replaceFirst('DriverRegistrationException: ', ''),
       );
     }
+  }
+
+  /// Tras mostrar el snack de redirección desde perfil (derivación checklist API).
+  void clearProfileRedirectNotice() {
+    state = state.copyWith(clearProfileRedirect: true);
   }
 
   void goToStep(int s) {
