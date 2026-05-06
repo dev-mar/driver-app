@@ -2,6 +2,16 @@
 
 App Flutter para conductores Texi.
 
+> Documento en depuración controlada (Fase A de consolidación).
+>
+> La documentación funcional canónica relacionada a esta app está en:
+>
+> - `../.cursor/functional-modules/driver-onboarding/README.md`
+> - `../.cursor/functional-modules/driver-operations/README.md`
+> - `../.cursor/functional-modules/auth-access/README.md`
+>
+> Este README debe quedar orientado a setup técnico Flutter y convenciones locales de desarrollo.
+
 ## Documentación para el equipo
 
 - **[Reglas de trabajo (i18n, UX, PRs)](docs/TEAM-WORKING-RULES.md)** — strings en `l10n`, tema, checklist y buenas prácticas al implementar nuevas pantallas.

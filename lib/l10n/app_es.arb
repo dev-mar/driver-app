@@ -98,6 +98,14 @@
   "driverHomeVehicleRegistrationBanner": "Falta registrar tu vehículo. Sin vehículo no puedes recibir viajes.",
   "driverHomeVehicleRegistrationCta": "Completar datos del vehículo",
   "driverHomeCannotGoOnlineWithoutVehicle": "Registra tu vehículo para poder conectarte y recibir viajes.",
+  "driverHomeVehicleRequiredDialogTitle": "Vehículo requerido",
+  "driverHomeCreditsLowWarning": "Tu saldo ({balance}) está cerca del mínimo ({min}) para permanecer en línea. Recargá créditos pronto para evitar que te desconectemos automáticamente.",
+  "@driverHomeCreditsLowWarning": {
+    "placeholders": {
+      "balance": { "type": "String" },
+      "min": { "type": "String" }
+    }
+  },
   "driverFcmOpenedTripOfferHint": "Si acabamos de cargar la solicitud desde la alerta, revisa la lista abajo. Si no aparece, puede haber expirado o falló la conexión: vuelve a ponerte en línea.",
   "driverFcmOpenedTripOfferOfflineHint": "Estás fuera de línea. Activa disponibilidad para poder atender solicitudes desde las alertas.",
   "driverHomeMiniVehicleEmpty": "Vehículo",

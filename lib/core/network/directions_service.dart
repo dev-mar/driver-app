@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../config/driver_app_config.dart';
+import '../maps/trip_route_tracking_policy.dart';
 import 'request_policy_cache.dart';
 
 enum RouteReferenceType { toll, trafficSignal, landmark }
@@ -74,7 +75,7 @@ class DirectionsService {
       'https://maps.googleapis.com/maps/api/directions/json';
   static final RequestPolicyCache<RouteSnapshot?> _cache =
       RequestPolicyCache<RouteSnapshot?>(
-        defaultTtl: const Duration(seconds: 20),
+        defaultTtl: TripRouteTrackingPolicy.directionsHttpCacheTtl,
       );
   static bool _missingKeyLogged = false;
 
@@ -99,9 +100,10 @@ class DirectionsService {
     required double destinationLat,
     required double destinationLng,
   }) async {
+    final d = TripRouteTrackingPolicy.directionsCacheCoordinateDecimals;
     final key =
-        'd:${originLat.toStringAsFixed(4)},${originLng.toStringAsFixed(4)}'
-        '>${destinationLat.toStringAsFixed(4)},${destinationLng.toStringAsFixed(4)}';
+        'd:${originLat.toStringAsFixed(d)},${originLng.toStringAsFixed(d)}'
+        '>${destinationLat.toStringAsFixed(d)},${destinationLng.toStringAsFixed(d)}';
     return _cache.run(
       key: key,
       fetcher: () async {

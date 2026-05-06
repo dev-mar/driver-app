@@ -140,6 +140,14 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     debugPrint('[DriverHome] $message');
   }
 
+  /// Errores de “gates” online: se muestran arriba del scroll para mayor visibilidad.
+  bool _isProminentOnlineGateError(String? code) {
+    return code == 'DRIVER_VEHICLE_REQUIRED' ||
+        code == 'DRIVER_CREDITS_BELOW_MIN' ||
+        code == 'DRIVER_GO_ONLINE_BLOCKED' ||
+        code == 'DRIVER_ACCOUNT_BLOCKED';
+  }
+
   void _onFcmTripOfferOpenBump() {
     final bump = driverFcmTripOfferOpenBump.value;
     if (bump <= _lastHandledFcmTripOfferBump) return;
@@ -292,20 +300,53 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     });
   }
 
-  /// Impide pasar a online si el perfil indica registro de vehículo pendiente.
+  Future<void> _showVehicleRequiredForOnlineDialog(AppLocalizations l10n) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          icon: Icon(
+            Icons.directions_car_filled_rounded,
+            color: AppColors.primary,
+            size: 28,
+          ),
+          title: Text(l10n.driverHomeVehicleRequiredDialogTitle),
+          content: Text(l10n.driverHomeCannotGoOnlineWithoutVehicle),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(l10n.commonCancel),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                if (!context.mounted) return;
+                ref.invalidate(driverOperationalProfileProvider);
+                context.pushNamed(AppRouter.myVehicles);
+              },
+              child: Text(l10n.driverHomeMenuAddVehicle),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Impide pasar a online si el ack realtime o el perfil operativo indican vehículo pendiente.
+  /// Una sola puerta UX: evita depender solo del perfil REST cuando el servidor ya marcó
+  /// `hasVehicleRegistered: false` en `connection:ack`.
   Future<bool> _vehicleGateAllowsOnline() async {
     final l10n = AppLocalizations.of(context);
     try {
+      final rt = ref.read(driverRealtimeProvider);
+      if (rt.hasVehicleRegistered == false) {
+        await _showVehicleRequiredForOnlineDialog(l10n);
+        return false;
+      }
       final p = await ref.read(driverOperationalProfileProvider.future);
       if (!p.needsVehicleRegistration) return true;
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.driverHomeCannotGoOnlineWithoutVehicle),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      await _showVehicleRequiredForOnlineDialog(l10n);
       return false;
     } catch (_) {
       return true;
@@ -720,6 +761,8 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
         errorMessage = l10n.driverOnlineErrorRbacTechnical;
         break;
     }
+    final showProminentGateError = errorMessage != null &&
+        _isProminentOnlineGateError(realtime.errorCode);
     final String? tripErrorMessage = switch (realtime.tripErrorCode) {
       'TRIP_UPDATE_FAILED' => l10n.driverTripErrorGeneric,
       _ => realtime.tripErrorMessage,
@@ -878,6 +921,44 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   child: CustomScrollView(
                     slivers: [
+                      if (showProminentGateError)
+                        SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              DriverInlineError(message: errorMessage),
+                              const SizedBox(height: 12),
+                            ],
+                          ),
+                        ),
+                      if (realtime.showDriverCreditsLowWarning)
+                        SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              DriverInlineInfo(
+                                message: l10n.driverHomeCreditsLowWarning(
+                                  realtime.driverCreditsBalance
+                                      .toStringAsFixed(2),
+                                  realtime.minCreditsToGoOnline
+                                      .toStringAsFixed(2),
+                                ),
+                              ),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () {
+                                    context.pushNamed(
+                                      AppRouter.earningsCredits,
+                                    );
+                                  },
+                                  child: Text(l10n.driverEarningsCreditsMenu),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                          ),
+                        ),
                       if (blockOnlineForTrips)
                         SliverToBoxAdapter(
                           child: Column(
@@ -1188,7 +1269,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                           ),
                         ),
                       ),
-                      if (errorMessage != null)
+                      if (errorMessage != null && !showProminentGateError)
                         SliverToBoxAdapter(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,

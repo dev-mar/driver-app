@@ -114,6 +114,12 @@ class DriverRealtimeState {
   final double minCreditsToGoOnline;
   final double driverCreditsBalance;
 
+  /// `null` hasta el primer `connection:ack` con perfil; `false` si el servidor indica sin vehículo.
+  final bool? hasVehicleRegistered;
+
+  /// Política país: gate de saldo mínimo para online (solo aplica prealerta cuando es true).
+  final bool creditsOnlineGateEnabled;
+
   /// Valor interno para [copyWith] y poder asignar `null` en campos opcionales.
   static const Object _unset = Object();
 
@@ -154,6 +160,8 @@ class DriverRealtimeState {
     this.insufficientCreditsToGoOnline = false,
     this.minCreditsToGoOnline = 0,
     this.driverCreditsBalance = 0,
+    this.hasVehicleRegistered,
+    this.creditsOnlineGateEnabled = false,
   });
 
   DriverRealtimeState copyWith({
@@ -193,6 +201,8 @@ class DriverRealtimeState {
     bool? insufficientCreditsToGoOnline,
     double? minCreditsToGoOnline,
     double? driverCreditsBalance,
+    Object? hasVehicleRegistered = _unset,
+    bool? creditsOnlineGateEnabled,
   }) {
     return DriverRealtimeState(
       online: online ?? this.online,
@@ -274,6 +284,11 @@ class DriverRealtimeState {
       minCreditsToGoOnline:
           minCreditsToGoOnline ?? this.minCreditsToGoOnline,
       driverCreditsBalance: driverCreditsBalance ?? this.driverCreditsBalance,
+      hasVehicleRegistered: identical(hasVehicleRegistered, _unset)
+          ? this.hasVehicleRegistered
+          : hasVehicleRegistered as bool?,
+      creditsOnlineGateEnabled:
+          creditsOnlineGateEnabled ?? this.creditsOnlineGateEnabled,
     );
   }
 
@@ -314,6 +329,8 @@ class DriverRealtimeState {
     insufficientCreditsToGoOnline: false,
     minCreditsToGoOnline: 0,
     driverCreditsBalance: 0,
+    hasVehicleRegistered: null,
+    creditsOnlineGateEnabled: false,
   );
 }
 
@@ -345,8 +362,24 @@ class DriverTripChatMessage {
 /// Valor visual del switch "En línea": ON con socket, reconectando o con viaje /
 /// calificación pendiente aunque `online` sea false (caída de red durante carrera).
 extension DriverRealtimeStateAvailabilityUi on DriverRealtimeState {
+  /// Banda por encima del mínimo: avisar antes de que el saldo cruce el umbral y el servidor pase a offline.
+  static const double creditsLowWarningRatio = 1.25;
+
+  bool get showDriverCreditsLowWarning {
+    if (hasVehicleRegistered == false) return false;
+    if (creditsOnlineGateEnabled != true) return false;
+    if (insufficientCreditsToGoOnline) return false;
+    final min = minCreditsToGoOnline;
+    if (min <= 0) return false;
+    final bal = driverCreditsBalance;
+    if (bal <= min) return false;
+    return bal <= min * creditsLowWarningRatio;
+  }
+
   bool get availabilitySwitchVisualOn {
-    if ((goOnlineBlocked ||
+    if ((hasVehicleRegistered == false ||
+            errorCode == 'DRIVER_VEHICLE_REQUIRED' ||
+            goOnlineBlocked ||
             errorCode == 'DRIVER_GO_ONLINE_BLOCKED' ||
             accountBlocked ||
             errorCode == 'DRIVER_ACCOUNT_BLOCKED' ||
@@ -673,12 +706,24 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     final newVehicle = vehicleLabel ?? state.driverVehicleLabel;
     final newRating = rating ?? state.driverRating;
 
+    Object? hasVehicleUpd = DriverRealtimeState._unset;
+    final hv = map['hasVehicle'];
+    if (hv is bool) {
+      hasVehicleUpd = hv;
+    } else {
+      final vc = map['vehicleCount'] ?? map['vehicle_count'];
+      if (vc is num) {
+        hasVehicleUpd = vc.toInt() >= 1;
+      }
+    }
+
     state = state.copyWith(
       driverDisplayName: newName,
       driverVehicleLabel: newVehicle,
       driverRating: newRating,
       driverPictureProfile: picture ?? state.driverPictureProfile,
       driverPictureExpiresAt: pictureExpiresAt ?? state.driverPictureExpiresAt,
+      hasVehicleRegistered: hasVehicleUpd,
     );
   }
 
@@ -787,12 +832,43 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
     _locationPermissionCachedAt = DateTime.now();
   }
 
+  /// Cuando el GPS del sistema está apagado, [Geolocator.isLocationServiceEnabled]
+  /// solo devuelve false y no muestra UI. En Android, [Geolocator.getCurrentPosition]
+  /// con Activity usa Fused Location + [ResolvableApiException]: dispara el diálogo
+  /// nativo de activación (misma familia que en la app pasajero). Conservamos el botón
+  /// de ajustes en la UI como refuerzo.
   Future<void> _ensureLocationServiceEnabled() async {
     if (kIsWeb) return;
-    final enabled = await Geolocator.isLocationServiceEnabled();
-    if (!enabled) {
-      debugPrint('[DRIVER_RT] Servicio de ubicación del sistema desactivado.');
+    if (await Geolocator.isLocationServiceEnabled()) {
+      return;
+    }
+    debugPrint(
+      '[DRIVER_RT] Servicio de ubicación apagado; intentando prompt nativo vía getCurrentPosition...',
+    );
+    try {
+      final LocationSettings settings;
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        settings = AndroidSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 25),
+        );
+      } else {
+        settings = const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 25),
+        );
+      }
+      await Geolocator.getCurrentPosition(locationSettings: settings);
+    } on LocationServiceDisabledException {
+      debugPrint('[DRIVER_RT] Servicio de ubicación sigue desactivado tras el intento.');
       throw const _RealtimeException('GPS_SERVICE_OFF');
+    } on TimeoutException {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        throw const _RealtimeException('GPS_SERVICE_OFF');
+      }
+      debugPrint(
+        '[DRIVER_RT] GPS activado pero sin fix a tiempo; continúa conexión (presencia reintentará).',
+      );
     }
   }
 
@@ -947,20 +1023,28 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       return;
     }
     if (value) {
-      if ((state.goOnlineBlocked || state.accountBlocked) &&
+      if (state.accountBlocked &&
           state.activeTrip == null &&
           state.tripPendingRating == null) {
-        state = state.copyWith(
-          errorCode: state.accountBlocked
-              ? 'DRIVER_ACCOUNT_BLOCKED'
-              : 'DRIVER_GO_ONLINE_BLOCKED',
-        );
+        state = state.copyWith(errorCode: 'DRIVER_ACCOUNT_BLOCKED');
+        return;
+      }
+      if (state.hasVehicleRegistered == false &&
+          state.activeTrip == null &&
+          state.tripPendingRating == null) {
+        state = state.copyWith(errorCode: 'DRIVER_VEHICLE_REQUIRED');
         return;
       }
       if (state.insufficientCreditsToGoOnline &&
           state.activeTrip == null &&
           state.tripPendingRating == null) {
         state = state.copyWith(errorCode: 'DRIVER_CREDITS_BELOW_MIN');
+        return;
+      }
+      if (state.goOnlineBlocked &&
+          state.activeTrip == null &&
+          state.tripPendingRating == null) {
+        state = state.copyWith(errorCode: 'DRIVER_GO_ONLINE_BLOCKED');
         return;
       }
       _userRequestedOffline = false;
@@ -1003,6 +1087,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
         lastCompletedTripId: null,
         ignoreActiveTripRestoreTripId: null,
         ignoreActiveTripRestoreUntilMs: null,
+        hasVehicleRegistered: null,
+        creditsOnlineGateEnabled: false,
       );
     }
   }
@@ -1257,8 +1343,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
       }
       _logVerbose('Token leído. length=${token.length}');
 
-      await _ensureLocationServiceEnabled();
       await _ensureLocationPermissionForSocket();
+      await _ensureLocationServiceEnabled();
       await _ensureNotificationPermissionForTripOffers();
 
       _logVerbose(
@@ -1989,6 +2075,10 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
             final creditsBalance = balanceRaw is num
                 ? balanceRaw.toDouble()
                 : state.driverCreditsBalance;
+            final creditsGateOn = _toBool(
+              sm['creditsOnlineGateEnabled'] ??
+                  sm['credits_online_gate_enabled'],
+            );
             final hadBlockedError = state.errorCode == 'DRIVER_GO_ONLINE_BLOCKED';
             state = state.copyWith(
               goOnlineBlocked: blocked,
@@ -2001,6 +2091,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState> {
               insufficientCreditsToGoOnline: creditsBlocked,
               minCreditsToGoOnline: minCredits,
               driverCreditsBalance: creditsBalance,
+              creditsOnlineGateEnabled: creditsGateOn,
               errorCode: !blocked && hadBlockedError ? null : state.errorCode,
               availabilityDesired: (blocked || accountBlocked || creditsBlocked) &&
                       state.activeTrip == null &&

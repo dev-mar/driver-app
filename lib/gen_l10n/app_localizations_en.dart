@@ -293,6 +293,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Register your vehicle before going online to receive trips.';
 
   @override
+  String get driverHomeVehicleRequiredDialogTitle => 'Vehicle required';
+
+  @override
+  String driverHomeCreditsLowWarning(String balance, String min) {
+    return 'Your balance ($balance) is close to the minimum ($min) to stay online. Top up soon so you are not taken offline automatically.';
+  }
+
+  @override
   String get driverFcmOpenedTripOfferHint =>
       'We try to load the request from the alert into the list below. If it\'s missing, it may have expired or the connection failed—toggle online again.';
 

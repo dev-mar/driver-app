@@ -98,6 +98,14 @@
   "driverHomeVehicleRegistrationBanner": "You still need to register your vehicle. Without a vehicle you cannot receive trips.",
   "driverHomeVehicleRegistrationCta": "Complete vehicle registration",
   "driverHomeCannotGoOnlineWithoutVehicle": "Register your vehicle before going online to receive trips.",
+  "driverHomeVehicleRequiredDialogTitle": "Vehicle required",
+  "driverHomeCreditsLowWarning": "Your balance ({balance}) is close to the minimum ({min}) to stay online. Top up soon so you are not taken offline automatically.",
+  "@driverHomeCreditsLowWarning": {
+    "placeholders": {
+      "balance": { "type": "String" },
+      "min": { "type": "String" }
+    }
+  },
   "driverFcmOpenedTripOfferHint": "We try to load the request from the alert into the list below. If it's missing, it may have expired or the connection failed—toggle online again.",
   "driverFcmOpenedTripOfferOfflineHint": "You're offline. Turn on availability to receive requests from alerts.",
   "driverHomeMiniVehicleEmpty": "Vehicle",

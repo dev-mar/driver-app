@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/maps/trip_route_tracking_policy.dart';
 import '../../core/session/driver_map_preferences_store.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_foundation.dart';
@@ -206,7 +207,7 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
       _fetchRoutesAndFit();
       return;
     }
-    _routeFetchDebounce = Timer(const Duration(milliseconds: 280), () {
+    _routeFetchDebounce = Timer(TripRouteTrackingPolicy.mapRouteRefreshDebounce, () {
       if (!mounted) return;
       _fetchRoutesAndFit();
     });
@@ -351,7 +352,10 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
             destinationLat: destinationLat,
             destinationLng: destinationLng,
           )
-          .timeout(const Duration(seconds: 4), onTimeout: () => null);
+          .timeout(
+            TripRouteTrackingPolicy.directionsRequestTimeout,
+            onTimeout: () => null,
+          );
     } catch (e) {
       _routeDebug('fetch:$tag error=$e');
       return null;
@@ -428,73 +432,80 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
     _lastRouteSignature = signature;
 
     List<LatLng>? toPickup;
-    List<LatLng>? pickupToDest = _routePickupToDest;
+    List<LatLng>? pickupToDest;
     final references = <RouteReferencePoint>[];
 
-    if (dest != null) {
-      final originForDest = pickup ?? driver;
-      if (encoded.isNotEmpty) {
-        try {
-          final decoded = decodePolyline(encoded);
-          _routeDebug('fetch:encoded decode points=${decoded.length}');
-          if (decoded.length >= 2) {
-            pickupToDest = decoded;
-          }
-        } catch (e) {
-          _routeDebug('fetch:encoded decode error=$e');
-          // Polyline inválida: seguir con Directions como antes.
+    final st = status.toLowerCase();
+    final isPrePickup = st == 'accepted' || st == 'arrived';
+    final isEnRouteToDestination = st == 'started' || st == 'in_trip';
+
+    if (isPrePickup) {
+      // Fase recogida: solo conductor → origen del pasajero (no dibujar pickup→dest).
+      if (pickup != null && driver != null) {
+        final toPickupSnapshot = await _safeRouteSnapshot(
+          originLat: driver.latitude,
+          originLng: driver.longitude,
+          destinationLat: pickup.latitude,
+          destinationLng: pickup.longitude,
+          tag: 'driver->pickup',
+        );
+        toPickup = toPickupSnapshot?.polyline;
+        _routeDebug(
+          'fetch:driver->pickup points=${toPickup?.length ?? 0} '
+          'refs=${toPickupSnapshot?.references.length ?? 0}',
+        );
+        if (toPickupSnapshot != null) {
+          references.addAll(toPickupSnapshot.references);
+        }
+        if (toPickup == null) {
+          toPickup = <LatLng>[driver, pickup];
+          _routeDebug('fetch:driver->pickup fallback straight-line points=2');
         }
       } else {
-        _routeDebug('fetch:encoded missing -> fallback directions');
+        _routeDebug(
+          'fetch:driver->pickup skipped driver=${driver != null} pickup=${pickup != null}',
+        );
       }
-      if (pickupToDest == null && originForDest != null) {
-        final toDestinationSnapshot = await _safeRouteSnapshot(
-          originLat: originForDest.latitude,
-          originLng: originForDest.longitude,
+      pickupToDest = null;
+    } else if (isEnRouteToDestination) {
+      // Viaje iniciado: solo posición actual → destino (sustituye el trazo hacia el origen).
+      toPickup = null;
+      if (dest != null && driver != null) {
+        final toDestSnapshot = await _safeRouteSnapshot(
+          originLat: driver.latitude,
+          originLng: driver.longitude,
           destinationLat: dest.latitude,
           destinationLng: dest.longitude,
-          tag: 'origin->dest',
+          tag: 'driver->dest',
         );
-        pickupToDest = toDestinationSnapshot?.polyline;
+        pickupToDest = toDestSnapshot?.polyline;
         _routeDebug(
-          'fetch:origin->dest fallback points=${pickupToDest?.length ?? 0} '
-          'refs=${toDestinationSnapshot?.references.length ?? 0}',
+          'fetch:driver->dest points=${pickupToDest?.length ?? 0} '
+          'refs=${toDestSnapshot?.references.length ?? 0}',
         );
-        if (toDestinationSnapshot != null) {
-          references.addAll(toDestinationSnapshot.references);
+        if (toDestSnapshot != null) {
+          references.addAll(toDestSnapshot.references);
         }
-      } else if (pickupToDest == null) {
-        _routeDebug('fetch:origin->dest skipped missing originForDest');
+        if (pickupToDest == null) {
+          pickupToDest = <LatLng>[driver, dest];
+          _routeDebug('fetch:driver->dest fallback straight-line points=2');
+        }
+      } else {
+        _routeDebug(
+          'fetch:driver->dest skipped driver=${driver != null} dest=${dest != null}',
+        );
+        pickupToDest = null;
+      }
+      if (encoded.isNotEmpty) {
+        _routeDebug(
+          'fetch:encoded present (${encoded.length} chars) ignored in started phase (dynamic driver->dest)',
+        );
       }
     } else {
-      _routeDebug('fetch:dest missing');
-    }
-
-    if (pickup != null && driver != null) {
-      final toPickupSnapshot = await _safeRouteSnapshot(
-        originLat: driver.latitude,
-        originLng: driver.longitude,
-        destinationLat: pickup.latitude,
-        destinationLng: pickup.longitude,
-        tag: 'driver->pickup',
-      );
-      toPickup = toPickupSnapshot?.polyline;
-      _routeDebug(
-        'fetch:driver->pickup points=${toPickup?.length ?? 0} '
-        'refs=${toPickupSnapshot?.references.length ?? 0}',
-      );
-      if (toPickupSnapshot != null) {
-        references.addAll(toPickupSnapshot.references);
-      }
-      if (toPickup == null) {
-        // Fallback resiliente cuando Directions no esta disponible (p.ej. key faltante).
-        toPickup = <LatLng>[driver, pickup];
-        _routeDebug('fetch:driver->pickup fallback straight-line points=2');
-      }
-    } else {
-      _routeDebug(
-        'fetch:driver->pickup skipped driver=${driver != null} pickup=${pickup != null}',
-      );
+      // Otros estados: sin polilíneas de navegación (p. ej. transición o mapa ya oculto).
+      toPickup = null;
+      pickupToDest = null;
+      _routeDebug('fetch:no navigation polylines for status=$status');
     }
 
     if (!mounted) return;
@@ -574,7 +585,8 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
 
     final now = DateTime.now();
     if (_lastFitAt != null &&
-        now.difference(_lastFitAt!) < const Duration(milliseconds: 700)) {
+        now.difference(_lastFitAt!) <
+            TripRouteTrackingPolicy.navigationCameraMinGap) {
       return;
     }
     _lastFitAt = now;
@@ -593,7 +605,8 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
   }) {
     final now = DateTime.now();
     if (_lastFitAt != null &&
-        now.difference(_lastFitAt!) < const Duration(milliseconds: 700)) {
+        now.difference(_lastFitAt!) <
+            TripRouteTrackingPolicy.navigationCameraMinGap) {
       return;
     }
     _lastFitAt = now;

@@ -614,6 +614,18 @@ abstract class AppLocalizations {
   /// **'Register your vehicle before going online to receive trips.'**
   String get driverHomeCannotGoOnlineWithoutVehicle;
 
+  /// No description provided for @driverHomeVehicleRequiredDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle required'**
+  String get driverHomeVehicleRequiredDialogTitle;
+
+  /// No description provided for @driverHomeCreditsLowWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Your balance ({balance}) is close to the minimum ({min}) to stay online. Top up soon so you are not taken offline automatically.'**
+  String driverHomeCreditsLowWarning(String balance, String min);
+
   /// No description provided for @driverFcmOpenedTripOfferHint.
   ///
   /// In en, this message translates to:

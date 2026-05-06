@@ -294,6 +294,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Registra tu vehículo para poder conectarte y recibir viajes.';
 
   @override
+  String get driverHomeVehicleRequiredDialogTitle => 'Vehículo requerido';
+
+  @override
+  String driverHomeCreditsLowWarning(String balance, String min) {
+    return 'Tu saldo ($balance) está cerca del mínimo ($min) para permanecer en línea. Recargá créditos pronto para evitar que te desconectemos automáticamente.';
+  }
+
+  @override
   String get driverFcmOpenedTripOfferHint =>
       'Si acabamos de cargar la solicitud desde la alerta, revisa la lista abajo. Si no aparece, puede haber expirado o falló la conexión: vuelve a ponerte en línea.';
 
