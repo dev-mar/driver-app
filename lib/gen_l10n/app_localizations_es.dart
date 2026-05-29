@@ -814,6 +814,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverTripOfferBadgeNew => 'Nueva';
 
   @override
+  String get driverTripOfferBadgeOperations => 'Operaciones';
+
+  @override
+  String get driverTripOfferOperationsSubtitle =>
+      'Asignación desde el portal de operaciones';
+
+  @override
+  String get driverFcmOpenedTripOfferOperationsHint =>
+      'Solicitud de operaciones cargada. Revisa la lista de viajes abajo.';
+
+  @override
   String driverTripOfferPickupEta(String minutes) {
     return '~$minutes min a la recogida';
   }

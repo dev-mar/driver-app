@@ -29,6 +29,7 @@ import '../../core/notifications/driver_fcm_navigation.dart'
 import '../../gen_l10n/app_localizations.dart';
 import '../session/driver_operational_profile.dart';
 import 'driver_realtime_controller.dart';
+import 'driver_trip_offer.dart';
 import 'driver_active_trip_map.dart';
 import 'driver_login_controller.dart';
 import 'driver_online_auth_sheet.dart';
@@ -167,10 +168,14 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
       if (messenger == null) return;
       final l10n = AppLocalizations.of(context);
       final String snackText;
+      final isWebDispatch = payload != null &&
+          DriverTripOfferSource.isAdminWebDispatch(payload['requestSource']);
       if (payload == null) {
         snackText = l10n.driverFcmOpenedTripOfferHint;
       } else if (appliedFromNotification == true) {
-        snackText = l10n.driverFcmOpenedTripOfferHint;
+        snackText = isWebDispatch
+            ? l10n.driverFcmOpenedTripOfferOperationsHint
+            : l10n.driverFcmOpenedTripOfferHint;
       } else {
         snackText = l10n.driverFcmOpenedTripOfferOfflineHint;
       }
@@ -333,21 +338,72 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     );
   }
 
+  Future<void> _showCreditsRequiredForOnlineDialog(
+    AppLocalizations l10n,
+    DriverRealtimeState rt,
+  ) async {
+    if (!mounted) return;
+    final minRequired = rt.minCreditsToGoOnline.toStringAsFixed(0);
+    final balance = rt.driverCreditsBalance.toStringAsFixed(2);
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          icon: Icon(
+            Icons.account_balance_wallet_rounded,
+            color: AppColors.primary,
+            size: 28,
+          ),
+          title: Text(l10n.driverAppCreditsTitle),
+          content: Text(
+            l10n.driverOnlineErrorCreditsBelowMin(minRequired, balance),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(l10n.commonCancel),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                if (!context.mounted) return;
+                context.pushNamed(AppRouter.earningsCredits);
+              },
+              child: Text(l10n.driverEarningsCreditsMenu),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   /// Impide pasar a online si el ack realtime o el perfil operativo indican vehículo pendiente.
   /// Una sola puerta UX: evita depender solo del perfil REST cuando el servidor ya marcó
   /// `hasVehicleRegistered: false` en `connection:ack`.
-  Future<bool> _vehicleGateAllowsOnline() async {
+  Future<bool> _preOnlineGatesAllowOnline() async {
     final l10n = AppLocalizations.of(context);
     try {
-      final rt = ref.read(driverRealtimeProvider);
+      var rt = ref.read(driverRealtimeProvider);
       if (rt.hasVehicleRegistered == false) {
         await _showVehicleRequiredForOnlineDialog(l10n);
         return false;
       }
       final p = await ref.read(driverOperationalProfileProvider.future);
-      if (!p.needsVehicleRegistration) return true;
-      await _showVehicleRequiredForOnlineDialog(l10n);
-      return false;
+      if (p.needsVehicleRegistration) {
+        await _showVehicleRequiredForOnlineDialog(l10n);
+        return false;
+      }
+
+      // Segunda precondición temprana: créditos vigentes suficientes.
+      // Se refresca contra backend para evitar estado stale del interruptor.
+      final notifier = ref.read(driverRealtimeProvider.notifier);
+      await notifier.refreshGoOnlineGuards();
+      rt = ref.read(driverRealtimeProvider);
+      if (rt.insufficientCreditsToGoOnline) {
+        await _showCreditsRequiredForOnlineDialog(l10n, rt);
+        return false;
+      }
+      return true;
     } catch (_) {
       return true;
     }
@@ -905,7 +961,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                     final notifier = ref.read(driverRealtimeProvider.notifier);
                     notifier.clearActiveTrip();
                     if (!mounted) return;
-                    if (!await _vehicleGateAllowsOnline()) return;
+                    if (!await _preOnlineGatesAllowOnline()) return;
                     if (!mounted) return;
                     await notifier.setOnline(true);
                   }());
@@ -1221,7 +1277,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                                         ? null
                                         : (value) async {
                                             if (value && !online) {
-                                              if (!await _vehicleGateAllowsOnline()) {
+                                              if (!await _preOnlineGatesAllowOnline()) {
                                                 return;
                                               }
                                               if (!context.mounted) return;
@@ -3494,15 +3550,19 @@ class _TripOfferCard extends StatelessWidget {
     return '$h h ${rem.toString().padLeft(2, '0')} min';
   }
 
+  static const Color _operationsAccent = Color(0xFFFB923C);
+
   @override
   Widget build(BuildContext context) {
+    final isWebDispatch = offer.isAdminWebDispatch;
     final hasPrice = offer.offeredPrice != null;
     final hasRouteEta = offer.etaToDestinationMinutes != null;
     final hasTripKm = offer.tripDistanceKm != null;
     final hasPassenger = (offer.passengerName ?? '').isNotEmpty;
     final passengerRatingValue = offer.passengerRating ?? 5.0;
-    final hasRating = true;
+    final hasRating = !isWebDispatch;
     final showChips = hasRouteEta || hasTripKm;
+    final badgeColor = isWebDispatch ? _operationsAccent : AppColors.primary;
 
     final originText = (offer.originAddress ?? '').isNotEmpty
         ? offer.originAddress!
@@ -3577,10 +3637,10 @@ class _TripOfferCard extends StatelessWidget {
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.16),
+                            color: badgeColor.withValues(alpha: 0.16),
                             borderRadius: BorderRadius.circular(999),
                             border: Border.all(
-                              color: AppColors.primary.withValues(alpha: 0.42),
+                              color: badgeColor.withValues(alpha: 0.42),
                               width: 1,
                             ),
                           ),
@@ -3588,19 +3648,21 @@ class _TripOfferCard extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.bolt_rounded,
+                                isWebDispatch
+                                    ? Icons.support_agent_rounded
+                                    : Icons.bolt_rounded,
                                 size: 13,
-                                color: AppColors.primary.withValues(
-                                  alpha: 0.95,
-                                ),
+                                color: badgeColor.withValues(alpha: 0.95),
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                l10n.driverTripOfferBadgeNew,
-                                style: const TextStyle(
+                                isWebDispatch
+                                    ? l10n.driverTripOfferBadgeOperations
+                                    : l10n.driverTripOfferBadgeNew,
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
-                                  color: AppColors.primary,
+                                  color: badgeColor,
                                   letterSpacing: 0.2,
                                 ),
                               ),
@@ -3609,6 +3671,17 @@ class _TripOfferCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (isWebDispatch) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        l10n.driverTripOfferOperationsSubtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary.withValues(alpha: 0.95),
+                        ),
+                      ),
+                    ],
                     if (showChips) ...[
                       const SizedBox(height: 12),
                       Wrap(

@@ -88,6 +88,11 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
   static const String _prefReferenceConfidence =
       'driver.map.reference_confidence';
   static const int _maxVisibleReferenceMarkers = 20;
+  static const double _navigationBottomPadding = 250;
+  static const double _navigationBoundsPaddingNormal = 72;
+  static const double _navigationBoundsPaddingSmooth = 64;
+  static const double _navigationFocusPaddingNormal = 92;
+  static const double _navigationFocusPaddingSmooth = 86;
 
   LatLng? get _driverLatLng {
     if (widget.driverLat != null && widget.driverLng != null) {
@@ -154,8 +159,8 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
     _routingPositionSub =
         Geolocator.getPositionStream(
           locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.high,
-            distanceFilter: 12,
+            accuracy: LocationAccuracy.medium,
+            distanceFilter: 18,
           ),
         ).listen(
           (pos) {
@@ -195,7 +200,7 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
     if (oldLat == null || oldLng == null || newLat == null || newLng == null) {
       return oldLat != newLat || oldLng != newLng;
     }
-    const minDelta = 0.00018; // ~20m
+    const minDelta = 0.00027; // ~30m
     final dLat = (newLat - oldLat).abs();
     final dLng = (newLng - oldLng).abs();
     return dLat > minDelta || dLng > minDelta;
@@ -591,9 +596,19 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
     }
     _lastFitAt = now;
     if (smoothOnly) {
-      controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 64));
+      controller.animateCamera(
+        CameraUpdate.newLatLngBounds(
+          bounds,
+          _navigationBoundsPaddingSmooth,
+        ),
+      );
     } else {
-      controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 72));
+      controller.animateCamera(
+        CameraUpdate.newLatLngBounds(
+          bounds,
+          _navigationBoundsPaddingNormal,
+        ),
+      );
     }
   }
 
@@ -637,7 +652,12 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
       northeast: LatLng(maxLat, maxLng),
     );
     controller.animateCamera(
-      CameraUpdate.newLatLngBounds(bounds, smoothOnly ? 86 : 92),
+      CameraUpdate.newLatLngBounds(
+        bounds,
+        smoothOnly
+            ? _navigationFocusPaddingSmooth
+            : _navigationFocusPaddingNormal,
+      ),
     );
   }
 
@@ -829,6 +849,7 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
           mapToolbarEnabled: false,
           zoomControlsEnabled: false,
           style: _nightMapStyle,
+          padding: const EdgeInsets.only(bottom: _navigationBottomPadding),
         ),
         Positioned(
           top: 16,

@@ -59,6 +59,7 @@ class DriverRegistrationRepository {
       DriverAppMediaUploader(apiDio: _usersDio);
 
   static const _tokenKey = 'driver_token';
+  static const _refreshTokenKey = 'driver_refresh_token';
 
   Future<List<GeoCountry>> fetchCountries() async {
     final response = await _geoDio.get<Map<String, dynamic>>(
@@ -149,20 +150,74 @@ class DriverRegistrationRepository {
     return out;
   }
 
-  Future<bool> _tryPersistTokenFromResponse(Map<String, dynamic> data) async {
-    final inner = data['data'];
-    if (inner is! Map) return false;
-    final m = Map<String, dynamic>.from(inner);
-    const keys = ['token', 'access_token', 'accessToken', 'driver_token', 'bearer'];
-    for (final k in keys) {
+  Future<bool> _persistAuthTokensFromMap(Map<String, dynamic> m) async {
+    var savedAccess = false;
+    const accessKeys = ['token', 'access_token', 'accessToken', 'driver_token', 'bearer'];
+    for (final k in accessKeys) {
       final v = m[k];
       if (v != null && v.toString().isNotEmpty) {
         await _storage.write(key: _tokenKey, value: v.toString());
-        DriverPushTokenService.instance.syncTokenIfPossible();
-        return true;
+        savedAccess = true;
+        break;
       }
     }
-    return false;
+    const refreshKeys = ['refresh_token', 'refreshToken', 'driver_refresh_token'];
+    for (final k in refreshKeys) {
+      final v = m[k];
+      if (v != null && v.toString().isNotEmpty) {
+        await _storage.write(key: _refreshTokenKey, value: v.toString());
+        break;
+      }
+    }
+    if (savedAccess) {
+      DriverPushTokenService.instance.syncTokenIfPossible();
+    }
+    return savedAccess;
+  }
+
+  Future<bool> _tryPersistTokenFromResponse(Map<String, dynamic> data) async {
+    final inner = data['data'];
+    if (inner is Map) {
+      return _persistAuthTokensFromMap(Map<String, dynamic>.from(inner));
+    }
+    return _persistAuthTokensFromMap(data);
+  }
+
+  /// Renueva access token durante registro largo (misma ruta que login operativo).
+  Future<bool> _refreshAccessToken() async {
+    final refresh = await _storage.read(key: _refreshTokenKey);
+    if (refresh == null || refresh.isEmpty) return false;
+    try {
+      final response = await _usersDio.post<Map<String, dynamic>>(
+        '/api/v2/auth/refresh',
+        data: <String, dynamic>{'refresh_token': refresh},
+      );
+      final data = response.data;
+      if (data == null) return false;
+      // Respuesta plana Flutter: { token, refresh_token, expires_in }
+      final token = data['token']?.toString();
+      if (token != null && token.isNotEmpty) {
+        return _persistAuthTokensFromMap(data);
+      }
+      return _tryPersistTokenFromResponse(data);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[DriverRegistration] refresh token falló: $e');
+      }
+      return false;
+    }
+  }
+
+  Future<T> _withBearerRetry<T>(Future<T> Function(String bearer) action) async {
+    var bearer = await _requireBearerToken();
+    try {
+      return await action(bearer);
+    } on DioException catch (e) {
+      if (e.response?.statusCode != 401) rethrow;
+      if (!await _refreshAccessToken()) rethrow;
+      bearer = await _requireBearerToken();
+      return await action(bearer);
+    }
   }
 
   /// Si ya hay token (p. ej. guardado por personal-info o login).
@@ -356,13 +411,14 @@ class DriverRegistrationRepository {
     required String base64Raw,
     String contentType = 'image/jpeg',
   }) async {
-    final bearer = await _requireBearerToken();
-    return _mediaUploader.uploadRegistrationImageViaPresign(
-      bearerToken: bearer,
-      uuid: uuid,
-      purpose: purpose,
-      base64Raw: base64Raw,
-      contentType: contentType,
+    return _withBearerRetry(
+      (bearer) => _mediaUploader.uploadRegistrationImageViaPresign(
+        bearerToken: bearer,
+        uuid: uuid,
+        purpose: purpose,
+        base64Raw: base64Raw,
+        contentType: contentType,
+      ),
     );
   }
 
@@ -372,13 +428,14 @@ class DriverRegistrationRepository {
     required String base64Raw,
     String contentType = 'image/jpeg',
   }) async {
-    final bearer = await _requireBearerToken();
-    return _mediaUploader.uploadVehicleImageViaPresign(
-      bearerToken: bearer,
-      vehicleAssetId: vehicleAssetId,
-      purpose: purpose,
-      base64Raw: base64Raw,
-      contentType: contentType,
+    return _withBearerRetry(
+      (bearer) => _mediaUploader.uploadVehicleImageViaPresign(
+        bearerToken: bearer,
+        vehicleAssetId: vehicleAssetId,
+        purpose: purpose,
+        base64Raw: base64Raw,
+        contentType: contentType,
+      ),
     );
   }
 
@@ -420,50 +477,49 @@ class DriverRegistrationRepository {
   /// Devuelve si en la respuesta vino un token guardado (sesión para vehículo).
   Future<bool> submitDocumentInfo(Map<String, dynamic> body) async {
     try {
-      final bearer = await _requireBearerToken();
-      final uuid = body['uuid']?.toString();
-      final docType = body['document_type'];
-      final idempotencyKey = ( uuid != null &&
-              uuid.isNotEmpty &&
-              docType != null)
-          ? 'app-doc-$uuid-$docType'
-          : null;
-      final headers = <String, dynamic>{
-        'Authorization': 'Bearer $bearer',
-        ...? (idempotencyKey != null
-            ? <String, dynamic>{'Idempotency-Key': idempotencyKey}
-            : null),
-      };
-      if (kDebugMode) {
-        final approx = _debugApproxMapStringChars(body);
-        final sizeHint = approx >= 1024 * 1024
-            ? '~${(approx / (1024 * 1024)).toStringAsFixed(2)} MiB'
-            : '~${(approx / 1024).toStringAsFixed(0)} KiB';
-        debugPrint(
-          '[DriverRegistration] submitDocumentInfo document_type=$docType '
-          'approx chars in string fields=$approx ($sizeHint en strings Base64+campos; JSON serializado algo mayor)',
+      return await _withBearerRetry((bearer) async {
+        final uuid = body['uuid']?.toString();
+        final docType = body['document_type'];
+        final idempotencyKey = (uuid != null && uuid.isNotEmpty && docType != null)
+            ? 'app-doc-$uuid-$docType'
+            : null;
+        final headers = <String, dynamic>{
+          'Authorization': 'Bearer $bearer',
+          ...? (idempotencyKey != null
+              ? <String, dynamic>{'Idempotency-Key': idempotencyKey}
+              : null),
+        };
+        if (kDebugMode) {
+          final approx = _debugApproxMapStringChars(body);
+          final sizeHint = approx >= 1024 * 1024
+              ? '~${(approx / (1024 * 1024)).toStringAsFixed(2)} MiB'
+              : '~${(approx / 1024).toStringAsFixed(0)} KiB';
+          debugPrint(
+            '[DriverRegistration] submitDocumentInfo document_type=$docType '
+            'approx chars in string fields=$approx ($sizeHint en strings Base64+campos; JSON serializado algo mayor)',
+          );
+        }
+        final telemetry = await DriverDeviceTelemetry.toApiPayload();
+        final payload = Map<String, dynamic>.from(body);
+        telemetry.forEach((key, value) {
+          payload.putIfAbsent(key, () => value);
+        });
+        final response = await _usersDio.post<Map<String, dynamic>>(
+          '/api/v2/driver/documents',
+          data: payload,
+          options: Options(
+            headers: headers,
+            sendTimeout: const Duration(minutes: 3),
+            receiveTimeout: const Duration(minutes: 2),
+          ),
         );
-      }
-      final telemetry = await DriverDeviceTelemetry.toApiPayload();
-      final payload = Map<String, dynamic>.from(body);
-      telemetry.forEach((key, value) {
-        payload.putIfAbsent(key, () => value);
+        final data = response.data;
+        if (data == null) throw DriverRegistrationException('Respuesta vacía');
+        if (data['success'] != true) {
+          throw DriverRegistrationException(_extractErrorMessage(data));
+        }
+        return _tryPersistTokenFromResponse(data);
       });
-      final response = await _usersDio.post<Map<String, dynamic>>(
-        '/api/v2/driver/documents',
-        data: payload,
-        options: Options(
-          headers: headers,
-          sendTimeout: const Duration(minutes: 3),
-          receiveTimeout: const Duration(minutes: 2),
-        ),
-      );
-      final data = response.data;
-      if (data == null) throw DriverRegistrationException('Respuesta vacía');
-      if (data['success'] != true) {
-        throw DriverRegistrationException(_extractErrorMessage(data));
-      }
-      return _tryPersistTokenFromResponse(data);
     } on DioException catch (e) {
       _logDioIfDebug('submitDocumentInfo', e);
       throw DriverRegistrationException(_messageFromDioException(e));

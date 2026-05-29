@@ -23,12 +23,15 @@ class DriverForegroundSession {
 
   bool _initialized = false;
   bool _startingOrRunning = false;
+  String? _lastNotificationBody;
+  bool? _lastAvailabilitySessionActive;
 
   AppLocalizations _l10nForCurrentLocale() {
     final raw = WidgetsBinding.instance.platformDispatcher.locale;
     final code = raw.languageCode.toLowerCase();
-    final Locale loc =
-        (code == 'en' || code == 'es') ? raw : const Locale('es');
+    final Locale loc = (code == 'en' || code == 'es')
+        ? raw
+        : const Locale('es');
     return lookupAppLocalizations(loc);
   }
 
@@ -123,7 +126,15 @@ class DriverForegroundSession {
         _startingOrRunning = false;
         if (result is ServiceRequestFailure) {
           debugPrint('[DriverForeground] startService failed: ${result.error}');
+        } else {
+          _lastAvailabilitySessionActive = availabilitySessionActive;
+          _lastNotificationBody = body;
         }
+        return;
+      }
+
+      if (_lastAvailabilitySessionActive == availabilitySessionActive &&
+          _lastNotificationBody == body) {
         return;
       }
 
@@ -133,7 +144,12 @@ class DriverForegroundSession {
         notificationIcon: _notificationIcon,
       );
       if (updateResult is ServiceRequestFailure) {
-        debugPrint('[DriverForeground] updateService failed: ${updateResult.error}');
+        debugPrint(
+          '[DriverForeground] updateService failed: ${updateResult.error}',
+        );
+      } else {
+        _lastAvailabilitySessionActive = availabilitySessionActive;
+        _lastNotificationBody = body;
       }
     } catch (e, st) {
       _startingOrRunning = false;
@@ -147,6 +163,9 @@ class DriverForegroundSession {
       final result = await FlutterForegroundTask.stopService();
       if (result is ServiceRequestFailure) {
         debugPrint('[DriverForeground] stopService failed: ${result.error}');
+      } else {
+        _lastAvailabilitySessionActive = false;
+        _lastNotificationBody = null;
       }
     } catch (e, st) {
       debugPrint('[DriverForeground] stop: $e $st');

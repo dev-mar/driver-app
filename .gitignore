@@ -34,7 +34,11 @@ lib/l10n/app_localizations*.dart
 .pub/
 /build/
 /coverage/
-.env.local
+.env
+.env.*
+!.env.example
+!.env.template
+!.env.*.example
 
 # Symbolication related
 app.*.symbols
@@ -51,3 +55,38 @@ app.*.map.json
 
 # Informe opcional de gen-l10n (regenerar con `dart run tool/verify_l10n.dart`)
 /lib/l10n/untranslated_report.json
+
+# --- Artefactos locales Android / JVM (no subir; GitHub límite 100 MB/archivo) ---
+*.hprof
+**/java_pid*.hprof
+android/.gradle/
+android/**/build/
+android/captures/
+android/local.properties
+android/**/local.properties
+
+# Salidas de build móvil
+*.apk
+*.aab
+*.ipa
+*.app.dSYM
+*.app.dSYM.zip
+
+# Flutter / tooling
+.flutter-plugins
+.fvm/
+.fvmrc
+
+# Firebase / caches locales
+.firebase/
+Thumbs.db
+*.tmp
+*~
+
+# Cobertura y capturas de prueba
+*.lcov
+test_driver/**/screenshots/
+
+# Logs locales de scripts de build
+build-out*.txt
+build-final.txt

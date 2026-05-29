@@ -1,7 +1,7 @@
 /// Host único del despliegue `app_texi_WebSocket` (auth, geo, registro, perfiles, Socket.IO).
 ///
 /// Mismo valor por defecto que la app pasajero. Override local:
-/// `flutter run --dart-define=TEXI_BACKEND_BASE_URL=https://bk-websockets-pre-prod.taxitexi.com`
+/// `flutter run --dart-define=TEXI_BACKEND_BASE_URL=https://api.dev.taxitexi.com`
 class DriverBackendConfig {
   DriverBackendConfig._();
 
@@ -11,6 +11,6 @@ class DriverBackendConfig {
 
   static const String baseUrl = String.fromEnvironment(
     'TEXI_BACKEND_BASE_URL',
-    defaultValue: 'https://bk-websockets-pre-prod.taxitexi.com',
+    defaultValue: 'https://api.dev.taxitexi.com',
   );
 }

@@ -1532,6 +1532,24 @@ abstract class AppLocalizations {
   /// **'New'**
   String get driverTripOfferBadgeNew;
 
+  /// No description provided for @driverTripOfferBadgeOperations.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations'**
+  String get driverTripOfferBadgeOperations;
+
+  /// No description provided for @driverTripOfferOperationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned from the operations portal'**
+  String get driverTripOfferOperationsSubtitle;
+
+  /// No description provided for @driverFcmOpenedTripOfferOperationsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations trip request loaded. Check the list below.'**
+  String get driverFcmOpenedTripOfferOperationsHint;
+
   /// No description provided for @driverTripOfferPickupEta.
   ///
   /// In en, this message translates to:

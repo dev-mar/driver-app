@@ -304,6 +304,9 @@
   "driverTripAccept": "Aceptar",
   "driverTripOfferPriceTbd": "A acordar",
   "driverTripOfferBadgeNew": "Nueva",
+  "driverTripOfferBadgeOperations": "Operaciones",
+  "driverTripOfferOperationsSubtitle": "Asignación desde el portal de operaciones",
+  "driverFcmOpenedTripOfferOperationsHint": "Solicitud de operaciones cargada. Revisa la lista de viajes abajo.",
   "driverTripOfferPickupEta": "~{minutes} min a la recogida",
   "@driverTripOfferPickupEta": {
     "placeholders": { "minutes": { "type": "String" } }

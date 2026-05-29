@@ -305,6 +305,9 @@
   "driverTripAccept": "Accept",
   "driverTripOfferPriceTbd": "To be agreed",
   "driverTripOfferBadgeNew": "New",
+  "driverTripOfferBadgeOperations": "Operations",
+  "driverTripOfferOperationsSubtitle": "Assigned from the operations portal",
+  "driverFcmOpenedTripOfferOperationsHint": "Operations trip request loaded. Check the list below.",
   "driverTripOfferPickupEta": "~{minutes} min to pickup",
   "@driverTripOfferPickupEta": {
     "placeholders": { "minutes": { "type": "String" } }

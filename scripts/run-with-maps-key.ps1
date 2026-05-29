@@ -1,4 +1,4 @@
-param(
+﻿param(
   [ValidateSet("run", "apk")]
   [string]$Mode = "run",
 
@@ -107,5 +107,8 @@ if ($Mode -eq "run") {
 }
 
 Write-Host "Ejecutando: flutter build apk (config de API key cargada)" -ForegroundColor Cyan
+$prepareScript = Join-Path $PSScriptRoot "prepare-android-build.ps1"
+if (Test-Path $prepareScript) { & $prepareScript }
 & flutter build apk @flutterArgs
 exit $LASTEXITCODE
+

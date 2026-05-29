@@ -808,6 +808,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverTripOfferBadgeNew => 'New';
 
   @override
+  String get driverTripOfferBadgeOperations => 'Operations';
+
+  @override
+  String get driverTripOfferOperationsSubtitle =>
+      'Assigned from the operations portal';
+
+  @override
+  String get driverFcmOpenedTripOfferOperationsHint =>
+      'Operations trip request loaded. Check the list below.';
+
+  @override
   String driverTripOfferPickupEta(String minutes) {
     return '~$minutes min to pickup';
   }

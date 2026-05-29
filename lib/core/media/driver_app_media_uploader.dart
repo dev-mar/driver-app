@@ -3,20 +3,20 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
-/// POST presign en API v2 + PUT binario a S3 (JSON liviano en el endpoint final).
+/// POST presign en API v2 + PUT binario a Azure Blob (URL SAS; JSON liviano en el endpoint final).
 ///
 /// Usado en registro (`/driver/media/presign`), galería vehículo (`/vehicles/media/presign`), etc.
 final class DriverAppMediaUploader {
   DriverAppMediaUploader({
     required Dio apiDio,
-    Dio? s3Dio,
+    Dio? blobPutDio,
   })  : _api = apiDio,
-        _s3 = s3Dio ?? _defaultS3Client();
+        _blobPutClient = blobPutDio ?? _defaultBlobPutClient();
 
   final Dio _api;
-  final Dio _s3;
+  final Dio _blobPutClient;
 
-  static Dio _defaultS3Client() {
+  static Dio _defaultBlobPutClient() {
     return Dio(
       BaseOptions(
         connectTimeout: const Duration(seconds: 45),
@@ -132,7 +132,7 @@ final class DriverAppMediaUploader {
           }
         });
       }
-      await _s3.put<void>(
+      await _blobPutClient.put<void>(
         uploadUrl,
         data: bytes,
         options: Options(headers: hdr),
@@ -140,7 +140,7 @@ final class DriverAppMediaUploader {
       return storageKey;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[DriverMedia] presign/S3 PUT falló purpose=$debugPurpose: $e');
+        debugPrint('[DriverMedia] presign/blob PUT falló purpose=$debugPurpose: $e');
       }
       return null;
     }
