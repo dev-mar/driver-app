@@ -2,9 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import '../../core/config/driver_app_environment.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../core/compliance/driver_play_media_disclosures.dart';
 import '../../gen_l10n/app_localizations.dart';
 import 'registration_image_isolate_codec.dart';
 import 'widgets/registration_photo_review_sheet.dart';
@@ -86,12 +89,10 @@ const bool kDriverVehicleCropEnabled = bool.fromEnvironment(
   defaultValue: true,
 );
 
-/// KYC: por defecto **solo cámara** (menos fraude / fotos arbitrarias). Para permitir galería en QA:
-/// `--dart-define=DRIVER_REGISTRATION_ALLOW_GALLERY=true`
-const bool kDriverRegistrationAllowGalleryPicker = bool.fromEnvironment(
-  'DRIVER_REGISTRATION_ALLOW_GALLERY',
-  defaultValue: false,
-);
+/// KYC: por defecto **solo cámara**. Galería solo en dev si
+/// `--dart-define=DRIVER_REGISTRATION_ALLOW_GALLERY=true` (forzado off en prod).
+bool get kDriverRegistrationAllowGalleryPicker =>
+    DriverAppEnvironment.registrationAllowGallery;
 
 const Color _kCropToolbarBg = Color(0xFFFFFFFF);
 const Color _kCropToolbarFg = Color(0xFF1C1B1F);
@@ -367,6 +368,14 @@ Future<String?> _pickImageAsBase64OneStrategy(
         )
       : ImageSource.camera;
   if (!context.mounted || source == null) return null;
+
+  if (!await driverEnsureMediaDisclosureBeforePick(
+    context,
+    l10n,
+    source: source,
+  )) {
+    return null;
+  }
 
   final picker = ImagePicker();
   try {

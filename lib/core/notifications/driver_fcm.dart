@@ -29,15 +29,15 @@ Future<void> setupDriverFirebaseMessaging() async {
       badge: true,
       sound: true,
     );
+    await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false,
+    );
   }
 
-  await messaging.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-    provisional: false,
-  );
-
+  // Android: permiso POST_NOTIFICATIONS tras divulgación al ir online.
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     unawaited(
       DriverNotificationService.instance.showFcmForegroundMessage(message),

@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../../gen_l10n/app_localizations.dart';
 import 'driver_fcm_navigation.dart';
 
 /// Notificaciones locales del conductor: FCM en foreground / data-only en background
@@ -22,6 +24,15 @@ class DriverNotificationService {
   static const int _quietHoursStart = 22; // 22:00
   static const int _quietHoursEnd = 7; // 07:00
   static const String _chatVibrationLevel = 'medium'; // low | medium | high
+
+  AppLocalizations _l10nForCurrentLocale() {
+    final raw = WidgetsBinding.instance.platformDispatcher.locale;
+    final code = raw.languageCode.toLowerCase();
+    final Locale loc = (code == 'en' || code == 'es')
+        ? raw
+        : const Locale('es');
+    return lookupAppLocalizations(loc);
+  }
 
   /// Llamar desde main() al arrancar la app.
   Future<void> initialize() async {
@@ -45,21 +56,22 @@ class DriverNotificationService {
         >()
         ?.createNotificationChannel(channel);
 
-    // Android 13+ requiere permiso en runtime para mostrar notificaciones.
-    if (Platform.isAndroid) {
-      try {
-        final androidPlugin = _plugin
-            .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin
-            >();
-        await androidPlugin?.requestNotificationsPermission();
-      } catch (_) {
-        // Si el permiso ya fue concedido o el SO ignora la llamada, continuamos.
-      }
-    }
-
     _initialized = true;
     debugPrint('[DriverNotification] Inicializado.');
+  }
+
+  /// Android 13+: solicitar tras divulgación in-app (Google Play).
+  Future<void> requestAndroidPostNotificationsPermission() async {
+    if (!Platform.isAndroid) return;
+    try {
+      final androidPlugin = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      await androidPlugin?.requestNotificationsPermission();
+    } catch (_) {
+      // Permiso ya concedido o no disponible en esta versión.
+    }
   }
 
   static Future<void> showFcmDataOnlyMessage(RemoteMessage message) async {
@@ -144,11 +156,14 @@ class DriverNotificationService {
       vibrationPattern: quiet ? null : _chatVibrationPattern(),
     );
     final details = NotificationDetails(android: android);
-    final who = senderRole == 'passenger' ? 'Pasajero' : 'Conductor';
+    final l10n = _l10nForCurrentLocale();
+    final who = senderRole == 'passenger'
+        ? l10n.driverNotifyChatSenderPassenger
+        : l10n.driverNotifyChatSenderDriver;
     await _plugin.show(
       (tripId + messageText).hashCode.abs() % 2147483647,
-      'Nuevo mensaje de chat',
-      '$who: $messageText',
+      l10n.driverNotifyChatTitle,
+      l10n.driverNotifyChatBody(who, messageText),
       details,
       payload: 'chat:$tripId',
     );

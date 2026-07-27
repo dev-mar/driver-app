@@ -18,7 +18,7 @@ class DriverAppConfig {
     final key = googleMapsApiKeyOrNull;
     if (key == null) {
       throw StateError(
-        'Falta GOOGLE_MAPS_API_KEY. Define --dart-define=GOOGLE_MAPS_API_KEY=...'
+        'Falta GOOGLE_MAPS_API_KEY. Define --dart-define=GOOGLE_MAPS_API_KEY=...',
       );
     }
     return key;

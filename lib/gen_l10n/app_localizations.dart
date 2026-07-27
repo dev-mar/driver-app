@@ -98,35 +98,11 @@ abstract class AppLocalizations {
     Locale('es'),
   ];
 
-  /// No description provided for @appName.
-  ///
-  /// In en, this message translates to:
-  /// **'Texi'**
-  String get appName;
-
   /// No description provided for @driverAppTitle.
   ///
   /// In en, this message translates to:
   /// **'Texi Driver'**
   String get driverAppTitle;
-
-  /// No description provided for @splashGettingLocation.
-  ///
-  /// In en, this message translates to:
-  /// **'Getting your location...'**
-  String get splashGettingLocation;
-
-  /// No description provided for @loginWelcome.
-  ///
-  /// In en, this message translates to:
-  /// **'Welcome'**
-  String get loginWelcome;
-
-  /// No description provided for @loginSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter your number to continue'**
-  String get loginSubtitle;
 
   /// No description provided for @loginCode.
   ///
@@ -140,66 +116,6 @@ abstract class AppLocalizations {
   /// **'Phone'**
   String get loginPhone;
 
-  /// No description provided for @loginContinue.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue'**
-  String get loginContinue;
-
-  /// No description provided for @loginErrorInvalidCredentials.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not sign in. Check your number.'**
-  String get loginErrorInvalidCredentials;
-
-  /// No description provided for @loginPhoneRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter your phone number'**
-  String get loginPhoneRequired;
-
-  /// No description provided for @homeRequestRide.
-  ///
-  /// In en, this message translates to:
-  /// **'Request ride'**
-  String get homeRequestRide;
-
-  /// No description provided for @homeNearbyDrivers.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} nearby driver'**
-  String homeNearbyDrivers(int count);
-
-  /// No description provided for @homeNearbyDriversNone.
-  ///
-  /// In en, this message translates to:
-  /// **'No nearby drivers at the moment'**
-  String get homeNearbyDriversNone;
-
-  /// No description provided for @homeUpdatesEvery.
-  ///
-  /// In en, this message translates to:
-  /// **'Updates every {seconds} seconds'**
-  String homeUpdatesEvery(int seconds);
-
-  /// No description provided for @homeLocationError.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable location to see the map and nearby drivers.'**
-  String get homeLocationError;
-
-  /// No description provided for @homeLocationErrorGps.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not get your location. Check GPS.'**
-  String get homeLocationErrorGps;
-
-  /// No description provided for @homeRetry.
-  ///
-  /// In en, this message translates to:
-  /// **'Retry'**
-  String get homeRetry;
-
   /// No description provided for @tripOrigin.
   ///
   /// In en, this message translates to:
@@ -212,185 +128,17 @@ abstract class AppLocalizations {
   /// **'Destination'**
   String get tripDestination;
 
-  /// No description provided for @tripYourLocation.
-  ///
-  /// In en, this message translates to:
-  /// **'Your current location'**
-  String get tripYourLocation;
-
-  /// No description provided for @tripWherePickup.
-  ///
-  /// In en, this message translates to:
-  /// **'Where should we pick you up?'**
-  String get tripWherePickup;
-
-  /// No description provided for @tripUseMyLocation.
-  ///
-  /// In en, this message translates to:
-  /// **'Use my current location'**
-  String get tripUseMyLocation;
-
-  /// No description provided for @tripSearchAddress.
-  ///
-  /// In en, this message translates to:
-  /// **'Search address'**
-  String get tripSearchAddress;
-
-  /// No description provided for @tripChooseOnMap.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose on map'**
-  String get tripChooseOnMap;
-
-  /// No description provided for @tripUseAsPickup.
-  ///
-  /// In en, this message translates to:
-  /// **'Use as pickup point'**
-  String get tripUseAsPickup;
-
-  /// No description provided for @tripUseAsDestination.
-  ///
-  /// In en, this message translates to:
-  /// **'Use as destination'**
-  String get tripUseAsDestination;
-
-  /// No description provided for @tripMoveMapSetPickup.
-  ///
-  /// In en, this message translates to:
-  /// **'Move the map and tap the button to set where you\'ll be picked up.'**
-  String get tripMoveMapSetPickup;
-
-  /// No description provided for @tripMoveMapSetDestination.
-  ///
-  /// In en, this message translates to:
-  /// **'Move the map and tap the button to set the destination.'**
-  String get tripMoveMapSetDestination;
-
-  /// No description provided for @tripTapMapDestination.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap the map or choose an option below'**
-  String get tripTapMapDestination;
-
-  /// No description provided for @tripSeePrices.
-  ///
-  /// In en, this message translates to:
-  /// **'See prices'**
-  String get tripSeePrices;
-
-  /// No description provided for @tripSearchPlaceholder.
-  ///
-  /// In en, this message translates to:
-  /// **'Search address...'**
-  String get tripSearchPlaceholder;
-
-  /// No description provided for @tripUseMapCenter.
-  ///
-  /// In en, this message translates to:
-  /// **'Use this location'**
-  String get tripUseMapCenter;
-
-  /// No description provided for @tripWhereTo.
-  ///
-  /// In en, this message translates to:
-  /// **'Where to?'**
-  String get tripWhereTo;
-
-  /// No description provided for @tripSearchError.
-  ///
-  /// In en, this message translates to:
-  /// **'Address not found'**
-  String get tripSearchError;
-
-  /// No description provided for @tripSearchingAddress.
-  ///
-  /// In en, this message translates to:
-  /// **'Searching...'**
-  String get tripSearchingAddress;
-
-  /// No description provided for @tripNoCoverageInZone.
-  ///
-  /// In en, this message translates to:
-  /// **'We don\'t have service coverage in this area at the moment. Try another location or move to a service zone.'**
-  String get tripNoCoverageInZone;
-
-  /// No description provided for @tripNoDriversAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'No drivers available at the moment. Please try again in a few moments.'**
-  String get tripNoDriversAvailable;
-
-  /// No description provided for @tripNext.
-  ///
-  /// In en, this message translates to:
-  /// **'Next'**
-  String get tripNext;
-
-  /// No description provided for @quoteTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose your ride'**
-  String get quoteTitle;
-
-  /// No description provided for @quoteSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a service type'**
-  String get quoteSubtitle;
-
-  /// No description provided for @quotePerTrip.
-  ///
-  /// In en, this message translates to:
-  /// **'per trip'**
-  String get quotePerTrip;
-
-  /// No description provided for @quoteConfirm.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm'**
-  String get quoteConfirm;
-
-  /// No description provided for @confirmTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm your ride'**
-  String get confirmTitle;
-
-  /// No description provided for @confirmFrom.
-  ///
-  /// In en, this message translates to:
-  /// **'From'**
-  String get confirmFrom;
-
-  /// No description provided for @confirmTo.
-  ///
-  /// In en, this message translates to:
-  /// **'To'**
-  String get confirmTo;
-
-  /// No description provided for @confirmRequestRide.
-  ///
-  /// In en, this message translates to:
-  /// **'Request ride'**
-  String get confirmRequestRide;
-
-  /// No description provided for @searchingTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Looking for a driver'**
-  String get searchingTitle;
-
-  /// No description provided for @searchingSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'We are finding the best option for you'**
-  String get searchingSubtitle;
-
   /// No description provided for @commonCancel.
   ///
   /// In en, this message translates to:
   /// **'Cancel'**
   String get commonCancel;
+
+  /// No description provided for @commonClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get commonClose;
 
   /// No description provided for @commonLoading.
   ///
@@ -431,7 +179,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverLoginSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Sign in with your number and password to start receiving rides.'**
+  /// **'Or enter your number and password if you\'re already a Texi driver.'**
   String get driverLoginSubtitle;
 
   /// No description provided for @driverLoginPassword.
@@ -506,11 +254,23 @@ abstract class AppLocalizations {
   /// **'Unexpected sign-in error. Please try again.'**
   String get driverLoginErrorUnexpected;
 
-  /// No description provided for @driverLoginRegisterHint.
+  /// No description provided for @driverLoginErrorSessionSuperseded.
   ///
   /// In en, this message translates to:
-  /// **'Don\'t have credentials? You can register as a driver.'**
-  String get driverLoginRegisterHint;
+  /// **'Your session was opened on another device.'**
+  String get driverLoginErrorSessionSuperseded;
+
+  /// No description provided for @driverLoginErrorTripOperationalLock.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish or cancel your current trip before signing in on another device.'**
+  String get driverLoginErrorTripOperationalLock;
+
+  /// No description provided for @driverLoginErrorDeviceBound.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is linked to another device. Contact support to change phones.'**
+  String get driverLoginErrorDeviceBound;
 
   /// No description provided for @driverLoginRegisterCta.
   ///
@@ -535,30 +295,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Driver'**
   String get driverHomeTitle;
-
-  /// No description provided for @driverHomeOnlineTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'You are online'**
-  String get driverHomeOnlineTitle;
-
-  /// No description provided for @driverHomeOfflineTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'You are offline'**
-  String get driverHomeOfflineTitle;
-
-  /// No description provided for @driverHomeOnlineSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Nearby passengers will see your vehicle and you can receive ride requests.'**
-  String get driverHomeOnlineSubtitle;
-
-  /// No description provided for @driverHomeOfflineSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Turn the switch on to start receiving rides.'**
-  String get driverHomeOfflineSubtitle;
 
   /// No description provided for @driverHomeRequestsTitle.
   ///
@@ -944,6 +680,24 @@ abstract class AppLocalizations {
   /// **'Add vehicle'**
   String get driverMyVehiclesAddFab;
 
+  /// No description provided for @driverMyVehiclesAddLockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available yet'**
+  String get driverMyVehiclesAddLockedTitle;
+
+  /// No description provided for @driverMyVehiclesAddLockedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'For now you can only have one registered vehicle. Adding another is a benefit unlocked based on your seniority and driver evaluation. If you think it should already apply, contact support.'**
+  String get driverMyVehiclesAddLockedBody;
+
+  /// No description provided for @driverMyVehiclesAddLockedCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get driverMyVehiclesAddLockedCta;
+
   /// No description provided for @driverMyVehiclesEmpty.
   ///
   /// In en, this message translates to:
@@ -1109,7 +863,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverProfileOnboardingBody.
   ///
   /// In en, this message translates to:
-  /// **'Review the status of each item. You can complete or resubmit as needed.'**
+  /// **'Review each block\'s status. You can only edit pending items or those flagged for correction.'**
   String get driverProfileOnboardingBody;
 
   /// No description provided for @driverProfileSectionOnboardingPersonal.
@@ -1165,6 +919,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap to open or update'**
   String get driverProfileOnboardingTapToContinue;
+
+  /// No description provided for @driverProfileOnboardingTapEditable.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to complete or fix'**
+  String get driverProfileOnboardingTapEditable;
+
+  /// No description provided for @driverProfileOnboardingTapViewOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to view (in review)'**
+  String get driverProfileOnboardingTapViewOnly;
+
+  /// No description provided for @driverProfileOnboardingTapLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to view (verified)'**
+  String get driverProfileOnboardingTapLocked;
+
+  /// No description provided for @driverRegProfileSectionReadOnlyBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'This block is under review. You can view the information but cannot save changes until our team processes it.'**
+  String get driverRegProfileSectionReadOnlyBanner;
+
+  /// No description provided for @driverRegProfileSectionLockedBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'This block is verified and cannot be changed from the app.'**
+  String get driverRegProfileSectionLockedBanner;
+
+  /// No description provided for @driverRegErrorSectionNotEditable.
+  ///
+  /// In en, this message translates to:
+  /// **'This section cannot be changed in its current status.'**
+  String get driverRegErrorSectionNotEditable;
+
+  /// No description provided for @driverRegErrorRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many requests in a short time. Wait a moment and try again.'**
+  String get driverRegErrorRateLimited;
+
+  /// No description provided for @driverRegErrorNoConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection. Check your signal and try again.'**
+  String get driverRegErrorNoConnection;
 
   /// No description provided for @driverProfileSectionPersonal.
   ///
@@ -1490,23 +1292,11 @@ abstract class AppLocalizations {
   /// **'Finish trip'**
   String get driverTripCompleteButton;
 
-  /// No description provided for @driverTripOfferTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'New ride request'**
-  String get driverTripOfferTitle;
-
   /// No description provided for @driverTripOfferPrice.
   ///
   /// In en, this message translates to:
   /// **'Estimated price: {amount}'**
   String driverTripOfferPrice(String amount);
-
-  /// No description provided for @driverTripOfferEta.
-  ///
-  /// In en, this message translates to:
-  /// **'Estimated arrival: {minutes} min'**
-  String driverTripOfferEta(int minutes);
 
   /// No description provided for @driverTripReject.
   ///
@@ -1550,24 +1340,6 @@ abstract class AppLocalizations {
   /// **'Operations trip request loaded. Check the list below.'**
   String get driverFcmOpenedTripOfferOperationsHint;
 
-  /// No description provided for @driverTripOfferPickupEta.
-  ///
-  /// In en, this message translates to:
-  /// **'~{minutes} min to pickup'**
-  String driverTripOfferPickupEta(String minutes);
-
-  /// No description provided for @driverTripOfferRouteEta.
-  ///
-  /// In en, this message translates to:
-  /// **'~{minutes} min to destination'**
-  String driverTripOfferRouteEta(String minutes);
-
-  /// No description provided for @driverTripOfferRouteKm.
-  ///
-  /// In en, this message translates to:
-  /// **'{distance} trip'**
-  String driverTripOfferRouteKm(String distance);
-
   /// No description provided for @driverOfferErrorNoConnection.
   ///
   /// In en, this message translates to:
@@ -1586,12 +1358,6 @@ abstract class AppLocalizations {
   /// **'Trip already assigned or cancelled.'**
   String get driverOfferErrorTaken;
 
-  /// No description provided for @driverOfferErrorGeneric.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not update the request.'**
-  String get driverOfferErrorGeneric;
-
   /// No description provided for @driverTripErrorGeneric.
   ///
   /// In en, this message translates to:
@@ -1609,18 +1375,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Navigate to destination'**
   String get driverTripNavigateDestination;
-
-  /// No description provided for @driverTripNavAssistedTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Assisted navigation'**
-  String get driverTripNavAssistedTitle;
-
-  /// No description provided for @driverTripNavAssistedSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Opens your maps or GPS app (Maps, Waze…)'**
-  String get driverTripNavAssistedSubtitle;
 
   /// No description provided for @driverRegisteredImagesMenu.
   ///
@@ -1706,6 +1460,12 @@ abstract class AppLocalizations {
   /// **'No messages yet.\nSend one to start the conversation.'**
   String get driverTripChatEmptyState;
 
+  /// No description provided for @driverTripChatMessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a message'**
+  String get driverTripChatMessageHint;
+
   /// No description provided for @driverTripReactivate.
   ///
   /// In en, this message translates to:
@@ -1790,11 +1550,29 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{1 pending request — open Texi to respond} other{{count} pending requests — open Texi}}'**
   String driverForegroundNotifyBodyOffers(num count);
 
-  /// No description provided for @driverMapDriverPosition.
+  /// No description provided for @driverNotifyChatTitle.
   ///
   /// In en, this message translates to:
-  /// **'Your position'**
-  String get driverMapDriverPosition;
+  /// **'New chat message'**
+  String get driverNotifyChatTitle;
+
+  /// Local notification body for in-trip chat messages
+  ///
+  /// In en, this message translates to:
+  /// **'{sender}: {message}'**
+  String driverNotifyChatBody(String sender, String message);
+
+  /// No description provided for @driverNotifyChatSenderPassenger.
+  ///
+  /// In en, this message translates to:
+  /// **'Passenger'**
+  String get driverNotifyChatSenderPassenger;
+
+  /// No description provided for @driverNotifyChatSenderDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver'**
+  String get driverNotifyChatSenderDriver;
 
   /// No description provided for @driverMapPickupPoint.
   ///
@@ -1808,11 +1586,23 @@ abstract class AppLocalizations {
   /// **'Destination'**
   String get driverMapDestinationPoint;
 
-  /// No description provided for @driverMapCalculatingRoute.
+  /// No description provided for @driverDirectionsTollOnRoute.
   ///
   /// In en, this message translates to:
-  /// **'Calculating route...'**
-  String get driverMapCalculatingRoute;
+  /// **'Toll on route'**
+  String get driverDirectionsTollOnRoute;
+
+  /// No description provided for @driverDirectionsTollSnippet.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust speed and lane in advance.'**
+  String get driverDirectionsTollSnippet;
+
+  /// No description provided for @driverDirectionsRelevantIntersection.
+  ///
+  /// In en, this message translates to:
+  /// **'Relevant intersection'**
+  String get driverDirectionsRelevantIntersection;
 
   /// No description provided for @driverTripRatingHeaderTitle.
   ///
@@ -1844,47 +1634,11 @@ abstract class AppLocalizations {
   /// **'Skip for now'**
   String get driverTripRatingSkip;
 
-  /// No description provided for @driverTripRatingSummaryLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Trip summary'**
-  String get driverTripRatingSummaryLabel;
-
   /// No description provided for @driverTripRatingPassengerDefault.
   ///
   /// In en, this message translates to:
   /// **'Passenger'**
   String get driverTripRatingPassengerDefault;
-
-  /// No description provided for @driverTripRatingOriginDefault.
-  ///
-  /// In en, this message translates to:
-  /// **'Pickup'**
-  String get driverTripRatingOriginDefault;
-
-  /// No description provided for @driverTripRatingDestinationDefault.
-  ///
-  /// In en, this message translates to:
-  /// **'Destination'**
-  String get driverTripRatingDestinationDefault;
-
-  /// No description provided for @driverTripRatingDistanceKm.
-  ///
-  /// In en, this message translates to:
-  /// **'{distance} km'**
-  String driverTripRatingDistanceKm(String distance);
-
-  /// No description provided for @driverTripRatingEtaMinutes.
-  ///
-  /// In en, this message translates to:
-  /// **'~{minutes} min'**
-  String driverTripRatingEtaMinutes(String minutes);
-
-  /// No description provided for @driverTripRatingPriceLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Fare'**
-  String get driverTripRatingPriceLabel;
 
   /// No description provided for @driverTripRatingYourRating.
   ///
@@ -1904,11 +1658,65 @@ abstract class AppLocalizations {
   /// **'What stood out about the passenger? (multiple)'**
   String get driverTripRatingFeedbackPromptHigh;
 
-  /// No description provided for @driverTripRatingRouteHint.
+  /// No description provided for @driverRatingFallbackDelay.
   ///
   /// In en, this message translates to:
-  /// **'{origin} → {destination}'**
-  String driverTripRatingRouteHint(String origin, String destination);
+  /// **'Too long waiting'**
+  String get driverRatingFallbackDelay;
+
+  /// No description provided for @driverRatingFallbackLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Hard to find each other'**
+  String get driverRatingFallbackLocation;
+
+  /// No description provided for @driverRatingFallbackRespect.
+  ///
+  /// In en, this message translates to:
+  /// **'Lack of respect'**
+  String get driverRatingFallbackRespect;
+
+  /// No description provided for @driverRatingFallbackPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment issue'**
+  String get driverRatingFallbackPayment;
+
+  /// No description provided for @driverRatingFallbackOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other issue'**
+  String get driverRatingFallbackOther;
+
+  /// No description provided for @driverRatingFallbackPunctual.
+  ///
+  /// In en, this message translates to:
+  /// **'Punctual and ready to go'**
+  String get driverRatingFallbackPunctual;
+
+  /// No description provided for @driverRatingFallbackRespectful.
+  ///
+  /// In en, this message translates to:
+  /// **'Respectful attitude'**
+  String get driverRatingFallbackRespectful;
+
+  /// No description provided for @driverRatingFallbackClearPickup.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear and quick pickup'**
+  String get driverRatingFallbackClearPickup;
+
+  /// No description provided for @driverRatingFallbackRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended passenger'**
+  String get driverRatingFallbackRecommended;
+
+  /// No description provided for @driverRatingFallbackExcellent.
+  ///
+  /// In en, this message translates to:
+  /// **'Excellent experience'**
+  String get driverRatingFallbackExcellent;
 
   /// No description provided for @driverRegImageTakePhoto.
   ///
@@ -2282,6 +2090,36 @@ abstract class AppLocalizations {
   /// **'Required'**
   String get driverRegValidationRequired;
 
+  /// No description provided for @driverRegValidationMinAge18.
+  ///
+  /// In en, this message translates to:
+  /// **'You must be at least 18 years old to register as a driver.'**
+  String get driverRegValidationMinAge18;
+
+  /// No description provided for @driverRegAgeRequirementHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver registration and use of the driver app are reserved for persons over 18 years of age.'**
+  String get driverRegAgeRequirementHint;
+
+  /// No description provided for @driverRegAgeRequirementFieldHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'18+ only. The calendar only allows valid dates.'**
+  String get driverRegAgeRequirementFieldHelper;
+
+  /// No description provided for @driverRegAgeRequirementDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Age of majority required'**
+  String get driverRegAgeRequirementDialogTitle;
+
+  /// No description provided for @driverRegAgeRequirementDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You must be at least 18 years old to register as a driver. Correct your date of birth to continue.'**
+  String get driverRegAgeRequirementDialogBody;
+
   /// No description provided for @driverRegValidationSelectOption.
   ///
   /// In en, this message translates to:
@@ -2534,23 +2372,11 @@ abstract class AppLocalizations {
   /// **'Vehicle data'**
   String get driverRegSectionVehicleData;
 
-  /// No description provided for @driverRegSubtitleVehicleData.
-  ///
-  /// In en, this message translates to:
-  /// **'Brand, model, year and color (as in document or policy).'**
-  String get driverRegSubtitleVehicleData;
-
   /// Section title: classification from GET /api/v2/vehicles/catalog.
   ///
   /// In en, this message translates to:
   /// **'Vehicle classification'**
   String get driverRegSectionVehicleClassification;
-
-  /// Subtitle clarifying server catalog dependency.
-  ///
-  /// In en, this message translates to:
-  /// **'Type, category and allowed services from the catalog (required by the server).'**
-  String get driverRegSubtitleVehicleClassification;
 
   /// Vehicle type dropdown label (fleet.vehicle_types).
   ///
@@ -2593,18 +2419,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'1. What will you drive?'**
   String get driverRegCatalogTransportStepTitle;
-
-  /// No description provided for @driverRegCatalogModelLockedTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Make and model'**
-  String get driverRegCatalogModelLockedTitle;
-
-  /// No description provided for @driverRegCatalogModelLockedHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Taken from your selection above. You can change make or model in the same section if needed.'**
-  String get driverRegCatalogModelLockedHint;
 
   /// No description provided for @serviceTypeNameStandard.
   ///
@@ -2671,18 +2485,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Measurement units'**
   String get driverRegCatalogUnits;
-
-  /// No description provided for @driverRegCatalogSourceFallback.
-  ///
-  /// In en, this message translates to:
-  /// **'Offline fallback data (run DB migrations for the full server catalog).'**
-  String get driverRegCatalogSourceFallback;
-
-  /// No description provided for @driverRegCatalogSourceDatabase.
-  ///
-  /// In en, this message translates to:
-  /// **'Catalog from database'**
-  String get driverRegCatalogSourceDatabase;
 
   /// Button when catalog not loaded yet.
   ///
@@ -3014,6 +2816,36 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get driverRegActionSave;
 
+  /// No description provided for @driverRegCancelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel registration'**
+  String get driverRegCancelTitle;
+
+  /// No description provided for @driverRegCancelBodyUser.
+  ///
+  /// In en, this message translates to:
+  /// **'For security, data entered so far will not be kept and this registration progress will be removed. You can start again whenever you want.'**
+  String get driverRegCancelBodyUser;
+
+  /// No description provided for @driverRegCancelBodyVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'For security, the vehicle you are registering will not be saved. Your account and other vehicles stay unchanged.'**
+  String get driverRegCancelBodyVehicle;
+
+  /// No description provided for @driverRegCancelConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, cancel'**
+  String get driverRegCancelConfirm;
+
+  /// No description provided for @driverRegCancelKeepGoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep going'**
+  String get driverRegCancelKeepGoing;
+
   /// No description provided for @driverRegTitleProfileCompletion.
   ///
   /// In en, this message translates to:
@@ -3199,6 +3031,237 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Gold'**
   String get driverRegColorGold;
+
+  /// No description provided for @driverLegalSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal & privacy'**
+  String get driverLegalSectionTitle;
+
+  /// No description provided for @driverLegalSectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the documents that apply to your account and manage your data.'**
+  String get driverLegalSectionSubtitle;
+
+  /// No description provided for @driverLegalPrivacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy policy'**
+  String get driverLegalPrivacyPolicy;
+
+  /// No description provided for @driverLegalTermsOfService.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of service'**
+  String get driverLegalTermsOfService;
+
+  /// No description provided for @driverLegalDeleteAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get driverLegalDeleteAccountTitle;
+
+  /// No description provided for @driverLegalDeleteAccountBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account will enter a scheduled deletion period for {graceDays} days. After you confirm, your session will close and you cannot use the app. To recover it, sign in with your credentials and cancel the request before the deadline.'**
+  String driverLegalDeleteAccountBody(int graceDays);
+
+  /// No description provided for @driverLegalDeleteAccountAction.
+  ///
+  /// In en, this message translates to:
+  /// **'How to request'**
+  String get driverLegalDeleteAccountAction;
+
+  /// No description provided for @driverLegalDeleteAccountConfirmSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule deletion'**
+  String get driverLegalDeleteAccountConfirmSchedule;
+
+  /// No description provided for @driverLegalDeleteAccountScheduling.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduling deletion…'**
+  String get driverLegalDeleteAccountScheduling;
+
+  /// No description provided for @driverLegalDeleteAccountScheduledSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletion scheduled. Your session was closed; sign in to recover your account before the deadline.'**
+  String get driverLegalDeleteAccountScheduledSuccess;
+
+  /// No description provided for @driverLoginAccountDeletionPendingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletion scheduled'**
+  String get driverLoginAccountDeletionPendingTitle;
+
+  /// No description provided for @driverLoginAccountDeletionPendingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is scheduled for deletion on {effectiveDate}. You cannot use the app until you recover it.'**
+  String driverLoginAccountDeletionPendingBody(String effectiveDate);
+
+  /// No description provided for @driverLoginAccountDeletionPendingDateFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'the scheduled date'**
+  String get driverLoginAccountDeletionPendingDateFallback;
+
+  /// No description provided for @driverLoginAccountDeletionRecover.
+  ///
+  /// In en, this message translates to:
+  /// **'Recover account'**
+  String get driverLoginAccountDeletionRecover;
+
+  /// No description provided for @driverLoginAccountDeletionDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get driverLoginAccountDeletionDismiss;
+
+  /// No description provided for @driverLoginAccountDeletionRecovering.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovering account…'**
+  String get driverLoginAccountDeletionRecovering;
+
+  /// No description provided for @driverLoginAccountDeletionRecoverSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Account recovered. Welcome back.'**
+  String get driverLoginAccountDeletionRecoverSuccess;
+
+  /// No description provided for @driverLegalDeleteAccountPendingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletion scheduled'**
+  String get driverLegalDeleteAccountPendingTitle;
+
+  /// No description provided for @driverLegalDeleteAccountPendingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account will be deleted on {effectiveDate}. You have {daysRemaining} days left to cancel and restore access.'**
+  String driverLegalDeleteAccountPendingBody(
+    String effectiveDate,
+    int daysRemaining,
+  );
+
+  /// No description provided for @driverLegalDeleteAccountPendingDateFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'the scheduled date'**
+  String get driverLegalDeleteAccountPendingDateFallback;
+
+  /// No description provided for @driverLegalDeleteAccountCancelAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel deletion'**
+  String get driverLegalDeleteAccountCancelAction;
+
+  /// No description provided for @driverLegalDeleteAccountCancelling.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelling deletion…'**
+  String get driverLegalDeleteAccountCancelling;
+
+  /// No description provided for @driverLegalDeleteAccountCancelSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletion cancelled. Your account is still active.'**
+  String get driverLegalDeleteAccountCancelSuccess;
+
+  /// No description provided for @driverPlayNotificationDisclosureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip notifications'**
+  String get driverPlayNotificationDisclosureTitle;
+
+  /// No description provided for @driverPlayNotificationDisclosureBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Texi needs to send you notifications when trip requests arrive, trip status changes, or the passenger sends a message while you are online as a driver.'**
+  String get driverPlayNotificationDisclosureBody;
+
+  /// No description provided for @driverPlayLocationDisclosureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Location to receive trips'**
+  String get driverPlayLocationDisclosureTitle;
+
+  /// No description provided for @driverPlayLocationDisclosureBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Texi uses your location to show you on the map, match nearby trip requests, and share your position with the passenger during an active trip.'**
+  String get driverPlayLocationDisclosureBody;
+
+  /// No description provided for @driverPlayDisclosureContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get driverPlayDisclosureContinue;
+
+  /// No description provided for @driverLegalLoginHint.
+  ///
+  /// In en, this message translates to:
+  /// **'By continuing, you agree to our usage policies and terms of service.'**
+  String get driverLegalLoginHint;
+
+  /// No description provided for @driverLegalLoginPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'By continuing, you agree to our '**
+  String get driverLegalLoginPrefix;
+
+  /// No description provided for @driverLegalLoginConjunction.
+  ///
+  /// In en, this message translates to:
+  /// **' and '**
+  String get driverLegalLoginConjunction;
+
+  /// No description provided for @driverLegalActivatePrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'By activating you accept our '**
+  String get driverLegalActivatePrefix;
+
+  /// No description provided for @driverLegalUsagePolicies.
+  ///
+  /// In en, this message translates to:
+  /// **'usage policies'**
+  String get driverLegalUsagePolicies;
+
+  /// No description provided for @driverLegalRegistrationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'By activating you accept our usage policies.'**
+  String get driverLegalRegistrationHint;
+
+  /// No description provided for @driverPlayCameraDisclosureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera access'**
+  String get driverPlayCameraDisclosureTitle;
+
+  /// No description provided for @driverPlayCameraDisclosureBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Texi uses the camera to capture identity documents, your license, and vehicle photos during registration. Images are sent securely for verification.'**
+  String get driverPlayCameraDisclosureBody;
+
+  /// No description provided for @driverPlayGalleryDisclosureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo library access'**
+  String get driverPlayGalleryDisclosureTitle;
+
+  /// No description provided for @driverPlayGalleryDisclosureBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Texi accesses photos you choose from your library for driver registration. Only the image you select is uploaded.'**
+  String get driverPlayGalleryDisclosureBody;
 }
 
 class _AppLocalizationsDelegate

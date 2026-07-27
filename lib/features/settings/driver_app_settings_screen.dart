@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/config/locale_provider.dart';
+import 'widgets/driver_settings_legal_section.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_foundation.dart';
 import '../../core/ui/driver_language_picker_sheet.dart';
@@ -40,6 +41,7 @@ class DriverAppSettingsScreen extends ConsumerWidget {
               onTap: () => showDriverLanguagePickerSheet(context, ref),
             ),
           ),
+          const DriverSettingsLegalSection(),
         ],
       ),
     );

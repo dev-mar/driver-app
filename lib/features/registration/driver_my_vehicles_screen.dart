@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -22,6 +23,8 @@ class _DriverMyVehiclesScreenState extends ConsumerState<DriverMyVehiclesScreen>
   List<DriverVehicleSummary>? _items;
   String? _error;
   bool _loading = true;
+
+  bool get _hasRegisteredVehicle => (_items?.isNotEmpty ?? false);
 
   @override
   void initState() {
@@ -59,7 +62,36 @@ class _DriverMyVehiclesScreenState extends ConsumerState<DriverMyVehiclesScreen>
     }
   }
 
-  Future<void> _openAddVehicleFlow() async {
+  Future<void> _showAddVehicleLockedDialog(AppLocalizations l10n) async {
+    HapticFeedback.selectionClick();
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        icon: Icon(
+          Icons.lock_outline_rounded,
+          color: AppColors.primary.withValues(alpha: 0.95),
+          size: 28,
+        ),
+        title: Text(l10n.driverMyVehiclesAddLockedTitle),
+        content: Text(l10n.driverMyVehiclesAddLockedBody),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.driverMyVehiclesAddLockedCta),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _onAddVehiclePressed() async {
+    final l10n = AppLocalizations.of(context);
+    if (_hasRegisteredVehicle) {
+      await _showAddVehicleLockedDialog(l10n);
+      return;
+    }
     await context.pushNamed(
       AppRouter.register,
       extra: <String, dynamic>{'addVehicleOnly': true},
@@ -70,6 +102,7 @@ class _DriverMyVehiclesScreenState extends ConsumerState<DriverMyVehiclesScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final addLocked = _hasRegisteredVehicle;
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.driverMyVehiclesTitle),
@@ -82,8 +115,14 @@ class _DriverMyVehiclesScreenState extends ConsumerState<DriverMyVehiclesScreen>
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddVehicleFlow,
-        icon: const Icon(Icons.add_rounded),
+        onPressed: _loading ? null : _onAddVehiclePressed,
+        backgroundColor: addLocked
+            ? AppColors.primary.withValues(alpha: 0.42)
+            : null,
+        foregroundColor: addLocked
+            ? AppColors.onPrimary.withValues(alpha: 0.9)
+            : null,
+        icon: Icon(addLocked ? Icons.lock_outline_rounded : Icons.add_rounded),
         label: Text(l10n.driverMyVehiclesAddFab),
       ),
       body: RefreshIndicator(
@@ -144,7 +183,7 @@ class _DriverMyVehiclesScreenState extends ConsumerState<DriverMyVehiclesScreen>
           SizedBox(height: AppFoundation.spacingLg),
           Center(
             child: FilledButton.icon(
-              onPressed: _openAddVehicleFlow,
+              onPressed: _onAddVehiclePressed,
               icon: const Icon(Icons.add_rounded),
               label: Text(l10n.driverMyVehiclesAddFab),
             ),

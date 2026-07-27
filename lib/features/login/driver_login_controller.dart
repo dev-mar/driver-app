@@ -1,8 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../core/network/driver_api_client.dart';
 import '../../core/notifications/driver_push_token_service.dart';
-import '../../core/config/driver_backend_config.dart';
+import '../../core/session/driver_session_expulsion.dart';
 import '../../core/device/driver_device_telemetry.dart';
 import '../../core/session/driver_internal_tools_gate.dart';
 import '../../core/session/driver_map_preferences_store.dart';
@@ -21,61 +22,58 @@ final driverLoginControllerProvider =
 class DriverLoginState {
   final String? errorMessage;
   final String? errorCode;
-  DriverLoginState({this.errorMessage, this.errorCode});
+  final Map<String, dynamic>? accountDeletion;
+
+  DriverLoginState({
+    this.errorMessage,
+    this.errorCode,
+    this.accountDeletion,
+  });
 }
 
 class DriverLoginController extends StateNotifier<DriverLoginState> {
-  DriverLoginController() : super(DriverLoginState());
+  DriverLoginController({DriverApiClient? apiClient})
+      : _api = apiClient ?? DriverApiClient(),
+        super(DriverLoginState());
 
   static const _storage = FlutterSecureStorage();
-
-  // Base URL del backend unificado para autenticación de conductor.
-  final Dio _dio = Dio(
-    BaseOptions(
-      baseUrl: DriverBackendConfig.baseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 15),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    ),
-  );
+  final DriverApiClient _api;
 
   /// [driverRegistrationInProgress]: el conductor aún debe cargar vehículo; el backend
   /// puede exigir este flag para devolver token aunque el perfil no esté "activo".
+  /// [cancelPendingDeletion]: cancela eliminación programada y continúa login normal.
   Future<bool> login({
     required String fullPhone,
     required String password,
     bool driverRegistrationInProgress = false,
+    bool cancelPendingDeletion = false,
   }) async {
     state = DriverLoginState();
 
     try {
       final telemetry = await DriverDeviceTelemetry.toApiPayload();
-      final response = await _dio.post(
-        '/api/v2/auth/login',
+      final response = await _api.postPublic<Map<String, dynamic>>(
+        path: '/api/v2/auth/login',
         data: {
           'password': password,
           'user_name': fullPhone,
           ...telemetry,
           if (driverRegistrationInProgress)
             'driver_registration_in_progress': true,
+          if (cancelPendingDeletion) 'cancel_pending_deletion': true,
         },
       );
 
-      final data = response.data;
-      if (data is! Map) return _fail(code: 'CLIENT_INVALID_RESPONSE');
+      final raw = response.data;
+      if (raw is! Map) return _fail(code: 'CLIENT_INVALID_RESPONSE');
+      final data = Map<String, dynamic>.from(raw as Map);
 
       if (data['success'] != true) {
         // Algunos backends envían token en data aunque success sea false.
         if (await _tryPersistTokenFromLoginPayload(data, fullPhone: fullPhone)) {
           return true;
         }
-        return _fail(
-          code: data['code']?.toString() ?? 'AUTH_LOGIN_FAILED',
-          message: data['message']?.toString(),
-        );
+        return _failFromPayload(data);
       }
 
       final payload = data['data'];
@@ -87,21 +85,28 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
       }
       final refreshToken = payload['refresh_token']?.toString();
 
-      await _storage.write(key: 'driver_token', value: token);
+      await _storage.write(key: DriverApiClient.tokenStorageKey, value: token);
       if (refreshToken != null && refreshToken.isNotEmpty) {
-        await _storage.write(key: 'driver_refresh_token', value: refreshToken);
+        await _storage.write(
+          key: DriverApiClient.refreshTokenStorageKey,
+          value: refreshToken,
+        );
       }
       await _storage.write(
         key: DriverInternalToolsGate.storageKeyLoginPhone,
         value: fullPhone,
       );
       DriverRegistrationResumeGate.invalidate();
+      resetDriverSessionExpulsionState();
       DriverPushTokenService.instance.syncTokenIfPossible();
       return true;
     } on DioException catch (e) {
       final body = e.response?.data;
       if (body is Map &&
-          await _tryPersistTokenFromLoginPayload(body, fullPhone: fullPhone)) {
+          await _tryPersistTokenFromLoginPayload(
+            Map<String, dynamic>.from(body),
+            fullPhone: fullPhone,
+          )) {
         return true;
       }
       if (e.type == DioExceptionType.connectionTimeout ||
@@ -112,24 +117,38 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
       if (e.type == DioExceptionType.connectionError) {
         return _fail(code: 'NETWORK_CONNECTION');
       }
-      final msg = body is Map ? body['message']?.toString() : null;
-      final code = body is Map ? body['code']?.toString() : null;
+      if (body is Map) {
+        return _failFromPayload(Map<String, dynamic>.from(body));
+      }
       return _fail(
-        code: code ?? 'NETWORK_REQUEST_FAILED',
-        message: msg ?? e.message,
+        code: 'NETWORK_REQUEST_FAILED',
+        message: e.message,
       );
     } catch (_) {
       return _fail(code: 'CLIENT_UNEXPECTED');
     }
   }
 
+  Future<bool> recoverAccountFromPendingDeletion({
+    required String fullPhone,
+    required String password,
+  }) {
+    return login(
+      fullPhone: fullPhone,
+      password: password,
+      cancelPendingDeletion: true,
+    );
+  }
+
   /// Extrae token de `data` / `data.data` (nombres habituales en APIs).
   Future<bool> _tryPersistTokenFromLoginPayload(
-    Map<dynamic, dynamic> root, {
+    Map<String, dynamic> root, {
     required String fullPhone,
   }) async {
-    final candidates = <Map<dynamic, dynamic>>[];
-    if (root['data'] is Map) candidates.add(root['data'] as Map);
+    final candidates = <Map<String, dynamic>>[];
+    if (root['data'] is Map) {
+      candidates.add(Map<String, dynamic>.from(root['data'] as Map));
+    }
     candidates.add(root);
     const keys = ['token', 'access_token', 'accessToken', 'driver_token', 'bearer'];
     const refreshKeys = ['refresh_token', 'refreshToken', 'driver_refresh_token'];
@@ -137,11 +156,17 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
       for (final k in keys) {
         final v = map[k];
         if (v != null && v.toString().isNotEmpty) {
-          await _storage.write(key: 'driver_token', value: v.toString());
+          await _storage.write(
+            key: DriverApiClient.tokenStorageKey,
+            value: v.toString(),
+          );
           for (final rk in refreshKeys) {
             final rv = map[rk];
             if (rv != null && rv.toString().isNotEmpty) {
-              await _storage.write(key: 'driver_refresh_token', value: rv.toString());
+              await _storage.write(
+                key: DriverApiClient.refreshTokenStorageKey,
+                value: rv.toString(),
+              );
               break;
             }
           }
@@ -150,6 +175,7 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
             value: fullPhone,
           );
           DriverRegistrationResumeGate.invalidate();
+          resetDriverSessionExpulsionState();
           DriverPushTokenService.instance.syncTokenIfPossible();
           return true;
         }
@@ -163,10 +189,37 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
     DriverRegistrationResumeGate.invalidate();
     await DriverPushTokenService.instance.revokeAllOnServerIfPossible();
     await DriverMapPreferencesStore.clearMapPreferencesForCurrentSession();
-    await _storage.delete(key: 'driver_token');
-    await _storage.delete(key: 'driver_refresh_token');
+    await _storage.delete(key: DriverApiClient.tokenStorageKey);
+    await _storage.delete(key: DriverApiClient.refreshTokenStorageKey);
     await _storage.delete(key: DriverInternalToolsGate.storageKeyLoginPhone);
     state = DriverLoginState();
+  }
+
+  bool _failFromPayload(Map<String, dynamic> data) {
+    final code = data['code']?.toString() ?? 'AUTH_LOGIN_FAILED';
+    final message = data['message']?.toString();
+    final accountDeletion = _extractAccountDeletion(data);
+    state = DriverLoginState(
+      errorMessage: message,
+      errorCode: code,
+      accountDeletion: accountDeletion,
+    );
+    return false;
+  }
+
+  Map<String, dynamic>? _extractAccountDeletion(Map<String, dynamic> data) {
+    final direct = data['data'];
+    if (direct is Map && direct['account_deletion'] is Map) {
+      return Map<String, dynamic>.from(direct['account_deletion'] as Map);
+    }
+    final err = data['error'];
+    if (err is Map && err['details'] is Map) {
+      final details = Map<String, dynamic>.from(err['details'] as Map);
+      if (details['account_deletion'] is Map) {
+        return Map<String, dynamic>.from(details['account_deletion'] as Map);
+      }
+    }
+    return null;
   }
 
   bool _fail({required String code, String? message}) {
@@ -174,4 +227,3 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
     return false;
   }
 }
-

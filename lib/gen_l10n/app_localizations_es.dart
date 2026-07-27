@@ -9,19 +9,7 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
-  String get appName => 'Texi';
-
-  @override
   String get driverAppTitle => 'Texi Conductor';
-
-  @override
-  String get splashGettingLocation => 'Obteniendo tu ubicación...';
-
-  @override
-  String get loginWelcome => 'Bienvenido';
-
-  @override
-  String get loginSubtitle => 'Ingresa tu número para continuar';
 
   @override
   String get loginCode => 'Código';
@@ -30,142 +18,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get loginPhone => 'Teléfono';
 
   @override
-  String get loginContinue => 'Continuar';
-
-  @override
-  String get loginErrorInvalidCredentials =>
-      'No se pudo iniciar sesión. Revisa tu número.';
-
-  @override
-  String get loginPhoneRequired => 'Ingresa tu número de teléfono';
-
-  @override
-  String get homeRequestRide => 'Solicitar viaje';
-
-  @override
-  String homeNearbyDrivers(int count) {
-    return '$count conductor cercano';
-  }
-
-  @override
-  String get homeNearbyDriversNone =>
-      'No hay conductores cercanos en este momento';
-
-  @override
-  String homeUpdatesEvery(int seconds) {
-    return 'Se actualiza cada $seconds segundos';
-  }
-
-  @override
-  String get homeLocationError =>
-      'Activa la ubicación para ver el mapa y conductores cercanos.';
-
-  @override
-  String get homeLocationErrorGps =>
-      'No se pudo obtener tu ubicación. Revisa el GPS.';
-
-  @override
-  String get homeRetry => 'Reintentar';
-
-  @override
   String get tripOrigin => 'Origen';
 
   @override
   String get tripDestination => 'Destino';
 
   @override
-  String get tripYourLocation => 'Tu ubicación actual';
-
-  @override
-  String get tripWherePickup => '¿Dónde te recogemos?';
-
-  @override
-  String get tripUseMyLocation => 'Usar mi ubicación actual';
-
-  @override
-  String get tripSearchAddress => 'Buscar dirección';
-
-  @override
-  String get tripChooseOnMap => 'Elegir en el mapa';
-
-  @override
-  String get tripUseAsPickup => 'Usar como punto de recogida';
-
-  @override
-  String get tripUseAsDestination => 'Usar como destino';
-
-  @override
-  String get tripMoveMapSetPickup =>
-      'Mueve el mapa y toca el botón para fijar dónde te recogerán.';
-
-  @override
-  String get tripMoveMapSetDestination =>
-      'Mueve el mapa y toca el botón para fijar el destino.';
-
-  @override
-  String get tripTapMapDestination => 'Toca el mapa o elige una opción abajo';
-
-  @override
-  String get tripSeePrices => 'Ver precios';
-
-  @override
-  String get tripSearchPlaceholder => 'Buscar dirección...';
-
-  @override
-  String get tripUseMapCenter => 'Usar esta ubicación';
-
-  @override
-  String get tripWhereTo => '¿A dónde vas?';
-
-  @override
-  String get tripSearchError => 'No se encontró la dirección';
-
-  @override
-  String get tripSearchingAddress => 'Buscando...';
-
-  @override
-  String get tripNoCoverageInZone =>
-      'No tenemos cobertura del servicio en esta zona por el momento. Prueba en otra ubicación o acércate a una zona de servicio.';
-
-  @override
-  String get tripNoDriversAvailable =>
-      'No hay conductores disponibles en este momento. Intenta de nuevo en unos instantes.';
-
-  @override
-  String get tripNext => 'Siguiente';
-
-  @override
-  String get quoteTitle => 'Elige tu viaje';
-
-  @override
-  String get quoteSubtitle => 'Selecciona un tipo de servicio';
-
-  @override
-  String get quotePerTrip => 'por viaje';
-
-  @override
-  String get quoteConfirm => 'Confirmar';
-
-  @override
-  String get confirmTitle => 'Confirma tu viaje';
-
-  @override
-  String get confirmFrom => 'Desde';
-
-  @override
-  String get confirmTo => 'Hasta';
-
-  @override
-  String get confirmRequestRide => 'Solicitar viaje';
-
-  @override
-  String get searchingTitle => 'Buscando conductor';
-
-  @override
-  String get searchingSubtitle => 'Estamos encontrando la mejor opción para ti';
-
-  @override
   String get commonCancel => 'Cancelar';
+
+  @override
+  String get commonClose => 'Cerrar';
 
   @override
   String get commonLoading => 'Cargando...';
@@ -187,7 +49,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverLoginSubtitle =>
-      'Ingresa con tu número y contraseña para comenzar a recibir viajes.';
+      'O ingresa tu número y contraseña si ya eres un conductor Texi.';
 
   @override
   String get driverLoginPassword => 'Contraseña';
@@ -233,8 +95,16 @@ class AppLocalizationsEs extends AppLocalizations {
       'Error inesperado al iniciar sesión. Intenta nuevamente.';
 
   @override
-  String get driverLoginRegisterHint =>
-      '¿No tienes credenciales? Puedes registrarte como conductor.';
+  String get driverLoginErrorSessionSuperseded =>
+      'Tu sesión se abrió en otro dispositivo.';
+
+  @override
+  String get driverLoginErrorTripOperationalLock =>
+      'Terminá o cancelá tu viaje actual antes de iniciar sesión en otro dispositivo.';
+
+  @override
+  String get driverLoginErrorDeviceBound =>
+      'Esta cuenta está vinculada a otro dispositivo. Contactá a soporte para cambiar de teléfono.';
 
   @override
   String get driverLoginRegisterCta => 'Registrarme';
@@ -248,20 +118,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverHomeTitle => 'Conductor';
-
-  @override
-  String get driverHomeOnlineTitle => 'Estás en línea';
-
-  @override
-  String get driverHomeOfflineTitle => 'Estás desconectado';
-
-  @override
-  String get driverHomeOnlineSubtitle =>
-      'Los pasajeros cercanos verán tu vehículo y podrás recibir solicitudes.';
-
-  @override
-  String get driverHomeOfflineSubtitle =>
-      'Activa el interruptor para comenzar a recibir viajes.';
 
   @override
   String get driverHomeRequestsTitle => 'Solicitudes de viaje';
@@ -473,6 +329,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverMyVehiclesAddFab => 'Agregar vehículo';
 
   @override
+  String get driverMyVehiclesAddLockedTitle => 'Aún no disponible';
+
+  @override
+  String get driverMyVehiclesAddLockedBody =>
+      'Por ahora solo puedes tener un vehículo registrado. Agregar otro es un beneficio que se habilita según tu antigüedad y evaluación como conductor. Si crees que ya corresponde, contacta a soporte.';
+
+  @override
+  String get driverMyVehiclesAddLockedCta => 'Entendido';
+
+  @override
   String get driverMyVehiclesEmpty =>
       'Aún no tienes vehículos registrados. Puedes agregar uno para ofrecer servicio.';
 
@@ -566,7 +432,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverProfileOnboardingBody =>
-      'Revisa el estado de cada bloque. Puedes completar o reenviar datos según el caso.';
+      'Revisa el estado de cada bloque. Solo podés editar lo pendiente o lo que soporte marcó para corregir.';
 
   @override
   String get driverProfileSectionOnboardingPersonal => 'Información personal';
@@ -595,6 +461,37 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get driverProfileOnboardingTapToContinue =>
       'Toca para abrir o actualizar';
+
+  @override
+  String get driverProfileOnboardingTapEditable =>
+      'Toca para completar o corregir';
+
+  @override
+  String get driverProfileOnboardingTapViewOnly =>
+      'Toca para ver (en revisión)';
+
+  @override
+  String get driverProfileOnboardingTapLocked => 'Toca para ver (verificado)';
+
+  @override
+  String get driverRegProfileSectionReadOnlyBanner =>
+      'Este bloque está en revisión. Podés consultar la información, pero no guardar cambios hasta que el equipo la procese.';
+
+  @override
+  String get driverRegProfileSectionLockedBanner =>
+      'Este bloque ya fue verificado y no puede modificarse desde la app.';
+
+  @override
+  String get driverRegErrorSectionNotEditable =>
+      'Esta sección no admite cambios en su estado actual.';
+
+  @override
+  String get driverRegErrorRateLimited =>
+      'Hay demasiadas solicitudes en poco tiempo. Espera un momento e intenta de nuevo.';
+
+  @override
+  String get driverRegErrorNoConnection =>
+      'Sin conexión a internet. Revisa tu señal e intenta de nuevo.';
 
   @override
   String get driverProfileSectionPersonal => 'Información personal';
@@ -789,16 +686,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverTripCompleteButton => 'Finalizar viaje';
 
   @override
-  String get driverTripOfferTitle => 'Nueva solicitud de viaje';
-
-  @override
   String driverTripOfferPrice(String amount) {
     return 'Precio estimado: $amount';
-  }
-
-  @override
-  String driverTripOfferEta(int minutes) {
-    return 'Tiempo estimado de llegada: $minutes min';
   }
 
   @override
@@ -825,21 +714,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solicitud de operaciones cargada. Revisa la lista de viajes abajo.';
 
   @override
-  String driverTripOfferPickupEta(String minutes) {
-    return '~$minutes min a la recogida';
-  }
-
-  @override
-  String driverTripOfferRouteEta(String minutes) {
-    return '~$minutes min al destino';
-  }
-
-  @override
-  String driverTripOfferRouteKm(String distance) {
-    return '$distance de ruta';
-  }
-
-  @override
   String get driverOfferErrorNoConnection => 'Sin conexión con el servidor.';
 
   @override
@@ -850,9 +724,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'El viaje ya fue asignado o no está disponible.';
 
   @override
-  String get driverOfferErrorGeneric => 'No se pudo actualizar la solicitud.';
-
-  @override
   String get driverTripErrorGeneric =>
       'No se pudo actualizar el estado del viaje.';
 
@@ -861,13 +732,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverTripNavigateDestination => 'Navegar al destino';
-
-  @override
-  String get driverTripNavAssistedTitle => 'Navegación asistida';
-
-  @override
-  String get driverTripNavAssistedSubtitle =>
-      'Se abrirá tu app de mapas o GPS (Maps, Waze…)';
 
   @override
   String get driverRegisteredImagesMenu => 'Imágenes registradas';
@@ -916,6 +780,9 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get driverTripChatEmptyState =>
       'Aún no hay mensajes.\nEnvía uno para iniciar la conversación.';
+
+  @override
+  String get driverTripChatMessageHint => 'Escribe un mensaje';
 
   @override
   String get driverTripReactivate => 'Volver a recibir viajes';
@@ -975,7 +842,18 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get driverMapDriverPosition => 'Tu posición';
+  String get driverNotifyChatTitle => 'Nuevo mensaje de chat';
+
+  @override
+  String driverNotifyChatBody(String sender, String message) {
+    return '$sender: $message';
+  }
+
+  @override
+  String get driverNotifyChatSenderPassenger => 'Pasajero';
+
+  @override
+  String get driverNotifyChatSenderDriver => 'Conductor';
 
   @override
   String get driverMapPickupPoint => 'Punto de recogida';
@@ -984,7 +862,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverMapDestinationPoint => 'Destino';
 
   @override
-  String get driverMapCalculatingRoute => 'Calculando ruta...';
+  String get driverDirectionsTollOnRoute => 'Peaje en ruta';
+
+  @override
+  String get driverDirectionsTollSnippet =>
+      'Ajusta velocidad y carril con antelación.';
+
+  @override
+  String get driverDirectionsRelevantIntersection => 'Intersección relevante';
 
   @override
   String get driverTripRatingHeaderTitle => 'Viaje completado';
@@ -1003,29 +888,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverTripRatingSkip => 'Omitir por ahora';
 
   @override
-  String get driverTripRatingSummaryLabel => 'Resumen del viaje';
-
-  @override
   String get driverTripRatingPassengerDefault => 'Pasajero';
-
-  @override
-  String get driverTripRatingOriginDefault => 'Recogida';
-
-  @override
-  String get driverTripRatingDestinationDefault => 'Destino';
-
-  @override
-  String driverTripRatingDistanceKm(String distance) {
-    return '$distance km';
-  }
-
-  @override
-  String driverTripRatingEtaMinutes(String minutes) {
-    return '~$minutes min';
-  }
-
-  @override
-  String get driverTripRatingPriceLabel => 'Tarifa';
 
   @override
   String get driverTripRatingYourRating => 'Tu valoración';
@@ -1039,9 +902,34 @@ class AppLocalizationsEs extends AppLocalizations {
       '¿Qué destacó del pasajero? (múltiple)';
 
   @override
-  String driverTripRatingRouteHint(String origin, String destination) {
-    return '$origin → $destination';
-  }
+  String get driverRatingFallbackDelay => 'Demasiado tiempo de espera';
+
+  @override
+  String get driverRatingFallbackLocation => 'Dificultad para encontrarnos';
+
+  @override
+  String get driverRatingFallbackRespect => 'Falta de respeto';
+
+  @override
+  String get driverRatingFallbackPayment => 'Problema con el pago';
+
+  @override
+  String get driverRatingFallbackOther => 'Otro inconveniente';
+
+  @override
+  String get driverRatingFallbackPunctual => 'Puntual y listo para salir';
+
+  @override
+  String get driverRatingFallbackRespectful => 'Trato respetuoso';
+
+  @override
+  String get driverRatingFallbackClearPickup => 'Recogida clara y rápida';
+
+  @override
+  String get driverRatingFallbackRecommended => 'Pasajero recomendado';
+
+  @override
+  String get driverRatingFallbackExcellent => 'Excelente experiencia';
 
   @override
   String get driverRegImageTakePhoto => 'Tomar foto';
@@ -1247,6 +1135,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverRegValidationRequired => 'Requerido';
 
   @override
+  String get driverRegValidationMinAge18 =>
+      'Debes tener al menos 18 años para registrarte como conductor.';
+
+  @override
+  String get driverRegAgeRequirementHint =>
+      'El registro y uso de la app de conductor están reservados a personas mayores de 18 años.';
+
+  @override
+  String get driverRegAgeRequirementFieldHelper =>
+      'Mayores de 18 años. El calendario solo permite fechas válidas.';
+
+  @override
+  String get driverRegAgeRequirementDialogTitle => 'Mayoría de edad requerida';
+
+  @override
+  String get driverRegAgeRequirementDialogBody =>
+      'Debes tener al menos 18 años para registrarte como conductor. Corrige la fecha de nacimiento para continuar.';
+
+  @override
   String get driverRegValidationSelectOption => 'Selecciona una opción';
 
   @override
@@ -1384,16 +1291,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverRegSectionVehicleData => 'Datos del vehículo';
 
   @override
-  String get driverRegSubtitleVehicleData =>
-      'Marca, modelo, año y color (como en el documento o póliza).';
-
-  @override
   String get driverRegSectionVehicleClassification =>
       'Clasificación del vehículo';
-
-  @override
-  String get driverRegSubtitleVehicleClassification =>
-      'Tipo, categoría y servicios permitidos según el catálogo (requerido por el servidor).';
 
   @override
   String get driverRegFieldVehicleType => 'Tipo de vehículo';
@@ -1415,13 +1314,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverRegCatalogTransportStepTitle => '1. ¿Qué vas a conducir?';
-
-  @override
-  String get driverRegCatalogModelLockedTitle => 'Marca y modelo';
-
-  @override
-  String get driverRegCatalogModelLockedHint =>
-      'Según tu selección arriba. Puedes cambiar marca o modelo en la misma sección si hace falta.';
 
   @override
   String get serviceTypeNameStandard => 'Estándar';
@@ -1456,13 +1348,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverRegCatalogUnits => 'Unidades de medida';
-
-  @override
-  String get driverRegCatalogSourceFallback =>
-      'Datos locales de respaldo (ejecuta las migraciones para el catálogo completo en el servidor).';
-
-  @override
-  String get driverRegCatalogSourceDatabase => 'Catálogo desde base de datos';
 
   @override
   String get driverRegCatalogLoad => 'Cargar catálogo';
@@ -1656,6 +1541,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverRegActionSave => 'Guardar';
 
   @override
+  String get driverRegCancelTitle => 'Cancelar registro';
+
+  @override
+  String get driverRegCancelBodyUser =>
+      'Por seguridad, los datos registrados hasta ahora no se guardarán y se eliminará el avance de este registro. Podrás empezar de nuevo cuando quieras.';
+
+  @override
+  String get driverRegCancelBodyVehicle =>
+      'Por seguridad, el vehículo que estás registrando no se guardará. Tu cuenta y el resto de vehículos no se modifican.';
+
+  @override
+  String get driverRegCancelConfirm => 'Sí, cancelar';
+
+  @override
+  String get driverRegCancelKeepGoing => 'Seguir';
+
+  @override
   String get driverRegTitleProfileCompletion => 'Completar registro';
 
   @override
@@ -1752,4 +1654,140 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverRegColorGold => 'Dorado';
+
+  @override
+  String get driverLegalSectionTitle => 'Legal y privacidad';
+
+  @override
+  String get driverLegalSectionSubtitle =>
+      'Consulta los documentos aplicables a tu cuenta y gestiona tus datos.';
+
+  @override
+  String get driverLegalPrivacyPolicy => 'Política de privacidad';
+
+  @override
+  String get driverLegalTermsOfService => 'Términos de servicio';
+
+  @override
+  String get driverLegalDeleteAccountTitle => 'Eliminar cuenta';
+
+  @override
+  String driverLegalDeleteAccountBody(int graceDays) {
+    return 'Tu cuenta entrará en eliminación programada durante $graceDays días. Al confirmar se cerrará tu sesión y no podrás usar la app. Para recuperarla, inicia sesión con tus credenciales y cancela la solicitud antes de la fecha límite.';
+  }
+
+  @override
+  String get driverLegalDeleteAccountAction => 'Ver cómo solicitar';
+
+  @override
+  String get driverLegalDeleteAccountConfirmSchedule => 'Programar eliminación';
+
+  @override
+  String get driverLegalDeleteAccountScheduling => 'Programando eliminación…';
+
+  @override
+  String get driverLegalDeleteAccountScheduledSuccess =>
+      'Eliminación programada. Tu sesión se cerró; inicia sesión para recuperar tu cuenta antes de la fecha límite.';
+
+  @override
+  String get driverLoginAccountDeletionPendingTitle => 'Eliminación programada';
+
+  @override
+  String driverLoginAccountDeletionPendingBody(String effectiveDate) {
+    return 'Esta cuenta tiene una eliminación programada para el $effectiveDate. No puedes usar la app hasta recuperarla.';
+  }
+
+  @override
+  String get driverLoginAccountDeletionPendingDateFallback =>
+      'la fecha indicada';
+
+  @override
+  String get driverLoginAccountDeletionRecover => 'Recuperar cuenta';
+
+  @override
+  String get driverLoginAccountDeletionDismiss => 'Entendido';
+
+  @override
+  String get driverLoginAccountDeletionRecovering => 'Recuperando cuenta…';
+
+  @override
+  String get driverLoginAccountDeletionRecoverSuccess =>
+      'Cuenta recuperada. Bienvenido de nuevo.';
+
+  @override
+  String get driverLegalDeleteAccountPendingTitle => 'Eliminación programada';
+
+  @override
+  String driverLegalDeleteAccountPendingBody(
+    String effectiveDate,
+    int daysRemaining,
+  ) {
+    return 'Tu cuenta se eliminará el $effectiveDate. Quedan $daysRemaining días para cancelar y reactivar tu acceso.';
+  }
+
+  @override
+  String get driverLegalDeleteAccountPendingDateFallback => 'la fecha indicada';
+
+  @override
+  String get driverLegalDeleteAccountCancelAction => 'Cancelar eliminación';
+
+  @override
+  String get driverLegalDeleteAccountCancelling => 'Cancelando eliminación…';
+
+  @override
+  String get driverLegalDeleteAccountCancelSuccess =>
+      'Eliminación cancelada. Tu cuenta sigue activa.';
+
+  @override
+  String get driverPlayNotificationDisclosureTitle =>
+      'Notificaciones de viajes';
+
+  @override
+  String get driverPlayNotificationDisclosureBody =>
+      'Texi necesita enviarte notificaciones cuando haya solicitudes de viaje, cambios de estado o mensajes del pasajero mientras trabajas como conductor.';
+
+  @override
+  String get driverPlayLocationDisclosureTitle =>
+      'Ubicación para recibir viajes';
+
+  @override
+  String get driverPlayLocationDisclosureBody =>
+      'Texi usa tu ubicación para mostrarte en el mapa, asignarte viajes cercanos y compartir tu posición con el pasajero durante un viaje activo.';
+
+  @override
+  String get driverPlayDisclosureContinue => 'Continuar';
+
+  @override
+  String get driverLegalLoginHint =>
+      'Al continuar, aceptas nuestras políticas de uso y términos de servicio.';
+
+  @override
+  String get driverLegalLoginPrefix => 'Al continuar, aceptas nuestras ';
+
+  @override
+  String get driverLegalLoginConjunction => ' y ';
+
+  @override
+  String get driverLegalActivatePrefix => 'Al activar aceptas nuestras ';
+
+  @override
+  String get driverLegalUsagePolicies => 'políticas de uso';
+
+  @override
+  String get driverLegalRegistrationHint =>
+      'Al activar aceptas nuestras políticas de uso.';
+
+  @override
+  String get driverPlayCameraDisclosureTitle => 'Acceso a la cámara';
+
+  @override
+  String get driverPlayCameraDisclosureBody =>
+      'Texi usa la cámara para capturar documentos de identidad, licencia y fotos de tu vehículo durante el registro. Las imágenes se envían de forma segura para verificación.';
+
+  @override
+  String get driverPlayGalleryDisclosureTitle => 'Acceso a fotos';
+
+  @override
+  String get driverPlayGalleryDisclosureBody =>
+      'Texi accede a fotos que elijas de tu galería para el registro de conductor. Solo se sube la imagen que selecciones.';
 }

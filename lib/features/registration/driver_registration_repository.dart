@@ -4,9 +4,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import '../../core/config/driver_backend_config.dart';
 import '../../core/device/driver_device_telemetry.dart';
 import '../../core/media/driver_app_media_uploader.dart';
+import '../../core/network/driver_api_client.dart';
 import '../../core/notifications/driver_push_token_service.dart';
 import 'driver_registration_http_interceptor.dart';
 import 'driver_registration_models.dart';
@@ -26,29 +26,11 @@ class DriverRegistrationRepository {
     Dio? geoDio,
     Dio? usersDio,
     FlutterSecureStorage? storage,
-  })  : _geoDio = geoDio ??
-            Dio(
-              BaseOptions(
-                baseUrl: DriverBackendConfig.baseUrl,
-                connectTimeout: const Duration(seconds: 20),
-                receiveTimeout: const Duration(seconds: 20),
-                headers: const {
-                  'Accept': 'application/json',
-                },
-              ),
-            ),
+  })  : _geoDio = geoDio ?? DriverApiClient.createGeoDio(),
         _usersDio = usersDio ??
-            (Dio(
-              BaseOptions(
-                baseUrl: DriverBackendConfig.baseUrl,
-                connectTimeout: const Duration(seconds: 20),
-                receiveTimeout: const Duration(seconds: 60),
-                headers: const {
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json',
-                },
-              ),
-            )..interceptors.add(DriverRegistrationRequestIdInterceptor())),
+            DriverApiClient.createUsersDio(
+              interceptors: [DriverRegistrationRequestIdInterceptor()],
+            ),
         _storage = storage ?? const FlutterSecureStorage();
 
   final Dio _geoDio;
@@ -58,8 +40,8 @@ class DriverRegistrationRepository {
   late final DriverAppMediaUploader _mediaUploader =
       DriverAppMediaUploader(apiDio: _usersDio);
 
-  static const _tokenKey = 'driver_token';
-  static const _refreshTokenKey = 'driver_refresh_token';
+  static const _tokenKey = DriverApiClient.tokenStorageKey;
+  static const _refreshTokenKey = DriverApiClient.refreshTokenStorageKey;
 
   Future<List<GeoCountry>> fetchCountries() async {
     final response = await _geoDio.get<Map<String, dynamic>>(
@@ -334,8 +316,7 @@ class DriverRegistrationRepository {
           : 'La conexión se cerró antes de recibir la respuesta completa. ($underlyingStr)';
     }
     if (e.type == DioExceptionType.connectionError) {
-      final hint = _shortUnderlyingError(e);
-      return 'No se pudo establecer conexión con el servidor.${hint.isNotEmpty ? ' $hint' : ''}';
+      return 'Sin conexión a internet. Revisa tu señal e intenta de nuevo.';
     }
     final fromJson = _extractErrorMessage(body);
     if (fromJson != 'Error del servidor') return fromJson;
@@ -757,5 +738,67 @@ class DriverRegistrationRepository {
       _logDioIfDebug('submitVehicleImages', e);
       throw DriverRegistrationException(_messageFromDioException(e));
     }
+  }
+
+  /// Cancela registro incompleto (`DELETE /api/v2/driver/registration/session`).
+  Future<void> abortRegistrationSession() async {
+    final token = await _storage.read(key: _tokenKey);
+    if (token == null || token.isEmpty) {
+      throw DriverRegistrationException('Sesión no disponible.');
+    }
+    try {
+      final response = await _usersDio.delete<Map<String, dynamic>>(
+        '/api/v2/driver/registration/session',
+        data: const {'confirm': true},
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+        ),
+      );
+      final data = response.data;
+      if (data == null) throw DriverRegistrationException('Respuesta vacía');
+      if (data['success'] != true) {
+        throw DriverRegistrationException(_extractErrorMessage(data));
+      }
+    } on DioException catch (e) {
+      _logDioIfDebug('abortRegistrationSession', e);
+      throw DriverRegistrationException(_messageFromDioException(e));
+    }
+  }
+
+  /// Soft-archive del vehículo en curso (`POST /api/v2/vehicles/:id/archive`).
+  Future<void> archiveVehicleInProgress(String vehicleAssetId) async {
+    final token = await _storage.read(key: _tokenKey);
+    if (token == null || token.isEmpty) {
+      throw DriverRegistrationException('Sesión no disponible.');
+    }
+    final id = vehicleAssetId.trim();
+    if (id.isEmpty) {
+      throw DriverRegistrationException('Vehículo no disponible para cancelar.');
+    }
+    try {
+      final response = await _usersDio.post<Map<String, dynamic>>(
+        '/api/v2/vehicles/${Uri.encodeComponent(id)}/archive',
+        data: const {
+          'confirm': true,
+          'reason': 'registration_cancelled',
+        },
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+        ),
+      );
+      final data = response.data;
+      if (data == null) throw DriverRegistrationException('Respuesta vacía');
+      if (data['success'] != true) {
+        throw DriverRegistrationException(_extractErrorMessage(data));
+      }
+    } on DioException catch (e) {
+      _logDioIfDebug('archiveVehicleInProgress', e);
+      throw DriverRegistrationException(_messageFromDioException(e));
+    }
+  }
+
+  Future<void> clearStoredAuthTokens() async {
+    await _storage.delete(key: _tokenKey);
+    await _storage.delete(key: _refreshTokenKey);
   }
 }

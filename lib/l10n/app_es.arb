@@ -1,72 +1,19 @@
 {
   "@@locale": "es",
-  "appName": "Texi",
   "driverAppTitle": "Texi Conductor",
-  "splashGettingLocation": "Obteniendo tu ubicación...",
-  "loginWelcome": "Bienvenido",
-  "loginSubtitle": "Ingresa tu número para continuar",
   "loginCode": "Código",
   "loginPhone": "Teléfono",
-  "loginContinue": "Continuar",
-  "loginErrorInvalidCredentials": "No se pudo iniciar sesión. Revisa tu número.",
-  "loginPhoneRequired": "Ingresa tu número de teléfono",
-  "homeRequestRide": "Solicitar viaje",
-  "homeNearbyDrivers": "{count} conductor cercano",
-  "@homeNearbyDrivers": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
-  "homeNearbyDriversNone": "No hay conductores cercanos en este momento",
-  "homeUpdatesEvery": "Se actualiza cada {seconds} segundos",
-  "@homeUpdatesEvery": {
-    "placeholders": {
-      "seconds": {"type": "int"}
-    }
-  },
-  "homeLocationError": "Activa la ubicación para ver el mapa y conductores cercanos.",
-  "homeLocationErrorGps": "No se pudo obtener tu ubicación. Revisa el GPS.",
-  "homeRetry": "Reintentar",
   "tripOrigin": "Origen",
   "tripDestination": "Destino",
-  "tripYourLocation": "Tu ubicación actual",
-  "tripWherePickup": "¿Dónde te recogemos?",
-  "tripUseMyLocation": "Usar mi ubicación actual",
-  "tripSearchAddress": "Buscar dirección",
-  "tripChooseOnMap": "Elegir en el mapa",
-  "tripUseAsPickup": "Usar como punto de recogida",
-  "tripUseAsDestination": "Usar como destino",
-  "tripMoveMapSetPickup": "Mueve el mapa y toca el botón para fijar dónde te recogerán.",
-  "tripMoveMapSetDestination": "Mueve el mapa y toca el botón para fijar el destino.",
-  "tripTapMapDestination": "Toca el mapa o elige una opción abajo",
-  "tripSeePrices": "Ver precios",
-  "tripSearchPlaceholder": "Buscar dirección...",
-  "tripUseMapCenter": "Usar esta ubicación",
-  "tripWhereTo": "¿A dónde vas?",
-  "tripSearchError": "No se encontró la dirección",
-  "tripSearchingAddress": "Buscando...",
-  "tripNoCoverageInZone": "No tenemos cobertura del servicio en esta zona por el momento. Prueba en otra ubicación o acércate a una zona de servicio.",
-  "tripNoDriversAvailable": "No hay conductores disponibles en este momento. Intenta de nuevo en unos instantes.",
-  "tripNext": "Siguiente",
-  "quoteTitle": "Elige tu viaje",
-  "quoteSubtitle": "Selecciona un tipo de servicio",
-  "quotePerTrip": "por viaje",
-  "quoteConfirm": "Confirmar",
-  "confirmTitle": "Confirma tu viaje",
-  "confirmFrom": "Desde",
-  "confirmTo": "Hasta",
-  "confirmRequestRide": "Solicitar viaje",
-  "searchingTitle": "Buscando conductor",
-  "searchingSubtitle": "Estamos encontrando la mejor opción para ti",
   "commonCancel": "Cancelar",
+  "commonClose": "Cerrar",
   "commonLoading": "Cargando...",
   "commonError": "Algo salió mal",
   "settingsLanguage": "Idioma",
   "languageSpanish": "Español",
   "languageEnglish": "English",
-
   "driverLoginWelcome": "Bienvenido, conductor",
-  "driverLoginSubtitle": "Ingresa con tu número y contraseña para comenzar a recibir viajes.",
+  "driverLoginSubtitle": "O ingresa tu número y contraseña si ya eres un conductor Texi.",
   "driverLoginPassword": "Contraseña",
   "driverLoginButton": "Ingresar",
   "driverLoginPhoneAndPasswordRequired": "Ingresa tu número y contraseña",
@@ -79,16 +26,13 @@
   "driverLoginErrorInvalidResponse": "Respuesta inválida del servidor. Intenta nuevamente.",
   "driverLoginErrorTokenMissing": "No se recibió token de sesión. Intenta nuevamente.",
   "driverLoginErrorUnexpected": "Error inesperado al iniciar sesión. Intenta nuevamente.",
-  "driverLoginRegisterHint": "¿No tienes credenciales? Puedes registrarte como conductor.",
+  "driverLoginErrorSessionSuperseded": "Tu sesión se abrió en otro dispositivo.",
+  "driverLoginErrorTripOperationalLock": "Terminá o cancelá tu viaje actual antes de iniciar sesión en otro dispositivo.",
+  "driverLoginErrorDeviceBound": "Esta cuenta está vinculada a otro dispositivo. Contactá a soporte para cambiar de teléfono.",
   "driverLoginRegisterCta": "Registrarme",
   "driverLoginRegisterBannerTitle": "¿Nuevo conductor?",
   "driverLoginRegisterBannerSubtitle": "Crear cuenta solo toma unos minutos. Empieza a recibir viajes con Texi.",
-
   "driverHomeTitle": "Conductor",
-  "driverHomeOnlineTitle": "Estás en línea",
-  "driverHomeOfflineTitle": "Estás desconectado",
-  "driverHomeOnlineSubtitle": "Los pasajeros cercanos verán tu vehículo y podrás recibir solicitudes.",
-  "driverHomeOfflineSubtitle": "Activa el interruptor para comenzar a recibir viajes.",
   "driverHomeRequestsTitle": "Solicitudes de viaje",
   "driverHomeRequestsEmpty": "Aquí verás las solicitudes de los pasajeros\ncuando estés en línea.",
   "driverHomeMiniStatusOnline": "En línea",
@@ -102,8 +46,12 @@
   "driverHomeCreditsLowWarning": "Tu saldo ({balance}) está cerca del mínimo ({min}) para permanecer en línea. Recargá créditos pronto para evitar que te desconectemos automáticamente.",
   "@driverHomeCreditsLowWarning": {
     "placeholders": {
-      "balance": { "type": "String" },
-      "min": { "type": "String" }
+      "balance": {
+        "type": "String"
+      },
+      "min": {
+        "type": "String"
+      }
     }
   },
   "driverFcmOpenedTripOfferHint": "Si acabamos de cargar la solicitud desde la alerta, revisa la lista abajo. Si no aparece, puede haber expirado o falló la conexión: vuelve a ponerte en línea.",
@@ -111,7 +59,11 @@
   "driverHomeMiniVehicleEmpty": "Vehículo",
   "driverHomeMiniRating": "{rating} ★",
   "@driverHomeMiniRating": {
-    "placeholders": { "rating": { "type": "String" } }
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      }
+    }
   },
   "driverLogout": "Cerrar sesión",
   "driverEarningsCreditsMenu": "Ingresos y créditos",
@@ -162,19 +114,25 @@
   "driverMyVehiclesTitle": "Mis vehículos",
   "driverMyVehiclesRefreshTooltip": "Actualizar lista",
   "driverMyVehiclesAddFab": "Agregar vehículo",
+  "driverMyVehiclesAddLockedTitle": "Aún no disponible",
+  "driverMyVehiclesAddLockedBody": "Por ahora solo puedes tener un vehículo registrado. Agregar otro es un beneficio que se habilita según tu antigüedad y evaluación como conductor. Si crees que ya corresponde, contacta a soporte.",
+  "driverMyVehiclesAddLockedCta": "Entendido",
   "driverMyVehiclesEmpty": "Aún no tienes vehículos registrados. Puedes agregar uno para ofrecer servicio.",
   "driverMyVehiclesRetry": "Reintentar",
   "driverMyVehiclesPhotosPendingBadge": "Galería incompleta: {uploaded} de {required} fotos obligatorias",
   "@driverMyVehiclesPhotosPendingBadge": {
     "placeholders": {
-      "uploaded": {"type": "int"},
-      "required": {"type": "int"}
+      "uploaded": {
+        "type": "int"
+      },
+      "required": {
+        "type": "int"
+      }
     }
   },
   "driverMyVehiclesCompletePhotosCta": "Completar fotos",
   "driverMyVehiclesCompletePhotosTitle": "Fotos del vehículo",
   "driverMyVehiclesPhotosSavedSnackbar": "Fotos guardadas correctamente",
-
   "driverOnlineAuthTitle": "Confirma tu identidad",
   "driverOnlineAuthSubtitle": "Después te pediremos huella, rostro o PIN del dispositivo. Así protegemos tu cuenta al activar el servicio.",
   "driverOnlineAuthContinue": "Continuar",
@@ -182,7 +140,6 @@
   "driverOnlineAuthReasonBiometric": "Confirma tu identidad para conectarte como conductor",
   "driverOnlineAuthReasonDeviceCredential": "Confirma con tu PIN o patrón para conectarte",
   "driverOnlineAuthVerifyFailed": "No se pudo verificar la identidad del dispositivo",
-
   "driverProfileMenu": "Mi perfil",
   "driverProfileTitle": "Mi perfil",
   "driverProfileBack": "Volver al inicio",
@@ -197,7 +154,7 @@
   "driverProfileVerificationTitle": "Estado de la cuenta: En revisión",
   "driverProfileVerificationBody": "Tu documentación fue recibida correctamente. Nuestro equipo la está validando para habilitar tu servicio lo antes posible.",
   "driverProfileOnboardingTitle": "Carga y verificaciones",
-  "driverProfileOnboardingBody": "Revisa el estado de cada bloque. Puedes completar o reenviar datos según el caso.",
+  "driverProfileOnboardingBody": "Revisa el estado de cada bloque. Solo podés editar lo pendiente o lo que soporte marcó para corregir.",
   "driverProfileSectionOnboardingPersonal": "Información personal",
   "driverProfileSectionOnboardingIdentity": "Documento de identidad",
   "driverProfileSectionOnboardingLicense": "Licencia de conducir",
@@ -207,6 +164,14 @@
   "driverProfileOnboardingStatusVerified": "Verificado",
   "driverProfileOnboardingStatusAction": "Ajuste solicitado",
   "driverProfileOnboardingTapToContinue": "Toca para abrir o actualizar",
+  "driverProfileOnboardingTapEditable": "Toca para completar o corregir",
+  "driverProfileOnboardingTapViewOnly": "Toca para ver (en revisión)",
+  "driverProfileOnboardingTapLocked": "Toca para ver (verificado)",
+  "driverRegProfileSectionReadOnlyBanner": "Este bloque está en revisión. Podés consultar la información, pero no guardar cambios hasta que el equipo la procese.",
+  "driverRegProfileSectionLockedBanner": "Este bloque ya fue verificado y no puede modificarse desde la app.",
+  "driverRegErrorSectionNotEditable": "Esta sección no admite cambios en su estado actual.",
+  "driverRegErrorRateLimited": "Hay demasiadas solicitudes en poco tiempo. Espera un momento e intenta de nuevo.",
+  "driverRegErrorNoConnection": "Sin conexión a internet. Revisa tu señal e intenta de nuevo.",
   "driverProfileSectionPersonal": "Información personal",
   "driverProfileSectionContact": "Contacto",
   "driverProfileSectionLocation": "Ubicación",
@@ -216,7 +181,9 @@
   "driverAppCreditsBalance": "Saldo: {balance}",
   "@driverAppCreditsBalance": {
     "placeholders": {
-      "balance": {"type": "String"}
+      "balance": {
+        "type": "String"
+      }
     }
   },
   "driverAppCreditsProgramOn": "Comisión por viaje activa",
@@ -224,13 +191,17 @@
   "driverAppCreditsDetailPercent": "{percent}% sobre el monto del viaje",
   "@driverAppCreditsDetailPercent": {
     "placeholders": {
-      "percent": {"type": "String"}
+      "percent": {
+        "type": "String"
+      }
     }
   },
   "driverAppCreditsDetailFixed": "{amount} por viaje completado",
   "@driverAppCreditsDetailFixed": {
     "placeholders": {
-      "amount": {"type": "String"}
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "driverProfileFieldName": "Nombre",
@@ -245,7 +216,6 @@
   "driverProfileGenderOther": "Otro",
   "driverProfileValueEmpty": "—",
   "driverProfileDefaultName": "Conductor TEXI",
-
   "driverOnlineErrorNoInternet": "Sin conexión a internet. Conéctate para ponerte en línea.",
   "driverOnlineErrorNoGps": "Activa los permisos de ubicación para poder compartir tu posición.",
   "driverOnlineErrorGpsServiceOff": "Activa el GPS del dispositivo (ubicación) para poder ponerte en línea y recibir viajes.",
@@ -269,7 +239,6 @@
   "driverOnlineErrorRbacForbidden": "Tu cuenta no tiene permiso para esta acción. Si sigue igual, cierra sesión y vuelve a entrar o contacta soporte.",
   "driverOnlineErrorRbacSession": "No pudimos validar tu sesión. Cierra sesión y vuelve a iniciar sesión.",
   "driverOnlineErrorRbacTechnical": "Hubo un problema al verificar permisos. Intenta de nuevo en unos segundos.",
-
   "driverHomeOnlineRequirementsHint": "Solo aplica para recibir viajes: el servidor debe verte en línea, con ubicación y poder enviarte avisos. Otras pantallas (como tu perfil) no lo requieren.",
   "driverHomeOpenSystemLocationSettings": "Abrir ajustes de ubicación (GPS)",
   "driverHomeOpenAppPermissionSettings": "Abrir permisos de la app",
@@ -280,26 +249,25 @@
   "driverTripStatusCompleted": "Viaje completado",
   "driverTripStatusCancelled": "Viaje cancelado",
   "driverTripStatusInProgress": "Viaje en curso",
-
   "driverTripEstimatedPrice": "Precio estimado: {amount}",
   "@driverTripEstimatedPrice": {
-    "placeholders": { "amount": { "type": "String" } }
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
   },
-
   "driverTripArrivedButton": "Llegué al punto de recogida",
   "driverTripStartButton": "Iniciar viaje",
   "driverTripCompleteButton": "Finalizar viaje",
-
-  "driverTripOfferTitle": "Nueva solicitud de viaje",
   "driverTripOfferPrice": "Precio estimado: {amount}",
   "@driverTripOfferPrice": {
-    "placeholders": { "amount": { "type": "String" } }
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
   },
-  "driverTripOfferEta": "Tiempo estimado de llegada: {minutes} min",
-  "@driverTripOfferEta": {
-    "placeholders": { "minutes": { "type": "int" } }
-  },
-
   "driverTripReject": "Rechazar",
   "driverTripAccept": "Aceptar",
   "driverTripOfferPriceTbd": "A acordar",
@@ -307,28 +275,12 @@
   "driverTripOfferBadgeOperations": "Operaciones",
   "driverTripOfferOperationsSubtitle": "Asignación desde el portal de operaciones",
   "driverFcmOpenedTripOfferOperationsHint": "Solicitud de operaciones cargada. Revisa la lista de viajes abajo.",
-  "driverTripOfferPickupEta": "~{minutes} min a la recogida",
-  "@driverTripOfferPickupEta": {
-    "placeholders": { "minutes": { "type": "String" } }
-  },
-  "driverTripOfferRouteEta": "~{minutes} min al destino",
-  "@driverTripOfferRouteEta": {
-    "placeholders": { "minutes": { "type": "String" } }
-  },
-  "driverTripOfferRouteKm": "{distance} de ruta",
-  "@driverTripOfferRouteKm": {
-    "placeholders": { "distance": { "type": "String" } }
-  },
-
   "driverOfferErrorNoConnection": "Sin conexión con el servidor.",
   "driverOfferErrorExpired": "Esta oferta ya no está disponible.",
   "driverOfferErrorTaken": "El viaje ya fue asignado o no está disponible.",
-  "driverOfferErrorGeneric": "No se pudo actualizar la solicitud.",
   "driverTripErrorGeneric": "No se pudo actualizar el estado del viaje.",
   "driverTripNavigatePickup": "Navegar al origen",
   "driverTripNavigateDestination": "Navegar al destino",
-  "driverTripNavAssistedTitle": "Navegación asistida",
-  "driverTripNavAssistedSubtitle": "Se abrirá tu app de mapas o GPS (Maps, Waze…)",
   "driverRegisteredImagesMenu": "Imágenes registradas",
   "driverTripChatOpenCta": "Chat seguro",
   "driverTripChatTitle": "Chat del viaje",
@@ -343,26 +295,38 @@
   "driverTripChatErrorPhase": "El chat solo está disponible antes de iniciar el viaje.",
   "driverTripChatErrorSendReceive": "No se pudo enviar/recibir chat ({code}). Revisa la conexión.",
   "@driverTripChatErrorSendReceive": {
-    "placeholders": { "code": { "type": "String" } }
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
   },
   "driverTripChatEmptyState": "Aún no hay mensajes.\nEnvía uno para iniciar la conversación.",
+  "driverTripChatMessageHint": "Escribe un mensaje",
   "driverTripReactivate": "Volver a recibir viajes",
   "driverTripSnackbarNavigationFailed": "No se pudo abrir la navegación ({label})",
   "@driverTripSnackbarNavigationFailed": {
-    "placeholders": { "label": { "type": "String" } }
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
   },
   "driverTripBackgroundPromptTitle": "¿Mantener servicio activo?",
   "driverTripBackgroundPromptDisconnect": "Desconectar",
   "driverTripBackgroundPromptKeep": "Mantener activo",
   "driverTripBackgroundPromptBody": "Estuviste fuera de la app por más de 15 minutos.\nSi deseas seguir recibiendo solicitudes, confirma ahora.\n\nDesconexión automática en {seconds}s",
   "@driverTripBackgroundPromptBody": {
-    "placeholders": { "seconds": { "type": "String" } }
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
   },
   "driverHomeBackgroundLocationTitle": "Ubicación en segundo plano",
   "driverHomeBackgroundLocationBody": "Para que los pasajeros puedan encontrarte cuando la app no está a la vista, concede ubicación «Todo el tiempo» en el siguiente paso. Solo se usa mientras estás conectado como conductor. Puedes cambiarlo en los ajustes del sistema cuando quieras.",
   "driverHomeBackgroundLocationLater": "Ahora no",
   "driverHomeBackgroundLocationContinue": "Continuar",
-
   "driverForegroundNotifyTitle": "Texi · Modo conductor",
   "driverForegroundNotifyBodySearching": "Buscando viajes. El GPS sigue activo para ubicarte.",
   "driverForegroundNotifyBodyTrip": "Viaje activo · compartiendo ubicación.",
@@ -370,48 +334,59 @@
   "@driverForegroundNotifyBodyOffers": {
     "description": "Texto del servicio en primer plano con ofertas pendientes",
     "placeholders": {
-      "count": { "type": "num" }
+      "count": {
+        "type": "num"
+      }
     }
   },
-
-  "driverMapDriverPosition": "Tu posición",
+  "driverNotifyChatTitle": "Nuevo mensaje de chat",
+  "driverNotifyChatBody": "{sender}: {message}",
+  "@driverNotifyChatBody": {
+    "description": "Cuerpo de notificación local de mensaje de chat en viaje",
+    "placeholders": {
+      "sender": {
+        "type": "String"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "driverNotifyChatSenderPassenger": "Pasajero",
+  "driverNotifyChatSenderDriver": "Conductor",
   "driverMapPickupPoint": "Punto de recogida",
   "driverMapDestinationPoint": "Destino",
-  "driverMapCalculatingRoute": "Calculando ruta...",
-
+  "driverDirectionsTollOnRoute": "Peaje en ruta",
+  "driverDirectionsTollSnippet": "Ajusta velocidad y carril con antelación.",
+  "driverDirectionsRelevantIntersection": "Intersección relevante",
   "driverTripRatingHeaderTitle": "Viaje completado",
   "driverTripRatingTitle": "Califica al pasajero",
   "driverTripRatingSubtitle": "Tu opinión nos ayuda a mantener un buen servicio para todos.",
   "driverTripRatingSubmit": "Enviar calificación",
   "driverTripRatingSkip": "Omitir por ahora",
-  "driverTripRatingSummaryLabel": "Resumen del viaje",
   "driverTripRatingPassengerDefault": "Pasajero",
-  "driverTripRatingOriginDefault": "Recogida",
-  "driverTripRatingDestinationDefault": "Destino",
-  "driverTripRatingDistanceKm": "{distance} km",
-  "@driverTripRatingDistanceKm": {
-    "placeholders": { "distance": { "type": "String" } }
-  },
-  "driverTripRatingEtaMinutes": "~{minutes} min",
-  "@driverTripRatingEtaMinutes": {
-    "placeholders": { "minutes": { "type": "String" } }
-  },
-  "driverTripRatingPriceLabel": "Tarifa",
   "driverTripRatingYourRating": "Tu valoración",
   "driverTripRatingFeedbackPromptLow": "¿Qué afectó el viaje? (múltiple)",
   "driverTripRatingFeedbackPromptHigh": "¿Qué destacó del pasajero? (múltiple)",
-  "driverTripRatingRouteHint": "{origin} → {destination}",
-  "@driverTripRatingRouteHint": {
-    "placeholders": {
-      "origin": { "type": "String" },
-      "destination": { "type": "String" }
-    }
-  },
+  "driverRatingFallbackDelay": "Demasiado tiempo de espera",
+  "driverRatingFallbackLocation": "Dificultad para encontrarnos",
+  "driverRatingFallbackRespect": "Falta de respeto",
+  "driverRatingFallbackPayment": "Problema con el pago",
+  "driverRatingFallbackOther": "Otro inconveniente",
+  "driverRatingFallbackPunctual": "Puntual y listo para salir",
+  "driverRatingFallbackRespectful": "Trato respetuoso",
+  "driverRatingFallbackClearPickup": "Recogida clara y rápida",
+  "driverRatingFallbackRecommended": "Pasajero recomendado",
+  "driverRatingFallbackExcellent": "Excelente experiencia",
   "driverRegImageTakePhoto": "Tomar foto",
   "driverRegImageChooseGallery": "Elegir de galería",
   "driverRegImageTooLarge": "La imagen es muy pesada (máx. {maxKb} KB). Elige otra o reduce la resolución.",
   "@driverRegImageTooLarge": {
-    "placeholders": { "maxKb": { "type": "int" } }
+    "placeholders": {
+      "maxKb": {
+        "type": "int"
+      }
+    }
   },
   "driverRegImageReadError": "No se pudo obtener la imagen.",
   "driverRegImageCompatibleCaptureUsed": "Se usó captura optimizada desde la cámara para reducir el peso.",
@@ -436,8 +411,12 @@
   "driverRegStepCounter": "Paso {current} de {total}",
   "@driverRegStepCounter": {
     "placeholders": {
-      "current": { "type": "String" },
-      "total": { "type": "String" }
+      "current": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
     }
   },
   "driverRegSnackSelectCountryCoverage": "Selecciona un país con cobertura del servicio.",
@@ -478,6 +457,11 @@
   "driverRegFieldEmail": "Correo electrónico",
   "driverRegHintOptional": "Opcional",
   "driverRegValidationRequired": "Requerido",
+  "driverRegValidationMinAge18": "Debes tener al menos 18 años para registrarte como conductor.",
+  "driverRegAgeRequirementHint": "El registro y uso de la app de conductor están reservados a personas mayores de 18 años.",
+  "driverRegAgeRequirementFieldHelper": "Mayores de 18 años. El calendario solo permite fechas válidas.",
+  "driverRegAgeRequirementDialogTitle": "Mayoría de edad requerida",
+  "driverRegAgeRequirementDialogBody": "Debes tener al menos 18 años para registrarte como conductor. Corrige la fecha de nacimiento para continuar.",
   "driverRegValidationSelectOption": "Selecciona una opción",
   "driverRegSectionContact": "Contacto",
   "driverRegFieldPhoneNumber": "Número de teléfono",
@@ -520,9 +504,7 @@
   "driverRegIdentityLicenseRegistered": "Documentación de identidad y licencia registrada.",
   "driverRegIntroVehicle": "Datos como en la póliza y la placa. Después subirás cuatro fotos del vehículo.",
   "driverRegSectionVehicleData": "Datos del vehículo",
-  "driverRegSubtitleVehicleData": "Marca, modelo, año y color (como en el documento o póliza).",
   "driverRegSectionVehicleClassification": "Clasificación del vehículo",
-  "driverRegSubtitleVehicleClassification": "Tipo, categoría y servicios permitidos según el catálogo (requerido por el servidor).",
   "driverRegFieldVehicleType": "Tipo de vehículo",
   "driverRegFieldVehicleCategory": "Categoría",
   "driverRegFieldServiceTypes": "Servicios habilitados",
@@ -530,8 +512,6 @@
   "driverRegCatalogRetry": "Reintentar catálogo",
   "driverRegCatalogBrandModelTitle": "Marca y modelo",
   "driverRegCatalogTransportStepTitle": "1. ¿Qué vas a conducir?",
-  "driverRegCatalogModelLockedTitle": "Marca y modelo",
-  "driverRegCatalogModelLockedHint": "Según tu selección arriba. Puedes cambiar marca o modelo en la misma sección si hace falta.",
   "serviceTypeNameStandard": "Estándar",
   "driverRegCatalogTransportCar": "Automóvil",
   "driverRegCatalogTransportMoto": "Motocicleta",
@@ -543,8 +523,6 @@
   "driverRegCatalogAxles": "Configuración de ejes",
   "driverRegCatalogBodyTypes": "Tipos de carrocería",
   "driverRegCatalogUnits": "Unidades de medida",
-  "driverRegCatalogSourceFallback": "Datos locales de respaldo (ejecuta las migraciones para el catálogo completo en el servidor).",
-  "driverRegCatalogSourceDatabase": "Catálogo desde base de datos",
   "driverRegCatalogLoad": "Cargar catálogo",
   "driverRegVehicleTypeNoCategories": "Este tipo no tiene categorías en el catálogo. Prueba otro tipo o contacta soporte.",
   "driverRegCategoryNoServices": "Esta categoría no tiene servicios en el catálogo.",
@@ -569,20 +547,39 @@
   "@driverRegSectionVehicleClassification": {
     "description": "Título sección: clasificación desde GET /api/v2/vehicles/catalog."
   },
-  "@driverRegSubtitleVehicleClassification": {
-    "description": "Subtítulo que aclara dependencia del catálogo servidor."
+  "@driverRegFieldVehicleType": {
+    "description": "Label dropdown tipo de vehículo (fleet.vehicle_types)."
   },
-  "@driverRegFieldVehicleType": { "description": "Label dropdown tipo de vehículo (fleet.vehicle_types)." },
-  "@driverRegFieldVehicleCategory": { "description": "Label dropdown categoría (fleet.vehicle_categories)." },
-  "@driverRegFieldServiceTypes": { "description": "Encabezado chips multi-selección de service_types permitidos." },
-  "@driverRegFieldServiceType": { "description": "Label dropdown único en compatibility_mode." },
-  "@driverRegCatalogRetry": { "description": "Botón tras error al cargar catálogo." },
-  "@driverRegCatalogLoad": { "description": "Botón cuando aún no hay catálogo en memoria." },
-  "@driverRegVehicleTypeNoCategories": { "description": "Aviso si el tipo no tiene categorías en API." },
-  "@driverRegCategoryNoServices": { "description": "Aviso si categoría sin service_type_ids." },
-  "@driverRegServiceTypeFallbackPrefix": { "description": "Prefijo si falta nombre en lista service_types." },
-  "@driverRegSnackVehicleCatalogNotReady": { "description": "SnackBar al continuar sin catálogo listo." },
-  "@driverRegCatalogNoServiceTypes": { "description": "Estado vacío compatibility_mode sin filas." },
+  "@driverRegFieldVehicleCategory": {
+    "description": "Label dropdown categoría (fleet.vehicle_categories)."
+  },
+  "@driverRegFieldServiceTypes": {
+    "description": "Encabezado chips multi-selección de service_types permitidos."
+  },
+  "@driverRegFieldServiceType": {
+    "description": "Label dropdown único en compatibility_mode."
+  },
+  "@driverRegCatalogRetry": {
+    "description": "Botón tras error al cargar catálogo."
+  },
+  "@driverRegCatalogLoad": {
+    "description": "Botón cuando aún no hay catálogo en memoria."
+  },
+  "@driverRegVehicleTypeNoCategories": {
+    "description": "Aviso si el tipo no tiene categorías en API."
+  },
+  "@driverRegCategoryNoServices": {
+    "description": "Aviso si categoría sin service_type_ids."
+  },
+  "@driverRegServiceTypeFallbackPrefix": {
+    "description": "Prefijo si falta nombre en lista service_types."
+  },
+  "@driverRegSnackVehicleCatalogNotReady": {
+    "description": "SnackBar al continuar sin catálogo listo."
+  },
+  "@driverRegCatalogNoServiceTypes": {
+    "description": "Estado vacío compatibility_mode sin filas."
+  },
   "driverRegFieldBrand": "Marca",
   "driverRegHintBrandExample": "Ej. Toyota",
   "driverRegFieldModel": "Modelo",
@@ -620,13 +617,22 @@
   "driverRegActionContinue": "Continuar",
   "driverRegActionBack": "Anterior",
   "driverRegActionSave": "Guardar",
+  "driverRegCancelTitle": "Cancelar registro",
+  "driverRegCancelBodyUser": "Por seguridad, los datos registrados hasta ahora no se guardarán y se eliminará el avance de este registro. Podrás empezar de nuevo cuando quieras.",
+  "driverRegCancelBodyVehicle": "Por seguridad, el vehículo que estás registrando no se guardará. Tu cuenta y el resto de vehículos no se modifican.",
+  "driverRegCancelConfirm": "Sí, cancelar",
+  "driverRegCancelKeepGoing": "Seguir",
   "driverRegTitleProfileCompletion": "Completar registro",
   "driverRegProfileStepSaved": "Cambios guardados.",
   "driverRegProfileRedirectSnackbar": "Según tu registro, abrimos «{stepTo}» en lugar de «{stepFrom}».",
   "@driverRegProfileRedirectSnackbar": {
     "placeholders": {
-      "stepFrom": { "type": "String" },
-      "stepTo": { "type": "String" }
+      "stepFrom": {
+        "type": "String"
+      },
+      "stepTo": {
+        "type": "String"
+      }
     }
   },
   "driverRegImageReady": "Imagen lista",
@@ -656,5 +662,59 @@
   "driverRegColorViolet": "Violeta",
   "driverRegColorBrown": "Marrón",
   "driverRegColorBeige": "Beige",
-  "driverRegColorGold": "Dorado"
+  "driverRegColorGold": "Dorado",
+  "driverLegalSectionTitle": "Legal y privacidad",
+  "driverLegalSectionSubtitle": "Consulta los documentos aplicables a tu cuenta y gestiona tus datos.",
+  "driverLegalPrivacyPolicy": "Política de privacidad",
+  "driverLegalTermsOfService": "Términos de servicio",
+  "driverLegalDeleteAccountTitle": "Eliminar cuenta",
+  "driverLegalDeleteAccountBody": "Tu cuenta entrará en eliminación programada durante {graceDays} días. Al confirmar se cerrará tu sesión y no podrás usar la app. Para recuperarla, inicia sesión con tus credenciales y cancela la solicitud antes de la fecha límite.",
+  "@driverLegalDeleteAccountBody": {
+    "placeholders": {
+      "graceDays": { "type": "int" }
+    }
+  },
+  "driverLegalDeleteAccountAction": "Ver cómo solicitar",
+  "driverLegalDeleteAccountConfirmSchedule": "Programar eliminación",
+  "driverLegalDeleteAccountScheduling": "Programando eliminación…",
+  "driverLegalDeleteAccountScheduledSuccess": "Eliminación programada. Tu sesión se cerró; inicia sesión para recuperar tu cuenta antes de la fecha límite.",
+  "driverLoginAccountDeletionPendingTitle": "Eliminación programada",
+  "driverLoginAccountDeletionPendingBody": "Esta cuenta tiene una eliminación programada para el {effectiveDate}. No puedes usar la app hasta recuperarla.",
+  "@driverLoginAccountDeletionPendingBody": {
+    "placeholders": {
+      "effectiveDate": { "type": "String" }
+    }
+  },
+  "driverLoginAccountDeletionPendingDateFallback": "la fecha indicada",
+  "driverLoginAccountDeletionRecover": "Recuperar cuenta",
+  "driverLoginAccountDeletionDismiss": "Entendido",
+  "driverLoginAccountDeletionRecovering": "Recuperando cuenta…",
+  "driverLoginAccountDeletionRecoverSuccess": "Cuenta recuperada. Bienvenido de nuevo.",
+  "driverLegalDeleteAccountPendingTitle": "Eliminación programada",
+  "driverLegalDeleteAccountPendingBody": "Tu cuenta se eliminará el {effectiveDate}. Quedan {daysRemaining} días para cancelar y reactivar tu acceso.",
+  "@driverLegalDeleteAccountPendingBody": {
+    "placeholders": {
+      "effectiveDate": { "type": "String" },
+      "daysRemaining": { "type": "int" }
+    }
+  },
+  "driverLegalDeleteAccountPendingDateFallback": "la fecha indicada",
+  "driverLegalDeleteAccountCancelAction": "Cancelar eliminación",
+  "driverLegalDeleteAccountCancelling": "Cancelando eliminación…",
+  "driverLegalDeleteAccountCancelSuccess": "Eliminación cancelada. Tu cuenta sigue activa.",
+  "driverPlayNotificationDisclosureTitle": "Notificaciones de viajes",
+  "driverPlayNotificationDisclosureBody": "Texi necesita enviarte notificaciones cuando haya solicitudes de viaje, cambios de estado o mensajes del pasajero mientras trabajas como conductor.",
+  "driverPlayLocationDisclosureTitle": "Ubicación para recibir viajes",
+  "driverPlayLocationDisclosureBody": "Texi usa tu ubicación para mostrarte en el mapa, asignarte viajes cercanos y compartir tu posición con el pasajero durante un viaje activo.",
+  "driverPlayDisclosureContinue": "Continuar",
+  "driverLegalLoginHint": "Al continuar, aceptas nuestras políticas de uso y términos de servicio.",
+  "driverLegalLoginPrefix": "Al continuar, aceptas nuestras ",
+  "driverLegalLoginConjunction": " y ",
+  "driverLegalActivatePrefix": "Al activar aceptas nuestras ",
+  "driverLegalUsagePolicies": "políticas de uso",
+  "driverLegalRegistrationHint": "Al activar aceptas nuestras políticas de uso.",
+  "driverPlayCameraDisclosureTitle": "Acceso a la cámara",
+  "driverPlayCameraDisclosureBody": "Texi usa la cámara para capturar documentos de identidad, licencia y fotos de tu vehículo durante el registro. Las imágenes se envían de forma segura para verificación.",
+  "driverPlayGalleryDisclosureTitle": "Acceso a fotos",
+  "driverPlayGalleryDisclosureBody": "Texi accede a fotos que elijas de tu galería para el registro de conductor. Solo se sube la imagen que selecciones."
 }

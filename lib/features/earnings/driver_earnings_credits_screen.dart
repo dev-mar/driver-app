@@ -1,10 +1,8 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import '../../core/config/driver_backend_config.dart';
-import '../../core/network/driver_http_resilience.dart';
+import '../../core/network/driver_api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/money_formatter.dart';
 import '../../gen_l10n/app_localizations.dart';
@@ -106,18 +104,7 @@ class _DriverEarningsCreditsScreenState extends State<DriverEarningsCreditsScree
       _error = null;
     });
     try {
-      final token = await _storage.read(key: 'driver_token');
-      if (token == null || token.isEmpty) {
-        setState(() {
-          _error = 'NO_SESSION';
-          _loading = false;
-        });
-        return;
-      }
-      final dio = buildDriverAuthedDio(
-        token: token,
-        baseUrl: DriverBackendConfig.baseUrl,
-      );
+      final client = DriverApiClient();
       final from = _fromBoundary();
       final to = _toBoundary();
       final qp = <String, dynamic>{
@@ -126,46 +113,36 @@ class _DriverEarningsCreditsScreenState extends State<DriverEarningsCreditsScree
       };
 
       final results = await Future.wait([
-        requestWithRetry<Response<Map<String, dynamic>>>(
+        client.getWithRetry<Map<String, dynamic>>(
+          path: '/drivers/me/earnings-summary',
           flow: 'driver_earnings_summary',
-          endpoint: '/drivers/me/earnings-summary',
           maxAttempts: 2,
-          operation: () => dio.get<Map<String, dynamic>>(
-            '/drivers/me/earnings-summary',
-            queryParameters: qp,
-          ),
+          queryParameters: qp,
         ),
-        requestWithRetry<Response<Map<String, dynamic>>>(
+        client.getWithRetry<Map<String, dynamic>>(
+          path: '/api/v2/driver/app-credits',
           flow: 'driver_app_credits',
-          endpoint: '/api/v2/driver/app-credits',
           maxAttempts: 2,
-          operation: () => dio.get<Map<String, dynamic>>('/api/v2/driver/app-credits'),
         ),
-        requestWithRetry<Response<Map<String, dynamic>>>(
+        client.getWithRetry<Map<String, dynamic>>(
+          path: '/api/v2/driver/app-credits/ledger',
           flow: 'driver_credits_ledger',
-          endpoint: '/api/v2/driver/app-credits/ledger',
           maxAttempts: 2,
-          operation: () => dio.get<Map<String, dynamic>>(
-            '/api/v2/driver/app-credits/ledger',
-            queryParameters: {
-              ...qp,
-              'limit': 100,
-            },
-          ),
+          queryParameters: {
+            ...qp,
+            'limit': 100,
+          },
         ),
-        requestWithRetry<Response<Map<String, dynamic>>>(
+        client.getWithRetry<Map<String, dynamic>>(
+          path: '/drivers/me/trips',
           flow: 'driver_earnings_trips',
-          endpoint: '/drivers/me/trips',
           maxAttempts: 2,
-          operation: () => dio.get<Map<String, dynamic>>(
-            '/drivers/me/trips',
-            queryParameters: {
-              'status': 'completed',
-              'limit': 40,
-              'offset': 0,
-              ...qp,
-            },
-          ),
+          queryParameters: {
+            'status': 'completed',
+            'limit': 40,
+            'offset': 0,
+            ...qp,
+          },
         ),
       ]);
 
@@ -213,6 +190,12 @@ class _DriverEarningsCreditsScreenState extends State<DriverEarningsCreditsScree
         _credits = cred;
         _ledger = ledger;
         _trips = trips;
+        _loading = false;
+      });
+    } on DriverApiSessionException {
+      if (!mounted) return;
+      setState(() {
+        _error = 'NO_SESSION';
         _loading = false;
       });
     } catch (_) {

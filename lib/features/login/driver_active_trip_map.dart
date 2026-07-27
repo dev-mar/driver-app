@@ -681,6 +681,27 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
     return const CameraPosition(target: LatLng(-12.0464, -77.0428), zoom: 12);
   }
 
+  InfoWindow _routeReferenceInfoWindow(
+    AppLocalizations l10n,
+    RouteReferencePoint ref,
+  ) {
+    switch (ref.type) {
+      case RouteReferenceType.toll:
+        return InfoWindow(
+          title: l10n.driverDirectionsTollOnRoute,
+          snippet: l10n.driverDirectionsTollSnippet,
+        );
+      case RouteReferenceType.trafficSignal:
+        return InfoWindow(title: l10n.driverDirectionsRelevantIntersection);
+      case RouteReferenceType.landmark:
+        final title = ref.title.trim();
+        return InfoWindow(
+          title: title.isNotEmpty ? title : l10n.driverDirectionsRelevantIntersection,
+          snippet: ref.snippet,
+        );
+    }
+  }
+
   Set<Marker> _buildMarkers() {
     final l10n = AppLocalizations.of(context);
     final markers = <Marker>{};
@@ -734,7 +755,7 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
           icon: icon,
           alpha: 0.9,
           zIndexInt: 5,
-          infoWindow: InfoWindow(title: ref.title, snippet: ref.snippet),
+          infoWindow: _routeReferenceInfoWindow(l10n, ref),
         ),
       );
     }

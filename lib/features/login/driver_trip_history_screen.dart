@@ -1,10 +1,8 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import '../../core/config/driver_backend_config.dart';
-import '../../core/network/driver_http_resilience.dart';
+import '../session/driver_operational_profile.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/money_formatter.dart';
 import '../../gen_l10n/app_localizations.dart';
@@ -128,28 +126,20 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
         });
         return;
       }
-      final dio = buildDriverAuthedDio(
-        token: token,
-        baseUrl: DriverBackendConfig.baseUrl,
-      );
       final status = _status;
       final from = _fromDateForRange(_dateRange);
       final to = _toDateForRange(_dateRange);
       final offset = _offset;
-      final res = await requestWithRetry<Response<Map<String, dynamic>>>(
+      final res = await driverAuthedGetWithRetry<Map<String, dynamic>>(
+        path: '/drivers/me/trips',
         flow: 'driver_trip_history',
-        endpoint: '/drivers/me/trips',
-        maxAttempts: 3,
-        operation: () => dio.get<Map<String, dynamic>>(
-          '/drivers/me/trips',
-          queryParameters: {
-            if (status != null && status.isNotEmpty) 'status': status,
-            if (from != null) 'from': from.toIso8601String(),
-            if (to != null) 'to': to.toIso8601String(),
-            'limit': _pageSize,
-            'offset': offset,
-          },
-        ),
+        queryParameters: {
+          if (status != null && status.isNotEmpty) 'status': status,
+          if (from != null) 'from': from.toIso8601String(),
+          if (to != null) 'to': to.toIso8601String(),
+          'limit': _pageSize,
+          'offset': offset,
+        },
       );
       final root = res.data ?? <String, dynamic>{};
       final data = root['data'] is Map

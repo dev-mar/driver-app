@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../config/driver_backend_config.dart';
+import '../session/driver_session_expulsion.dart';
 
 class DriverPushTokenService {
   DriverPushTokenService._();
@@ -23,6 +24,7 @@ class DriverPushTokenService {
 
   Future<void> syncTokenIfPossible() async {
     try {
+      if (driverSessionSyncBlocked) return;
       final bearer = await _storage.read(key: 'driver_token');
       if (bearer == null || bearer.isEmpty) return;
       if (Firebase.apps.isEmpty) return;
@@ -41,6 +43,10 @@ class DriverPushTokenService {
         },
         options: Options(headers: {'Authorization': 'Bearer $bearer'}),
       );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        driverSessionSyncBlocked = true;
+      }
     } catch (_) {
       // No bloquear el flujo principal si FCM no está listo.
     }

@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/service_type_display.dart';
 import '../../../gen_l10n/app_localizations.dart';
 import '../driver_registration_models.dart';
+import '../../../core/ui/horizontal_edge_fade.dart';
 import 'registration_section_card.dart';
 import 'registration_soft_info_row.dart';
 
@@ -320,7 +321,7 @@ class DriverVehicleCatalogSection extends StatelessWidget {
             const SizedBox(height: 8),
             SizedBox(
               height: 38,
-              child: _HorizontalEdgeFade(
+              child: HorizontalEdgeFade(
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: allowedServiceIds.length,
@@ -601,61 +602,6 @@ class _ServiceTypePill extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _HorizontalEdgeFade extends StatelessWidget {
-  const _HorizontalEdgeFade({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned.fill(child: child),
-        Positioned(
-          left: 0,
-          top: 0,
-          bottom: 0,
-          child: IgnorePointer(
-            child: Container(
-              width: 18,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    AppColors.surfaceCard.withValues(alpha: 0.94),
-                    AppColors.surfaceCard.withValues(alpha: 0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          right: 0,
-          top: 0,
-          bottom: 0,
-          child: IgnorePointer(
-            child: Container(
-              width: 18,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerRight,
-                  end: Alignment.centerLeft,
-                  colors: [
-                    AppColors.surfaceCard.withValues(alpha: 0.94),
-                    AppColors.surfaceCard.withValues(alpha: 0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

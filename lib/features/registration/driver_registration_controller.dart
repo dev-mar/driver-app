@@ -7,6 +7,8 @@ import '../login/driver_login_controller.dart';
 import '../session/driver_operational_profile.dart';
 import 'driver_registration_models.dart';
 import 'driver_registration_repository.dart';
+import 'registration_flow_bindings.dart';
+import 'registration_flow_server_rehydration.dart';
 
 final driverRegistrationRepositoryProvider =
     Provider<DriverRegistrationRepository>((ref) {
@@ -237,6 +239,9 @@ class DriverRegistrationFlowController
 
   final Ref _ref;
   final DriverRegistrationRepository _repo;
+
+  Future<void>? _rehydrateInFlight;
+  int? _lastRehydratedStep;
 
   /// Reintentos breves antes de caer a Base64 en JSON (reduce evidencias inline gigantes en DB).
   static const List<Duration> _presignRetryDelays = [
@@ -486,9 +491,190 @@ class DriverRegistrationFlowController
     );
   }
 
-  /// Reinicia el flujo (p. ej. antes de reanudar con datos del servidor).
+  /// Reinicia el flujo (modos aislados: galería / agregar vehículo).
   void resetFlow() {
+    _lastRehydratedStep = null;
     state = const DriverRegistrationFlowState();
+  }
+
+  int? _parseProfileInt(dynamic raw) {
+    if (raw is int) return raw;
+    if (raw is num) return raw.toInt();
+    if (raw == null) return null;
+    return int.tryParse(raw.toString().trim());
+  }
+
+  Future<void> _applyGeoFromMeProfile(Map<String, dynamic> profile) async {
+    final localityId = _parseProfileInt(profile['locality_id']);
+    final countryId = _parseProfileInt(profile['registration_country_id']);
+    final localityLabel = profile['locality']?.toString().trim();
+
+    if (state.countries.isEmpty) {
+      await loadCountries();
+    }
+
+    if (countryId != null && countryId > 0) {
+      await _selectCountryByIdIfPossible(countryId);
+    } else if (registrationFieldIsBlank(state.selectedCountryName) &&
+        state.countries.isNotEmpty) {
+      GeoCountry? bolivia;
+      for (final c in state.countries) {
+        if (c.name.toLowerCase().trim() == 'bolivia') {
+          bolivia = c;
+          break;
+        }
+      }
+      final pick = bolivia ?? state.countries.first;
+      await selectCountry(pick.name);
+    } else if (!registrationFieldIsBlank(state.selectedCountryName) &&
+        state.departments.isEmpty) {
+      await selectCountry(state.selectedCountryName);
+    }
+
+    if (localityId == null) return;
+
+    if (state.departments.isEmpty &&
+        !registrationFieldIsBlank(state.selectedCountryName)) {
+      await selectCountry(state.selectedCountryName);
+    }
+
+    for (final dept in state.departments) {
+      for (final loc in dept.localities) {
+        if (loc.id == localityId) {
+          state = state.copyWith(
+            selectedDepartmentName: dept.name,
+            selectedLocalityId: localityId,
+            selectedLocalityLabel: loc.name,
+          );
+          return;
+        }
+      }
+    }
+
+    if (!registrationFieldIsBlank(localityLabel)) {
+      state = state.copyWith(
+        selectedLocalityId: localityId,
+        selectedLocalityLabel: localityLabel,
+      );
+    } else {
+      state = state.copyWith(selectedLocalityId: localityId);
+    }
+  }
+
+  Future<void> _mergeVehicleFromServer(RegistrationFlowBindings form) async {
+    try {
+      final vehicles = await _repo.fetchMyVehicleSummaries();
+      if (vehicles.isEmpty) return;
+
+      DriverVehicleSummary? pick;
+      for (final v in vehicles) {
+        if (v.needsGalleryCompletion) {
+          pick = v;
+          break;
+        }
+      }
+      pick ??= vehicles.first;
+
+      mergeVehicleSummaryIntoRegistrationForm(
+        form: form,
+        brand: pick.brand,
+        model: pick.model,
+        year: pick.year,
+        color: pick.color,
+        vin: pick.vin,
+        licensePlate: pick.licensePlate,
+      );
+
+      if (registrationFieldIsBlank(state.carUuid)) {
+        state = state.copyWith(carUuid: pick.vehicleAssetId);
+      }
+    } catch (_) {}
+  }
+
+  Future<bool> rehydrateFromServerIfNeeded(
+    RegistrationFlowBindings form, {
+    int? step,
+    bool force = false,
+  }) async {
+    final targetStep = (step ?? state.step).clamp(0, 5);
+    final geoMissing = state.selectedLocalityId == null &&
+        registrationFieldIsBlank(state.selectedCountryName);
+    if (!force &&
+        _lastRehydratedStep == targetStep &&
+        !registrationFormStepNeedsServerRehydrate(
+          form: form,
+          step: targetStep,
+          geoMissing: geoMissing,
+        )) {
+      return false;
+    }
+
+    if (_rehydrateInFlight != null) {
+      await _rehydrateInFlight;
+      final geoAfterWait = state.selectedLocalityId == null &&
+          registrationFieldIsBlank(state.selectedCountryName);
+      if (_lastRehydratedStep == targetStep) {
+        return !registrationFormStepNeedsServerRehydrate(
+          form: form,
+          step: targetStep,
+          geoMissing: geoAfterWait,
+        );
+      }
+    }
+
+    final future = _rehydrateFromServerImpl(form, targetStep);
+    _rehydrateInFlight = future;
+    try {
+      await future;
+      _lastRehydratedStep = targetStep;
+      return true;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[DriverRegistration] rehydrateFromServerIfNeeded: $e');
+      }
+      return false;
+    } finally {
+      _rehydrateInFlight = null;
+    }
+  }
+
+  Future<void> _rehydrateFromServerImpl(
+    RegistrationFlowBindings form,
+    int targetStep,
+  ) async {
+    final hasToken = state.registrationTokenSaved || await _repo.hasDriverToken();
+    if (!hasToken) return;
+
+    final profile = await fetchDriverMeProfileData();
+    mergeMeProfileIntoRegistrationForm(
+      profile: profile,
+      form: form,
+      countryPhoneCode: state.selectedCountryPhoneCode,
+    );
+    await _applyGeoFromMeProfile(profile);
+
+    mergeMeProfileIntoRegistrationForm(
+      profile: profile,
+      form: form,
+      countryPhoneCode: state.selectedCountryPhoneCode,
+    );
+
+    final profileUuid = profile['uuid']?.toString().trim();
+    if (registrationFieldIsBlank(state.userUuid) &&
+        profileUuid != null &&
+        profileUuid.isNotEmpty) {
+      state = state.copyWith(userUuid: profileUuid);
+    }
+
+    if (targetStep >= 4) {
+      if (state.countries.isEmpty || state.selectedCountryId == null) {
+        await _ensureCountryIdForVehicleOnly();
+      }
+      if (state.vehicleCatalog == null && !state.vehicleCatalogLoading) {
+        await loadVehicleCatalog();
+      }
+      await _mergeVehicleFromServer(form);
+    }
   }
 
   /// Flujo solo vehículo (sesión ya activa, ej. conductor con vehículos que agrega otro).
@@ -1061,7 +1247,11 @@ class DriverRegistrationFlowController
     state = state.copyWith(loading: true, clearGlobalError: true);
     try {
       final list = await _repo.fetchCountries();
-      state = state.copyWith(loading: false, countries: list);
+      // UI v1: solo Bolivia visible en registro (catálogo completo sigue en backend).
+      final visible = list
+          .where((c) => c.name.toLowerCase().trim() == 'bolivia')
+          .toList();
+      state = state.copyWith(loading: false, countries: visible);
     } catch (e) {
       state = state.copyWith(
         loading: false,
@@ -1663,8 +1853,16 @@ class DriverRegistrationFlowController
     state = state.copyWith(clearProfileRedirect: true);
   }
 
-  void goToStep(int s) {
-    state = state.copyWith(step: s, clearGlobalError: true);
+  Future<void> goToStep(
+    int s, {
+    RegistrationFlowBindings? form,
+    bool rehydrateIfEmpty = true,
+  }) async {
+    final next = s.clamp(0, 5);
+    state = state.copyWith(step: next, clearGlobalError: true);
+    if (form != null && rehydrateIfEmpty) {
+      await rehydrateFromServerIfNeeded(form, step: next);
+    }
   }
 }
 

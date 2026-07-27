@@ -1,9 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import '../../core/config/driver_backend_config.dart';
-import '../../core/network/driver_http_resilience.dart';
+import '../../core/network/driver_api_client.dart';
+import '../../core/network/driver_profile_api_providers.dart';
 import '../../core/network/request_policy_cache.dart';
 
 /// Snapshot mínimo del perfil conductor para gating operativo (viajes / registro vehículo).
@@ -38,7 +37,7 @@ class DriverOperationalProfile {
   /// Paso sugerido en la app (0–5, alineado a `DriverRegistrationFlowScreen`).
   final int? suggestedClientStep;
 
-  /// `reference.countries.id` / `public.departments.country_id` vía localidad del staff; para `registration.country_id` en alta vehículo v2.
+  /// `reference.countries.id` vía localidad del staff; para `registration.country_id` en alta vehículo v2.
   final int? registrationCountryId;
 
   factory DriverOperationalProfile.fromJson(Map<String, dynamic> json) {
@@ -82,49 +81,55 @@ class DriverOperationalProfile {
     );
   }
 
-  static Future<DriverOperationalProfile> fetch() async {
+  static Future<DriverOperationalProfile> fetch({
+    DriverMeProfileService? meProfileService,
+  }) async {
     return _operationalProfileCache.run(
       key: _operationalProfileCacheKey,
-      fetcher: _fetchFromApi,
+      fetcher: () async {
+        final service = meProfileService ??
+            DriverMeProfileService(DriverApiClient());
+        final data = await service.fetchData();
+        return DriverOperationalProfile.fromJson(data);
+      },
       ttl: const Duration(seconds: 15),
     );
   }
 }
 
-const String _operationalProfileCacheKey = 'driver_me_profile';
+const String _operationalProfileCacheKey = 'driver_operational_profile';
 final RequestPolicyCache<DriverOperationalProfile> _operationalProfileCache =
     RequestPolicyCache<DriverOperationalProfile>(
       defaultTtl: const Duration(seconds: 15),
     );
 
-Future<DriverOperationalProfile> _fetchFromApi() async {
-  const storage = FlutterSecureStorage();
-  final token = await storage.read(key: 'driver_token');
-  if (token == null || token.isEmpty) {
-    throw StateError('no_token');
-  }
-  final dio = buildDriverAuthedDio(
-    token: token,
-    baseUrl: DriverBackendConfig.baseUrl,
-  );
-  final response = await requestWithRetry<Response<Map<String, dynamic>>>(
-    flow: 'driver_operational_profile',
-    endpoint: '/api/v2/driver/me-profile',
-    maxAttempts: 3,
-    operation: () => dio.get<Map<String, dynamic>>('/api/v2/driver/me-profile'),
-  );
-  final root = response.data;
-  if (root == null || root['success'] != true) {
-    throw StateError('profile_fail');
-  }
-  final data = root['data'];
-  if (data is! Map) {
-    throw StateError('bad_format');
-  }
-  return DriverOperationalProfile.fromJson(Map<String, dynamic>.from(data));
-}
-
 final driverOperationalProfileProvider =
     FutureProvider.autoDispose<DriverOperationalProfile>((ref) async {
-  return DriverOperationalProfile.fetch();
+  final meProfile = ref.watch(driverMeProfileServiceProvider);
+  return DriverOperationalProfile.fetch(meProfileService: meProfile);
 });
+
+/// GET autenticado con retry (historial, QA, etc.).
+Future<Response<T>> driverAuthedGetWithRetry<T>({
+  required String path,
+  required String flow,
+  int maxAttempts = 3,
+  Map<String, dynamic>? queryParameters,
+}) {
+  return DriverApiClient().getWithRetry<T>(
+    path: path,
+    flow: flow,
+    maxAttempts: maxAttempts,
+    queryParameters: queryParameters,
+  );
+}
+
+/// Perfil `data` sin Riverpod (resume gate, etc.).
+Future<Map<String, dynamic>> fetchDriverMeProfileData() {
+  return DriverMeProfileService(DriverApiClient()).fetchData();
+}
+
+/// Créditos `data` sin Riverpod.
+Future<Map<String, dynamic>> fetchDriverAppCreditsData() {
+  return DriverAppCreditsService(DriverApiClient()).fetchData();
+}

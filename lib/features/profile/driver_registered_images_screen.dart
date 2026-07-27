@@ -1,12 +1,10 @@
 import 'dart:convert';
 
-import 'package:dio/dio.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/services.dart';
 
-import '../../core/config/driver_backend_config.dart';
-import '../../core/network/driver_http_resilience.dart';
+import '../../core/network/driver_api_client.dart';
+import '../session/driver_operational_profile.dart';
 import '../../core/theme/app_colors.dart';
 
 class DriverRegisteredImagesScreen extends StatefulWidget {
@@ -26,30 +24,23 @@ class _DriverRegisteredImagesScreenState extends State<DriverRegisteredImagesScr
   }
 
   Future<_RegisteredImagesVm> _load() async {
-    const storage = FlutterSecureStorage();
-    final token = await storage.read(key: 'driver_token');
-    if (token == null || token.isEmpty) {
+    try {
+      final res = await driverAuthedGetWithRetry<Map<String, dynamic>>(
+        path: '/api/v2/driver/registered-images',
+        flow: 'driver_registered_images',
+      );
+      final root = res.data;
+      if (root == null || root['success'] != true) {
+        throw Exception(root?['message']?.toString() ?? 'No se pudo cargar imágenes');
+      }
+      final data = root['data'];
+      if (data is! Map) {
+        throw Exception('Formato inválido');
+      }
+      return _RegisteredImagesVm.fromJson(Map<String, dynamic>.from(data));
+    } on DriverApiSessionException {
       throw Exception('Sesión no disponible');
     }
-    final dio = buildDriverAuthedDio(
-      token: token,
-      baseUrl: DriverBackendConfig.baseUrl,
-    );
-    final res = await requestWithRetry<Response<Map<String, dynamic>>>(
-      flow: 'driver_registered_images',
-      endpoint: '/api/v2/driver/registered-images',
-      maxAttempts: 3,
-      operation: () => dio.get<Map<String, dynamic>>('/api/v2/driver/registered-images'),
-    );
-    final root = res.data;
-    if (root == null || root['success'] != true) {
-      throw Exception(root?['message']?.toString() ?? 'No se pudo cargar imágenes');
-    }
-    final data = root['data'];
-    if (data is! Map) {
-      throw Exception('Formato inválido');
-    }
-    return _RegisteredImagesVm.fromJson(Map<String, dynamic>.from(data));
   }
 
   Future<void> _reload() async {

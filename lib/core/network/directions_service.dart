@@ -176,9 +176,8 @@ class DirectionsService {
             RouteReferencePoint(
               position: LatLng(lat, lng),
               type: RouteReferenceType.toll,
-              title: 'Peaje en ruta',
+              title: '',
               confidence: 0.95,
-              snippet: 'Ajusta velocidad y carril con antelacion.',
             ),
           );
           continue;
@@ -189,7 +188,7 @@ class DirectionsService {
             RouteReferencePoint(
               position: LatLng(lat, lng),
               type: RouteReferenceType.trafficSignal,
-              title: 'Interseccion relevante',
+              title: '',
               confidence: _trafficSignalConfidence(
                 htmlInstructions: htmlInstructions,
                 maneuver: maneuver,

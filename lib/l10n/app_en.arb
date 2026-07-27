@@ -1,72 +1,19 @@
 {
   "@@locale": "en",
-  "appName": "Texi",
   "driverAppTitle": "Texi Driver",
-  "splashGettingLocation": "Getting your location...",
-  "loginWelcome": "Welcome",
-  "loginSubtitle": "Enter your number to continue",
   "loginCode": "Code",
   "loginPhone": "Phone",
-  "loginContinue": "Continue",
-  "loginErrorInvalidCredentials": "Could not sign in. Check your number.",
-  "loginPhoneRequired": "Enter your phone number",
-  "homeRequestRide": "Request ride",
-  "homeNearbyDrivers": "{count} nearby driver",
-  "@homeNearbyDrivers": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
-  "homeNearbyDriversNone": "No nearby drivers at the moment",
-  "homeUpdatesEvery": "Updates every {seconds} seconds",
-  "@homeUpdatesEvery": {
-    "placeholders": {
-      "seconds": {"type": "int"}
-    }
-  },
-  "homeLocationError": "Enable location to see the map and nearby drivers.",
-  "homeLocationErrorGps": "Could not get your location. Check GPS.",
-  "homeRetry": "Retry",
   "tripOrigin": "Origin",
   "tripDestination": "Destination",
-  "tripYourLocation": "Your current location",
-  "tripWherePickup": "Where should we pick you up?",
-  "tripUseMyLocation": "Use my current location",
-  "tripSearchAddress": "Search address",
-  "tripChooseOnMap": "Choose on map",
-  "tripUseAsPickup": "Use as pickup point",
-  "tripUseAsDestination": "Use as destination",
-  "tripMoveMapSetPickup": "Move the map and tap the button to set where you'll be picked up.",
-  "tripMoveMapSetDestination": "Move the map and tap the button to set the destination.",
-  "tripTapMapDestination": "Tap the map or choose an option below",
-  "tripSeePrices": "See prices",
-  "tripSearchPlaceholder": "Search address...",
-  "tripUseMapCenter": "Use this location",
-  "tripWhereTo": "Where to?",
-  "tripSearchError": "Address not found",
-  "tripSearchingAddress": "Searching...",
-  "tripNoCoverageInZone": "We don't have service coverage in this area at the moment. Try another location or move to a service zone.",
-  "tripNoDriversAvailable": "No drivers available at the moment. Please try again in a few moments.",
-  "tripNext": "Next",
-  "quoteTitle": "Choose your ride",
-  "quoteSubtitle": "Select a service type",
-  "quotePerTrip": "per trip",
-  "quoteConfirm": "Confirm",
-  "confirmTitle": "Confirm your ride",
-  "confirmFrom": "From",
-  "confirmTo": "To",
-  "confirmRequestRide": "Request ride",
-  "searchingTitle": "Looking for a driver",
-  "searchingSubtitle": "We are finding the best option for you",
   "commonCancel": "Cancel",
+  "commonClose": "Close",
   "commonLoading": "Loading...",
   "commonError": "Something went wrong",
   "settingsLanguage": "Language",
   "languageSpanish": "Español",
   "languageEnglish": "English",
-
   "driverLoginWelcome": "Welcome, driver",
-  "driverLoginSubtitle": "Sign in with your number and password to start receiving rides.",
+  "driverLoginSubtitle": "Or enter your number and password if you're already a Texi driver.",
   "driverLoginPassword": "Password",
   "driverLoginButton": "Sign in",
   "driverLoginPhoneAndPasswordRequired": "Enter your number and password",
@@ -79,16 +26,13 @@
   "driverLoginErrorInvalidResponse": "Invalid server response. Please try again.",
   "driverLoginErrorTokenMissing": "Session token was not received. Please try again.",
   "driverLoginErrorUnexpected": "Unexpected sign-in error. Please try again.",
-  "driverLoginRegisterHint": "Don't have credentials? You can register as a driver.",
+  "driverLoginErrorSessionSuperseded": "Your session was opened on another device.",
+  "driverLoginErrorTripOperationalLock": "Finish or cancel your current trip before signing in on another device.",
+  "driverLoginErrorDeviceBound": "This account is linked to another device. Contact support to change phones.",
   "driverLoginRegisterCta": "Register",
   "driverLoginRegisterBannerTitle": "New driver?",
   "driverLoginRegisterBannerSubtitle": "Create your account in minutes and start receiving trips with Texi.",
-
   "driverHomeTitle": "Driver",
-  "driverHomeOnlineTitle": "You are online",
-  "driverHomeOfflineTitle": "You are offline",
-  "driverHomeOnlineSubtitle": "Nearby passengers will see your vehicle and you can receive ride requests.",
-  "driverHomeOfflineSubtitle": "Turn the switch on to start receiving rides.",
   "driverHomeRequestsTitle": "Ride requests",
   "driverHomeRequestsEmpty": "You will see passenger requests here\nwhen you are online.",
   "driverHomeMiniStatusOnline": "Online",
@@ -102,8 +46,12 @@
   "driverHomeCreditsLowWarning": "Your balance ({balance}) is close to the minimum ({min}) to stay online. Top up soon so you are not taken offline automatically.",
   "@driverHomeCreditsLowWarning": {
     "placeholders": {
-      "balance": { "type": "String" },
-      "min": { "type": "String" }
+      "balance": {
+        "type": "String"
+      },
+      "min": {
+        "type": "String"
+      }
     }
   },
   "driverFcmOpenedTripOfferHint": "We try to load the request from the alert into the list below. If it's missing, it may have expired or the connection failed—toggle online again.",
@@ -111,7 +59,11 @@
   "driverHomeMiniVehicleEmpty": "Vehicle",
   "driverHomeMiniRating": "{rating} ★",
   "@driverHomeMiniRating": {
-    "placeholders": { "rating": { "type": "String" } }
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      }
+    }
   },
   "driverLogout": "Sign out",
   "driverEarningsCreditsMenu": "Earnings & credits",
@@ -162,19 +114,25 @@
   "driverMyVehiclesTitle": "My vehicles",
   "driverMyVehiclesRefreshTooltip": "Refresh list",
   "driverMyVehiclesAddFab": "Add vehicle",
+  "driverMyVehiclesAddLockedTitle": "Not available yet",
+  "driverMyVehiclesAddLockedBody": "For now you can only have one registered vehicle. Adding another is a benefit unlocked based on your seniority and driver evaluation. If you think it should already apply, contact support.",
+  "driverMyVehiclesAddLockedCta": "Got it",
   "driverMyVehiclesEmpty": "You have no registered vehicles yet. Add one to offer service.",
   "driverMyVehiclesRetry": "Try again",
   "driverMyVehiclesPhotosPendingBadge": "Gallery incomplete: {uploaded} of {required} required photos",
   "@driverMyVehiclesPhotosPendingBadge": {
     "placeholders": {
-      "uploaded": {"type": "int"},
-      "required": {"type": "int"}
+      "uploaded": {
+        "type": "int"
+      },
+      "required": {
+        "type": "int"
+      }
     }
   },
   "driverMyVehiclesCompletePhotosCta": "Complete photos",
   "driverMyVehiclesCompletePhotosTitle": "Vehicle photos",
   "driverMyVehiclesPhotosSavedSnackbar": "Photos saved successfully",
-
   "driverOnlineAuthTitle": "Confirm your identity",
   "driverOnlineAuthSubtitle": "Next, you'll use your fingerprint, Face ID, or device PIN. This keeps your account safe when you go online.",
   "driverOnlineAuthContinue": "Continue",
@@ -182,7 +140,6 @@
   "driverOnlineAuthReasonBiometric": "Confirm your identity to go online as a driver",
   "driverOnlineAuthReasonDeviceCredential": "Confirm with your PIN or pattern to go online",
   "driverOnlineAuthVerifyFailed": "Could not verify device identity",
-
   "driverProfileMenu": "My profile",
   "driverProfileTitle": "My profile",
   "driverProfileBack": "Back to home",
@@ -197,7 +154,7 @@
   "driverProfileVerificationTitle": "Account status: Under review",
   "driverProfileVerificationBody": "Your documents were received successfully. Our team is validating them so we can enable your service as soon as possible.",
   "driverProfileOnboardingTitle": "Uploads and checks",
-  "driverProfileOnboardingBody": "Review the status of each item. You can complete or resubmit as needed.",
+  "driverProfileOnboardingBody": "Review each block's status. You can only edit pending items or those flagged for correction.",
   "driverProfileSectionOnboardingPersonal": "Personal information",
   "driverProfileSectionOnboardingIdentity": "Identity document",
   "driverProfileSectionOnboardingLicense": "Driver license",
@@ -207,6 +164,14 @@
   "driverProfileOnboardingStatusVerified": "Verified",
   "driverProfileOnboardingStatusAction": "Update requested",
   "driverProfileOnboardingTapToContinue": "Tap to open or update",
+  "driverProfileOnboardingTapEditable": "Tap to complete or fix",
+  "driverProfileOnboardingTapViewOnly": "Tap to view (in review)",
+  "driverProfileOnboardingTapLocked": "Tap to view (verified)",
+  "driverRegProfileSectionReadOnlyBanner": "This block is under review. You can view the information but cannot save changes until our team processes it.",
+  "driverRegProfileSectionLockedBanner": "This block is verified and cannot be changed from the app.",
+  "driverRegErrorSectionNotEditable": "This section cannot be changed in its current status.",
+  "driverRegErrorRateLimited": "Too many requests in a short time. Wait a moment and try again.",
+  "driverRegErrorNoConnection": "No internet connection. Check your signal and try again.",
   "driverProfileSectionPersonal": "Personal information",
   "driverProfileSectionContact": "Contact",
   "driverProfileSectionLocation": "Location",
@@ -216,7 +181,9 @@
   "driverAppCreditsBalance": "Balance: {balance}",
   "@driverAppCreditsBalance": {
     "placeholders": {
-      "balance": {"type": "String"}
+      "balance": {
+        "type": "String"
+      }
     }
   },
   "driverAppCreditsProgramOn": "Per-trip commission active",
@@ -224,13 +191,17 @@
   "driverAppCreditsDetailPercent": "{percent}% of trip fare",
   "@driverAppCreditsDetailPercent": {
     "placeholders": {
-      "percent": {"type": "String"}
+      "percent": {
+        "type": "String"
+      }
     }
   },
   "driverAppCreditsDetailFixed": "{amount} per completed trip",
   "@driverAppCreditsDetailFixed": {
     "placeholders": {
-      "amount": {"type": "String"}
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "driverProfileFieldName": "Name",
@@ -245,7 +216,6 @@
   "driverProfileGenderOther": "Other",
   "driverProfileValueEmpty": "—",
   "driverProfileDefaultName": "TEXI driver",
-
   "driverOnlineErrorNoInternet": "No internet connection. Connect to go online.",
   "driverOnlineErrorNoGps": "Enable location permissions to share your position.",
   "driverOnlineErrorGpsServiceOff": "Turn on device location services to go online and receive trip offers.",
@@ -269,11 +239,9 @@
   "driverOnlineErrorRbacForbidden": "Your account doesn’t have permission for this action. If it keeps happening, sign out and sign back in or contact support.",
   "driverOnlineErrorRbacSession": "We couldn’t validate your session to go online. Sign out and sign in again.",
   "driverOnlineErrorRbacTechnical": "We couldn’t verify permissions. Please try again in a few seconds.",
-
   "driverHomeOnlineRequirementsHint": "Only needed to receive trips: the server must see you online, with location on, and be able to notify you. Other screens (like your profile) don’t need this.",
   "driverHomeOpenSystemLocationSettings": "Open location (GPS) settings",
   "driverHomeOpenAppPermissionSettings": "Open app permission settings",
-
   "driverTripInProgressTitle": "Trip in progress",
   "driverTripStatusAccepted": "Go to pickup",
   "driverTripStatusArrived": "At pickup point",
@@ -281,26 +249,25 @@
   "driverTripStatusCompleted": "Trip completed",
   "driverTripStatusCancelled": "Trip cancelled",
   "driverTripStatusInProgress": "Trip in progress",
-
   "driverTripEstimatedPrice": "Estimated price: {amount}",
   "@driverTripEstimatedPrice": {
-    "placeholders": { "amount": { "type": "String" } }
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
   },
-
   "driverTripArrivedButton": "I arrived at pickup",
   "driverTripStartButton": "Start trip",
   "driverTripCompleteButton": "Finish trip",
-
-  "driverTripOfferTitle": "New ride request",
   "driverTripOfferPrice": "Estimated price: {amount}",
   "@driverTripOfferPrice": {
-    "placeholders": { "amount": { "type": "String" } }
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
   },
-  "driverTripOfferEta": "Estimated arrival: {minutes} min",
-  "@driverTripOfferEta": {
-    "placeholders": { "minutes": { "type": "int" } }
-  },
-
   "driverTripReject": "Reject",
   "driverTripAccept": "Accept",
   "driverTripOfferPriceTbd": "To be agreed",
@@ -308,28 +275,12 @@
   "driverTripOfferBadgeOperations": "Operations",
   "driverTripOfferOperationsSubtitle": "Assigned from the operations portal",
   "driverFcmOpenedTripOfferOperationsHint": "Operations trip request loaded. Check the list below.",
-  "driverTripOfferPickupEta": "~{minutes} min to pickup",
-  "@driverTripOfferPickupEta": {
-    "placeholders": { "minutes": { "type": "String" } }
-  },
-  "driverTripOfferRouteEta": "~{minutes} min to destination",
-  "@driverTripOfferRouteEta": {
-    "placeholders": { "minutes": { "type": "String" } }
-  },
-  "driverTripOfferRouteKm": "{distance} trip",
-  "@driverTripOfferRouteKm": {
-    "placeholders": { "distance": { "type": "String" } }
-  },
-
   "driverOfferErrorNoConnection": "No connection to server.",
   "driverOfferErrorExpired": "This offer is no longer available.",
   "driverOfferErrorTaken": "Trip already assigned or cancelled.",
-  "driverOfferErrorGeneric": "Could not update the request.",
   "driverTripErrorGeneric": "Could not update trip status.",
   "driverTripNavigatePickup": "Navigate to pickup",
   "driverTripNavigateDestination": "Navigate to destination",
-  "driverTripNavAssistedTitle": "Assisted navigation",
-  "driverTripNavAssistedSubtitle": "Opens your maps or GPS app (Maps, Waze…)",
   "driverRegisteredImagesMenu": "Registered images",
   "driverTripChatOpenCta": "Secure chat",
   "driverTripChatTitle": "Trip chat",
@@ -344,26 +295,38 @@
   "driverTripChatErrorPhase": "Chat is only available before the trip starts.",
   "driverTripChatErrorSendReceive": "Could not send/receive chat ({code}). Check your connection.",
   "@driverTripChatErrorSendReceive": {
-    "placeholders": { "code": { "type": "String" } }
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
   },
   "driverTripChatEmptyState": "No messages yet.\nSend one to start the conversation.",
+  "driverTripChatMessageHint": "Write a message",
   "driverTripReactivate": "Resume receiving rides",
   "driverTripSnackbarNavigationFailed": "Could not open navigation ({label})",
   "@driverTripSnackbarNavigationFailed": {
-    "placeholders": { "label": { "type": "String" } }
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
   },
   "driverTripBackgroundPromptTitle": "Keep service active?",
   "driverTripBackgroundPromptDisconnect": "Disconnect",
   "driverTripBackgroundPromptKeep": "Keep active",
   "driverTripBackgroundPromptBody": "You were out of the app for more than 15 minutes.\nIf you want to keep receiving requests, confirm now.\n\nAuto disconnect in {seconds}s",
   "@driverTripBackgroundPromptBody": {
-    "placeholders": { "seconds": { "type": "String" } }
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
   },
   "driverHomeBackgroundLocationTitle": "Location in the background",
   "driverHomeBackgroundLocationBody": "So passengers can find you while the app is not open, allow \"Always\" (or \"Allow all the time\") location on the next step. It is only used while you are available as a driver. You can change this in system settings at any time.",
   "driverHomeBackgroundLocationLater": "Not now",
   "driverHomeBackgroundLocationContinue": "Continue",
-
   "driverForegroundNotifyTitle": "Texi · Driver mode",
   "driverForegroundNotifyBodySearching": "Waiting for ride requests. GPS stays on for dispatch.",
   "driverForegroundNotifyBodyTrip": "On a trip · location shared with passengers.",
@@ -371,48 +334,59 @@
   "@driverForegroundNotifyBodyOffers": {
     "description": "Foreground service body when there are pending trip offers",
     "placeholders": {
-      "count": { "type": "num" }
+      "count": {
+        "type": "num"
+      }
     }
   },
-
-  "driverMapDriverPosition": "Your position",
+  "driverNotifyChatTitle": "New chat message",
+  "driverNotifyChatBody": "{sender}: {message}",
+  "@driverNotifyChatBody": {
+    "description": "Local notification body for in-trip chat messages",
+    "placeholders": {
+      "sender": {
+        "type": "String"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "driverNotifyChatSenderPassenger": "Passenger",
+  "driverNotifyChatSenderDriver": "Driver",
   "driverMapPickupPoint": "Pickup point",
   "driverMapDestinationPoint": "Destination",
-  "driverMapCalculatingRoute": "Calculating route...",
-
+  "driverDirectionsTollOnRoute": "Toll on route",
+  "driverDirectionsTollSnippet": "Adjust speed and lane in advance.",
+  "driverDirectionsRelevantIntersection": "Relevant intersection",
   "driverTripRatingHeaderTitle": "Trip completed",
   "driverTripRatingTitle": "Rate your passenger",
   "driverTripRatingSubtitle": "Your feedback helps us keep the service great for everyone.",
   "driverTripRatingSubmit": "Send rating",
   "driverTripRatingSkip": "Skip for now",
-  "driverTripRatingSummaryLabel": "Trip summary",
   "driverTripRatingPassengerDefault": "Passenger",
-  "driverTripRatingOriginDefault": "Pickup",
-  "driverTripRatingDestinationDefault": "Destination",
-  "driverTripRatingDistanceKm": "{distance} km",
-  "@driverTripRatingDistanceKm": {
-    "placeholders": { "distance": { "type": "String" } }
-  },
-  "driverTripRatingEtaMinutes": "~{minutes} min",
-  "@driverTripRatingEtaMinutes": {
-    "placeholders": { "minutes": { "type": "String" } }
-  },
-  "driverTripRatingPriceLabel": "Fare",
   "driverTripRatingYourRating": "Your rating",
   "driverTripRatingFeedbackPromptLow": "What affected the trip? (multiple)",
   "driverTripRatingFeedbackPromptHigh": "What stood out about the passenger? (multiple)",
-  "driverTripRatingRouteHint": "{origin} → {destination}",
-  "@driverTripRatingRouteHint": {
-    "placeholders": {
-      "origin": { "type": "String" },
-      "destination": { "type": "String" }
-    }
-  },
+  "driverRatingFallbackDelay": "Too long waiting",
+  "driverRatingFallbackLocation": "Hard to find each other",
+  "driverRatingFallbackRespect": "Lack of respect",
+  "driverRatingFallbackPayment": "Payment issue",
+  "driverRatingFallbackOther": "Other issue",
+  "driverRatingFallbackPunctual": "Punctual and ready to go",
+  "driverRatingFallbackRespectful": "Respectful attitude",
+  "driverRatingFallbackClearPickup": "Clear and quick pickup",
+  "driverRatingFallbackRecommended": "Recommended passenger",
+  "driverRatingFallbackExcellent": "Excellent experience",
   "driverRegImageTakePhoto": "Take photo",
   "driverRegImageChooseGallery": "Choose from gallery",
   "driverRegImageTooLarge": "Image is too large (max {maxKb} KB). Choose another one or reduce resolution.",
   "@driverRegImageTooLarge": {
-    "placeholders": { "maxKb": { "type": "int" } }
+    "placeholders": {
+      "maxKb": {
+        "type": "int"
+      }
+    }
   },
   "driverRegImageReadError": "Could not read image.",
   "driverRegImageCompatibleCaptureUsed": "Optimized camera capture was used to reduce file size.",
@@ -437,8 +411,12 @@
   "driverRegStepCounter": "Step {current} of {total}",
   "@driverRegStepCounter": {
     "placeholders": {
-      "current": { "type": "String" },
-      "total": { "type": "String" }
+      "current": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
     }
   },
   "driverRegSnackSelectCountryCoverage": "Select a country with service coverage.",
@@ -479,6 +457,11 @@
   "driverRegFieldEmail": "Email",
   "driverRegHintOptional": "Optional",
   "driverRegValidationRequired": "Required",
+  "driverRegValidationMinAge18": "You must be at least 18 years old to register as a driver.",
+  "driverRegAgeRequirementHint": "Driver registration and use of the driver app are reserved for persons over 18 years of age.",
+  "driverRegAgeRequirementFieldHelper": "18+ only. The calendar only allows valid dates.",
+  "driverRegAgeRequirementDialogTitle": "Age of majority required",
+  "driverRegAgeRequirementDialogBody": "You must be at least 18 years old to register as a driver. Correct your date of birth to continue.",
   "driverRegValidationSelectOption": "Select an option",
   "driverRegSectionContact": "Contact",
   "driverRegFieldPhoneNumber": "Phone number",
@@ -521,9 +504,7 @@
   "driverRegIdentityLicenseRegistered": "Identity and license documents registered.",
   "driverRegIntroVehicle": "Complete the data exactly as shown on your policy and plate; then upload photos of all four sides.",
   "driverRegSectionVehicleData": "Vehicle data",
-  "driverRegSubtitleVehicleData": "Brand, model, year and color (as in document or policy).",
   "driverRegSectionVehicleClassification": "Vehicle classification",
-  "driverRegSubtitleVehicleClassification": "Type, category and allowed services from the catalog (required by the server).",
   "driverRegFieldVehicleType": "Vehicle type",
   "driverRegFieldVehicleCategory": "Category",
   "driverRegFieldServiceTypes": "Enabled services",
@@ -531,8 +512,6 @@
   "driverRegCatalogRetry": "Retry catalog",
   "driverRegCatalogBrandModelTitle": "Make and model",
   "driverRegCatalogTransportStepTitle": "1. What will you drive?",
-  "driverRegCatalogModelLockedTitle": "Make and model",
-  "driverRegCatalogModelLockedHint": "Taken from your selection above. You can change make or model in the same section if needed.",
   "serviceTypeNameStandard": "Standard",
   "driverRegCatalogTransportCar": "Car / utility",
   "driverRegCatalogTransportMoto": "Motorcycle",
@@ -544,8 +523,6 @@
   "driverRegCatalogAxles": "Axle configurations",
   "driverRegCatalogBodyTypes": "Body types",
   "driverRegCatalogUnits": "Measurement units",
-  "driverRegCatalogSourceFallback": "Offline fallback data (run DB migrations for the full server catalog).",
-  "driverRegCatalogSourceDatabase": "Catalog from database",
   "driverRegCatalogLoad": "Load catalog",
   "driverRegVehicleTypeNoCategories": "This type has no categories in the catalog. Try another type or contact support.",
   "driverRegCategoryNoServices": "This category has no linked services in the catalog.",
@@ -570,20 +547,39 @@
   "@driverRegSectionVehicleClassification": {
     "description": "Section title: classification from GET /api/v2/vehicles/catalog."
   },
-  "@driverRegSubtitleVehicleClassification": {
-    "description": "Subtitle clarifying server catalog dependency."
+  "@driverRegFieldVehicleType": {
+    "description": "Vehicle type dropdown label (fleet.vehicle_types)."
   },
-  "@driverRegFieldVehicleType": { "description": "Vehicle type dropdown label (fleet.vehicle_types)." },
-  "@driverRegFieldVehicleCategory": { "description": "Category dropdown label (fleet.vehicle_categories)." },
-  "@driverRegFieldServiceTypes": { "description": "Heading for multi-select service type chips." },
-  "@driverRegFieldServiceType": { "description": "Single service dropdown label in compatibility_mode." },
-  "@driverRegCatalogRetry": { "description": "Button after catalog load error." },
-  "@driverRegCatalogLoad": { "description": "Button when catalog not loaded yet." },
-  "@driverRegVehicleTypeNoCategories": { "description": "Info if type has no categories from API." },
-  "@driverRegCategoryNoServices": { "description": "Info if category has no service_type_ids." },
-  "@driverRegServiceTypeFallbackPrefix": { "description": "Prefix if name missing from service_types list." },
-  "@driverRegSnackVehicleCatalogNotReady": { "description": "SnackBar when continuing before catalog ready." },
-  "@driverRegCatalogNoServiceTypes": { "description": "Empty state when compatibility_mode has no rows." },
+  "@driverRegFieldVehicleCategory": {
+    "description": "Category dropdown label (fleet.vehicle_categories)."
+  },
+  "@driverRegFieldServiceTypes": {
+    "description": "Heading for multi-select service type chips."
+  },
+  "@driverRegFieldServiceType": {
+    "description": "Single service dropdown label in compatibility_mode."
+  },
+  "@driverRegCatalogRetry": {
+    "description": "Button after catalog load error."
+  },
+  "@driverRegCatalogLoad": {
+    "description": "Button when catalog not loaded yet."
+  },
+  "@driverRegVehicleTypeNoCategories": {
+    "description": "Info if type has no categories from API."
+  },
+  "@driverRegCategoryNoServices": {
+    "description": "Info if category has no service_type_ids."
+  },
+  "@driverRegServiceTypeFallbackPrefix": {
+    "description": "Prefix if name missing from service_types list."
+  },
+  "@driverRegSnackVehicleCatalogNotReady": {
+    "description": "SnackBar when continuing before catalog ready."
+  },
+  "@driverRegCatalogNoServiceTypes": {
+    "description": "Empty state when compatibility_mode has no rows."
+  },
   "driverRegFieldBrand": "Brand",
   "driverRegHintBrandExample": "Ex. Toyota",
   "driverRegFieldModel": "Model",
@@ -621,13 +617,22 @@
   "driverRegActionContinue": "Continue",
   "driverRegActionBack": "Back",
   "driverRegActionSave": "Save",
+  "driverRegCancelTitle": "Cancel registration",
+  "driverRegCancelBodyUser": "For security, data entered so far will not be kept and this registration progress will be removed. You can start again whenever you want.",
+  "driverRegCancelBodyVehicle": "For security, the vehicle you are registering will not be saved. Your account and other vehicles stay unchanged.",
+  "driverRegCancelConfirm": "Yes, cancel",
+  "driverRegCancelKeepGoing": "Keep going",
   "driverRegTitleProfileCompletion": "Complete registration",
   "driverRegProfileStepSaved": "Changes saved.",
   "driverRegProfileRedirectSnackbar": "Based on your registration status, we opened «{stepTo}» instead of «{stepFrom}».",
   "@driverRegProfileRedirectSnackbar": {
     "placeholders": {
-      "stepFrom": { "type": "String" },
-      "stepTo": { "type": "String" }
+      "stepFrom": {
+        "type": "String"
+      },
+      "stepTo": {
+        "type": "String"
+      }
     }
   },
   "driverRegImageReady": "Image ready",
@@ -657,5 +662,59 @@
   "driverRegColorViolet": "Violet",
   "driverRegColorBrown": "Brown",
   "driverRegColorBeige": "Beige",
-  "driverRegColorGold": "Gold"
+  "driverRegColorGold": "Gold",
+  "driverLegalSectionTitle": "Legal & privacy",
+  "driverLegalSectionSubtitle": "Review the documents that apply to your account and manage your data.",
+  "driverLegalPrivacyPolicy": "Privacy policy",
+  "driverLegalTermsOfService": "Terms of service",
+  "driverLegalDeleteAccountTitle": "Delete account",
+  "driverLegalDeleteAccountBody": "Your account will enter a scheduled deletion period for {graceDays} days. After you confirm, your session will close and you cannot use the app. To recover it, sign in with your credentials and cancel the request before the deadline.",
+  "@driverLegalDeleteAccountBody": {
+    "placeholders": {
+      "graceDays": { "type": "int" }
+    }
+  },
+  "driverLegalDeleteAccountAction": "How to request",
+  "driverLegalDeleteAccountConfirmSchedule": "Schedule deletion",
+  "driverLegalDeleteAccountScheduling": "Scheduling deletion…",
+  "driverLegalDeleteAccountScheduledSuccess": "Deletion scheduled. Your session was closed; sign in to recover your account before the deadline.",
+  "driverLoginAccountDeletionPendingTitle": "Deletion scheduled",
+  "driverLoginAccountDeletionPendingBody": "This account is scheduled for deletion on {effectiveDate}. You cannot use the app until you recover it.",
+  "@driverLoginAccountDeletionPendingBody": {
+    "placeholders": {
+      "effectiveDate": { "type": "String" }
+    }
+  },
+  "driverLoginAccountDeletionPendingDateFallback": "the scheduled date",
+  "driverLoginAccountDeletionRecover": "Recover account",
+  "driverLoginAccountDeletionDismiss": "OK",
+  "driverLoginAccountDeletionRecovering": "Recovering account…",
+  "driverLoginAccountDeletionRecoverSuccess": "Account recovered. Welcome back.",
+  "driverLegalDeleteAccountPendingTitle": "Deletion scheduled",
+  "driverLegalDeleteAccountPendingBody": "Your account will be deleted on {effectiveDate}. You have {daysRemaining} days left to cancel and restore access.",
+  "@driverLegalDeleteAccountPendingBody": {
+    "placeholders": {
+      "effectiveDate": { "type": "String" },
+      "daysRemaining": { "type": "int" }
+    }
+  },
+  "driverLegalDeleteAccountPendingDateFallback": "the scheduled date",
+  "driverLegalDeleteAccountCancelAction": "Cancel deletion",
+  "driverLegalDeleteAccountCancelling": "Cancelling deletion…",
+  "driverLegalDeleteAccountCancelSuccess": "Deletion cancelled. Your account is still active.",
+  "driverPlayNotificationDisclosureTitle": "Trip notifications",
+  "driverPlayNotificationDisclosureBody": "Texi needs to send you notifications when trip requests arrive, trip status changes, or the passenger sends a message while you are online as a driver.",
+  "driverPlayLocationDisclosureTitle": "Location to receive trips",
+  "driverPlayLocationDisclosureBody": "Texi uses your location to show you on the map, match nearby trip requests, and share your position with the passenger during an active trip.",
+  "driverPlayDisclosureContinue": "Continue",
+  "driverLegalLoginHint": "By continuing, you agree to our usage policies and terms of service.",
+  "driverLegalLoginPrefix": "By continuing, you agree to our ",
+  "driverLegalLoginConjunction": " and ",
+  "driverLegalActivatePrefix": "By activating you accept our ",
+  "driverLegalUsagePolicies": "usage policies",
+  "driverLegalRegistrationHint": "By activating you accept our usage policies.",
+  "driverPlayCameraDisclosureTitle": "Camera access",
+  "driverPlayCameraDisclosureBody": "Texi uses the camera to capture identity documents, your license, and vehicle photos during registration. Images are sent securely for verification.",
+  "driverPlayGalleryDisclosureTitle": "Photo library access",
+  "driverPlayGalleryDisclosureBody": "Texi accesses photos you choose from your library for driver registration. Only the image you select is uploaded."
 }

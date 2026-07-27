@@ -74,15 +74,14 @@ class AppRouter {
       if (location == '/my-vehicles' && !hasToken) return '/login';
       if (location == '/settings' && !hasToken) return '/login';
       if (location == '/earnings-credits' && !hasToken) return '/login';
+      if (location == '/trip-history' && !hasToken) return '/login';
       if (location == '/registered-images') {
         if (!hasToken) return '/login';
         try {
-          final phone = await _storage
-              .read(key: DriverInternalToolsGate.storageKeyLoginPhone)
-              .timeout(const Duration(seconds: 3));
-          if (!DriverInternalToolsGate.phoneAllowsInternalTools(phone)) {
-            return '/home';
-          }
+          final allowed =
+              await DriverInternalToolsGate.asyncAllowsInternalToolsRoute()
+                  .timeout(const Duration(seconds: 3));
+          if (!allowed) return '/home';
         } catch (e) {
           debugPrint('[AppRouter] gate imágenes internas: $e');
           return '/home';
@@ -107,6 +106,7 @@ class AppRouter {
           String? completeVehicleGalleryForAssetId;
           int? openFromProfileStep;
           int? profilePreselectedCountryId;
+          String? profileSectionUiStatus;
           if (extra is bool && extra) {
             resumeAfterLogin = true;
           } else if (extra is Map) {
@@ -129,6 +129,10 @@ class AppRouter {
             } else if (cid is num) {
               profilePreselectedCountryId = cid.toInt();
             }
+            final ui = m['profileSectionUiStatus'] ?? m['profile_section_ui_status'];
+            if (ui is String && ui.trim().isNotEmpty) {
+              profileSectionUiStatus = ui.trim();
+            }
           }
           return DriverRegistrationFlowScreen(
             resumeAfterLogin: resumeAfterLogin,
@@ -136,6 +140,7 @@ class AppRouter {
             completeVehicleGalleryForAssetId: completeVehicleGalleryForAssetId,
             openFromProfileStep: openFromProfileStep,
             profilePreselectedCountryId: profilePreselectedCountryId,
+            profileSectionUiStatus: profileSectionUiStatus,
           );
         },
       ),

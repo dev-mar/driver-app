@@ -35,10 +35,18 @@ lib/l10n/app_localizations*.dart
 /build/
 /coverage/
 .env
+.env.local
+.env.prod
 .env.*
-!.env.example
-!.env.template
-!.env.*.example
+.env.example
+.env.template
+.env.*.example
+.env.local.example
+
+# Android signing (nunca en repo)
+**/key.properties
+**/*.jks
+**/*.keystore
 
 # Symbolication related
 app.*.symbols

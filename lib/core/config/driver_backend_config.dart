@@ -1,16 +1,17 @@
+import 'driver_app_environment.dart';
+
 /// Host único del despliegue `app_texi_WebSocket` (auth, geo, registro, perfiles, Socket.IO).
 ///
-/// Mismo valor por defecto que la app pasajero. Override local:
-/// `flutter run --dart-define=TEXI_BACKEND_BASE_URL=https://api.dev.taxitexi.com`
+/// Override por entorno:
+/// `--dart-define=TEXI_APP_ENV=dev|prod`
+/// `--dart-define=TEXI_BACKEND_BASE_URL=https://api.dev.taxitexi.com`
 class DriverBackendConfig {
   DriverBackendConfig._();
 
-  /// `applicationId` Android (FCM / google-services.json).
-  static const String firebaseAndroidApplicationId =
-      'com.taxitexi.texi_driver_app';
+  /// `applicationId` Android (FCM / google-services.json). Dev flavor usa suffix `.dev`.
+  static String get firebaseAndroidApplicationId => DriverAppEnvironment.isDev
+      ? 'com.taxitexi.texi_driver_app.dev'
+      : 'com.taxitexi.texi_driver_app';
 
-  static const String baseUrl = String.fromEnvironment(
-    'TEXI_BACKEND_BASE_URL',
-    defaultValue: 'https://api.dev.taxitexi.com',
-  );
+  static String get baseUrl => DriverAppEnvironment.backendBaseUrl;
 }

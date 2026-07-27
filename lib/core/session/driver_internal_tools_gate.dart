@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../config/driver_app_environment.dart';
+
 /// Pantallas internas (QA / soporte) visibles solo para números autorizados.
 ///
 /// Criterio actual: el número nacional comienza con [qaNationalPrefix] (p. ej. Bolivia
@@ -28,9 +30,15 @@ class DriverInternalToolsGate {
     final phone = await storage.read(key: storageKeyLoginPhone);
     return phoneAllowsInternalTools(phone);
   }
+
+  /// Ruta `/registered-images` y entradas de menú QA.
+  static Future<bool> asyncAllowsInternalToolsRoute() async {
+    if (DriverAppEnvironment.showsInternalToolsByDefault) return true;
+    return asyncAllowsInternalTools();
+  }
 }
 
-/// `true` si el teléfono guardado al login autoriza herramientas internas (QA).
+/// `true` si el build o el teléfono guardado al login autorizan herramientas internas.
 final driverInternalToolsVisibleProvider = FutureProvider<bool>((ref) async {
-  return DriverInternalToolsGate.asyncAllowsInternalTools();
+  return DriverInternalToolsGate.asyncAllowsInternalToolsRoute();
 });

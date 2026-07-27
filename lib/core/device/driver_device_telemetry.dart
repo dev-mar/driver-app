@@ -4,6 +4,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import 'driver_device_identity.dart';
+
 class DriverDeviceTelemetry {
   DriverDeviceTelemetry._();
 
@@ -12,7 +14,9 @@ class DriverDeviceTelemetry {
     final info = await _readDeviceInfo();
     final appVersion = await _readAppVersion();
     final networkType = await _readNetworkType();
+    final deviceId = await DriverDeviceIdentity.stableDeviceId();
 
+    payload['device_id'] = deviceId;
     if (info['app_instance_id'] != null) {
       payload['app_instance_id'] = info['app_instance_id'];
     }

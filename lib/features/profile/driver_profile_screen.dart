@@ -2,17 +2,17 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/network/driver_api_client.dart';
+import '../../core/network/driver_profile_api_providers.dart';
 import '../../core/router/app_router.dart';
-import '../../core/config/driver_backend_config.dart';
-import '../../core/network/driver_http_resilience.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_motion.dart';
 import '../../core/ui/texi_circular_avatar.dart';
 import '../../gen_l10n/app_localizations.dart';
+import 'profile_checklist_edit_policy.dart';
 
 enum _ProfileLoadError { noSession, emptyResponse, badFormat }
 
@@ -62,63 +62,33 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     _futureProfile = _fetchProfileAndCredits();
   }
 
-  Future<_ProfileScreenData> _fetchProfileAndCredits() async {
-    const storage = FlutterSecureStorage();
-    final token = await storage.read(key: 'driver_token');
-    if (token == null || token.isEmpty) {
-      throw _ProfileLoadError.noSession;
-    }
-
-    final dio = buildDriverAuthedDio(
-      token: token,
-      baseUrl: DriverBackendConfig.baseUrl,
-    );
-
+  Future<_ProfileScreenData> _fetchProfileAndCredits({bool forceRefresh = false}) async {
+    final meService = DriverMeProfileService(DriverApiClient());
+    final creditsService = DriverAppCreditsService(DriverApiClient());
     try {
-      final response = await requestWithRetry<Response<Map<String, dynamic>>>(
-        flow: 'driver_profile',
-        endpoint: '/api/v2/driver/me-profile',
-        maxAttempts: 3,
-        operation: () => dio.get<Map<String, dynamic>>('/api/v2/driver/me-profile'),
-      );
-      final root = response.data;
-      if (root == null) {
-        throw _ProfileLoadError.emptyResponse;
-      }
-      if (root['success'] != true) {
-        final msg = root['message']?.toString();
-        if (msg != null && msg.isNotEmpty) {
-          throw Exception(msg);
-        }
-        throw Exception('__PROFILE_FAIL__');
-      }
-      final data = root['data'];
-      if (data is! Map) {
-        throw _ProfileLoadError.badFormat;
-      }
-      final profile = _DriverProfileViewModel.fromJson(Map<String, dynamic>.from(data));
+      final data = await meService.fetchData(forceRefresh: forceRefresh);
+      final profile = _DriverProfileViewModel.fromJson(data);
 
       _DriverAppCreditsVm? credits;
       try {
-        final creditsRes = await requestWithRetry<Response<Map<String, dynamic>>>(
-          flow: 'driver_app_credits',
-          endpoint: '/api/v2/driver/app-credits',
-          maxAttempts: 2,
-          operation: () => dio.get<Map<String, dynamic>>('/api/v2/driver/app-credits'),
-        );
-        final cr = creditsRes.data;
-        if (cr != null &&
-            cr['success'] == true &&
-            cr['data'] is Map<String, dynamic>) {
-          credits = _DriverAppCreditsVm.fromJson(
-            Map<String, dynamic>.from(cr['data'] as Map),
-          );
-        }
+        final creditsData =
+            await creditsService.fetchData(forceRefresh: forceRefresh);
+        credits = _DriverAppCreditsVm.fromJson(creditsData);
       } catch (_) {
         credits = null;
       }
 
       return _ProfileScreenData(profile: profile, credits: credits);
+    } on DriverApiSessionException {
+      throw _ProfileLoadError.noSession;
+    } on DriverApiResponseException catch (e) {
+      if (e.code == 'empty_response') {
+        throw _ProfileLoadError.emptyResponse;
+      }
+      if (e.code == 'bad_format') {
+        throw _ProfileLoadError.badFormat;
+      }
+      throw Exception(e.code);
     } on DioException catch (e) {
       final body = e.response?.data;
       final msg = body is Map ? body['message']?.toString() : null;
@@ -128,7 +98,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
 
   Future<void> _reload() async {
     setState(() {
-      _futureProfile = _fetchProfileAndCredits();
+      _futureProfile = _fetchProfileAndCredits(forceRefresh: true);
     });
     await _futureProfile;
   }
@@ -223,13 +193,15 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                       : _RegistrationOnboardingChecklist(
                           l10n: l10n,
                           items: p.registrationChecklist!,
-                          onOpenStep: (flowStep) {
+                          onOpenStep: (flowStep, uiStatus) {
                             context.pushNamed(
                               AppRouter.register,
                               extra: <String, dynamic>{
                                 'openFromProfileStep': flowStep,
+                                'profileSectionUiStatus': uiStatus,
                                 if (p.registrationCountryId != null)
-                                  'profilePreselectedCountryId': p.registrationCountryId,
+                                  'profilePreselectedCountryId':
+                                      p.registrationCountryId,
                               },
                             );
                           },
@@ -863,7 +835,7 @@ class _RegistrationOnboardingChecklist extends StatelessWidget {
 
   final AppLocalizations l10n;
   final List<_ProfileRegistrationChecklistItem> items;
-  final void Function(int flowStep) onOpenStep;
+  final void Function(int flowStep, String uiStatus) onOpenStep;
 
   @override
   Widget build(BuildContext context) {
@@ -925,7 +897,18 @@ class _ChecklistRow extends StatelessWidget {
 
   final AppLocalizations l10n;
   final _ProfileRegistrationChecklistItem item;
-  final void Function(int flowStep) onOpenStep;
+  final void Function(int flowStep, String uiStatus) onOpenStep;
+
+  String _tapHint(AppLocalizations l10n) {
+    switch (ProfileChecklistEditPolicy.fromUiStatus(item.uiStatus)) {
+      case ProfileChecklistEditPolicy.editable:
+        return l10n.driverProfileOnboardingTapEditable;
+      case ProfileChecklistEditPolicy.readOnly:
+        return l10n.driverProfileOnboardingTapViewOnly;
+      case ProfileChecklistEditPolicy.locked:
+        return l10n.driverProfileOnboardingTapLocked;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -938,7 +921,7 @@ class _ChecklistRow extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        onTap: () => onOpenStep(step),
+        onTap: () => onOpenStep(step, item.uiStatus),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           child: Row(
@@ -967,7 +950,7 @@ class _ChecklistRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      l10n.driverProfileOnboardingTapToContinue,
+                      _tapHint(l10n),
                       style: TextStyle(
                         color: AppColors.textSecondary.withValues(alpha: 0.9),
                         fontSize: 11.5,
