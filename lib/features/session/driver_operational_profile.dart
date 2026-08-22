@@ -16,6 +16,7 @@ class DriverOperationalProfile {
     this.registrationFlowPhase = '',
     this.suggestedClientStep,
     this.registrationCountryId,
+    this.mustChangePassword = false,
   });
 
   final String? uuid;
@@ -39,6 +40,9 @@ class DriverOperationalProfile {
 
   /// `reference.countries.id` vía localidad del staff; para `registration.country_id` en alta vehículo v2.
   final int? registrationCountryId;
+
+  /// Tras reset de soporte: debe crear una contraseña propia antes de operar.
+  final bool mustChangePassword;
 
   factory DriverOperationalProfile.fromJson(Map<String, dynamic> json) {
     final u = json['uuid']?.toString();
@@ -78,6 +82,10 @@ class DriverOperationalProfile {
       registrationFlowPhase: flowPhase,
       suggestedClientStep: step,
       registrationCountryId: countryId,
+      mustChangePassword: json['must_change_password'] == true ||
+          json['must_change_password'] == 'true' ||
+          json['must_change_password'] == 1 ||
+          json['must_change_password'] == '1',
     );
   }
 

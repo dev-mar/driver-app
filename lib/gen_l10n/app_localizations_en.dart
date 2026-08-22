@@ -114,7 +114,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverLoginRegisterBannerSubtitle =>
-      'Create your account in minutes and start receiving trips with Texi.';
+      'Create your account in minutes and start receiving trips with TEXIAPP.';
 
   @override
   String get driverHomeTitle => 'Driver';
@@ -178,7 +178,166 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverLogout => 'Sign out';
 
   @override
+  String get driverHomeMenuSectionAccount => 'Account';
+
+  @override
+  String get driverHomeMenuSectionActivity => 'Activity';
+
+  @override
+  String get driverHomeMenuSectionSession => 'Session';
+
+  @override
+  String get driverHomeMenuTitle => 'Menu';
+
+  @override
   String get driverEarningsCreditsMenu => 'Earnings & credits';
+
+  @override
+  String get driverClubMenu => 'Driver Club';
+
+  @override
+  String get driverClubTitle => 'Driver Club';
+
+  @override
+  String get driverClubHeroBadge => 'EXCLUSIVE';
+
+  @override
+  String get driverClubHeroHello => 'Hi';
+
+  @override
+  String driverClubHeroHelloName(String name) {
+    return 'Hi, $name';
+  }
+
+  @override
+  String get driverClubHeroTagline =>
+      'Benefits for drivers who already operate.';
+
+  @override
+  String get driverClubHowItWorks => 'What is the Texi Driver Club';
+
+  @override
+  String get driverClubLearnOnWeb => 'Learn more about this benefit';
+
+  @override
+  String get driverClubWalletTitle => 'Club credit';
+
+  @override
+  String driverClubExpiresOn(String date) {
+    return 'Active until $date';
+  }
+
+  @override
+  String get driverClubWalletEmptyHint => 'No Club credit yet.';
+
+  @override
+  String get driverClubWalletLiveHint => 'Used when trips complete.';
+
+  @override
+  String get driverClubInviteTitle => 'Invite and earn';
+
+  @override
+  String get driverClubInviteSubtitle => 'Share your code. Grow your network.';
+
+  @override
+  String get driverClubYourCode => 'Your code';
+
+  @override
+  String get driverClubCopyCode => 'Copy';
+
+  @override
+  String get driverClubCodeCopied => 'Code copied';
+
+  @override
+  String get driverClubShareWhatsapp => 'WhatsApp';
+
+  @override
+  String driverClubWhatsappShare(String code) {
+    return 'Join as a TEXIAPP driver with my code $code';
+  }
+
+  @override
+  String get driverClubEnterCodeHint => 'Were you invited? Enter their code';
+
+  @override
+  String get driverClubClaimCta => 'Register code';
+
+  @override
+  String get driverClubClaimOk => 'Code registered';
+
+  @override
+  String get driverClubInviteesTitle => 'My guests';
+
+  @override
+  String get driverClubInviteesEmpty => 'No guests yet.';
+
+  @override
+  String get driverClubStatusPending => 'Pending';
+
+  @override
+  String get driverClubStatusProgress => 'In progress';
+
+  @override
+  String get driverClubStatusDone => 'Done';
+
+  @override
+  String get driverClubBenefitsTitle => 'More benefits';
+
+  @override
+  String get driverClubLevelsTitle => 'Levels';
+
+  @override
+  String get driverClubLevelsHint =>
+      'Your category is confirmed by the team. These numbers are this month\'s reference.';
+
+  @override
+  String driverClubMonthTripsValue(int count) {
+    return '$count trips this month';
+  }
+
+  @override
+  String driverClubMonthRatingValue(String rating) {
+    return '$rating stars this month';
+  }
+
+  @override
+  String get driverClubMonthRatingEmpty => 'No ratings this month yet';
+
+  @override
+  String driverClubTripsRange(int min, int max) {
+    return '$min–$max trips';
+  }
+
+  @override
+  String driverClubTripsFrom(int min) {
+    return 'From $min trips';
+  }
+
+  @override
+  String driverClubRatingFrom(String rating) {
+    return 'From $rating stars';
+  }
+
+  @override
+  String get driverClubRatingNone => 'No star minimum';
+
+  @override
+  String get driverClubChallengesTitle => 'Challenges';
+
+  @override
+  String get driverClubChallengesBlurb => 'Short quests, when they go live.';
+
+  @override
+  String get driverClubAdsTitle => 'Vehicle ads';
+
+  @override
+  String get driverClubAdsBlurb => 'Apply when the call opens.';
+
+  @override
+  String get driverRegFieldReferralCode => 'Referral code (optional)';
+
+  @override
+  String get driverRegFieldReferralCodeHint => 'E.g. CARLOS-782';
 
   @override
   String get driverEarningsCreditsTitle => 'Earnings & credits';
@@ -429,7 +588,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverProfileOnboardingBody =>
-      'Review each block\'s status. You can only edit pending items or those flagged for correction.';
+      'Review each block\'s status. CI, license, and vehicle photos can be changed until the block shows as Verified. A verified block cannot be opened; the summary is below.';
 
   @override
   String get driverProfileSectionOnboardingPersonal => 'Personal information';
@@ -462,14 +621,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverProfileOnboardingTapEditable => 'Tap to complete or fix';
 
   @override
+  String get driverProfileOnboardingTapEditPhotos =>
+      'Tap to change photos (until approved)';
+
+  @override
   String get driverProfileOnboardingTapViewOnly => 'Tap to view (in review)';
 
   @override
-  String get driverProfileOnboardingTapLocked => 'Tap to view (verified)';
+  String get driverProfileOnboardingTapLocked =>
+      'Verified. The summary is below.';
 
   @override
   String get driverRegProfileSectionReadOnlyBanner =>
       'This block is under review. You can view the information but cannot save changes until our team processes it.';
+
+  @override
+  String get driverRegProfileSectionPhotosEditableBanner =>
+      'You can change the photos until this block is approved. Other details stay locked.';
+
+  @override
+  String get driverRegActionSavePhotos => 'Save photos';
+
+  @override
+  String get driverRegSnackChangeAtLeastOnePhoto =>
+      'Change at least one photo to save.';
 
   @override
   String get driverRegProfileSectionLockedBanner =>
@@ -486,6 +661,59 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get driverRegErrorNoConnection =>
       'No internet connection. Check your signal and try again.';
+
+  @override
+  String get driverRegPassengerUpgradeTitle =>
+      'You already have a passenger account';
+
+  @override
+  String get driverRegPassengerUpgradeBody =>
+      'This number is already registered as a passenger. Open WhatsApp and send the message to confirm it is yours.';
+
+  @override
+  String get driverRegPassengerUpgradeBodyCode =>
+      'This number is already registered as a passenger. Enter the verification code to confirm it is yours.';
+
+  @override
+  String get driverRegPassengerUpgradeOpenWhatsApp => 'Open WhatsApp';
+
+  @override
+  String get driverRegPassengerUpgradeWaiting =>
+      'Waiting for your WhatsApp message…';
+
+  @override
+  String get driverRegPassengerUpgradeExpired =>
+      'The message expired. Try again.';
+
+  @override
+  String get driverRegPassengerUpgradeCodeHint => 'Verification code';
+
+  @override
+  String get driverRegPassengerUpgradeConfirm => 'Continue';
+
+  @override
+  String get driverRegErrorPassengerUpgradeRequired =>
+      'This number already belongs to a passenger. Confirm it on WhatsApp to register as a driver.';
+
+  @override
+  String get driverRegErrorDuplicatePhoneDriver =>
+      'This number is already registered as a driver. Sign in or recover your access.';
+
+  @override
+  String get driverRegErrorUpgradeOtpInvalid =>
+      'The code is invalid or expired. Request a new one and try again.';
+
+  @override
+  String get driverRegErrorUpgradeOtpNotFound =>
+      'There is no passenger account with this number. Complete registration as a new driver.';
+
+  @override
+  String get driverRegErrorAccountDeletionPending =>
+      'This account is pending deletion. Cancel that request in the passenger app before registering as a driver.';
+
+  @override
+  String get driverRegErrorUpgradeWhatsAppSend =>
+      'We could not send the WhatsApp code. Try again in a few minutes.';
 
   @override
   String get driverProfileSectionPersonal => 'Personal information';
@@ -530,6 +758,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverProfileFieldName => 'Name';
+
+  @override
+  String get driverProfileFieldReferralCode => 'Referral code';
+
+  @override
+  String get driverProfileCopyReferralCode => 'Copy referral code';
+
+  @override
+  String get driverProfileReferralCopied => 'Code copied';
 
   @override
   String get driverProfileFieldBirthDate => 'Date of birth';
@@ -695,6 +932,94 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverTripOfferBadgeNew => 'New';
+
+  @override
+  String get driverTripPaymentCash => 'Cash';
+
+  @override
+  String get driverTripPaymentQr => 'QR';
+
+  @override
+  String get driverTripExtrasTitle => 'Passenger notes';
+
+  @override
+  String get driverTripExtrasHint =>
+      'Informational. Close to return to the request list.';
+
+  @override
+  String get driverTripAddonsHint =>
+      'Review preferences and requirements. Close to return to the list.';
+
+  @override
+  String get driverTripExtrasClose => 'Close';
+
+  @override
+  String get driverTripExtraPet => 'Pet';
+
+  @override
+  String get driverTripExtraPetAlert => 'Pet on board.';
+
+  @override
+  String get driverTripExtraPetDetail =>
+      'The passenger is traveling with a pet.';
+
+  @override
+  String get driverTripExtraChildSeat => 'Child seat';
+
+  @override
+  String get driverTripExtraWheelchair => 'Wheelchair';
+
+  @override
+  String get driverTripExtraWheelchairAlert => 'Passenger with a wheelchair.';
+
+  @override
+  String get driverTripExtraWheelchairDetail =>
+      'Needs trunk space for a folding wheelchair. Please assist if needed.';
+
+  @override
+  String get driverTripExtraOver4 => 'More than 4 people';
+
+  @override
+  String get driverTripExtraLuggageAlert => 'With luggage.';
+
+  @override
+  String get driverTripExtraLuggageDetail =>
+      'The passenger has bags. Keep the trunk empty for luggage.';
+
+  @override
+  String get driverTripExtraAcAlert => 'Air conditioning.';
+
+  @override
+  String get driverTripExtraAcDetail =>
+      'The passenger asked to travel with A/C.';
+
+  @override
+  String get driverTripSpecialSeats6Alert => 'Large group (up to 6 passengers)';
+
+  @override
+  String get driverTripSpecialSeats6Detail =>
+      'Needs a roomy vehicle confirmed for 6 passengers.';
+
+  @override
+  String get driverTripSpecialRoofRackAlert => 'Roof rack required';
+
+  @override
+  String get driverTripSpecialRoofRackDetail =>
+      'The passenger will carry roof cargo. Have straps/bungees ready.';
+
+  @override
+  String get driverTripSpecialCargoAlert => 'Cargo / merchandise trip';
+
+  @override
+  String get driverTripSpecialCargoDetail =>
+      'Cargo space occupied. Includes extra time for loading and unloading.';
+
+  @override
+  String get driverRegFieldSixSeats => 'Vehicle with 6 seats';
+
+  @override
+  String get driverRegHintSixSeats =>
+      'Check if your car can carry up to 6 passengers. Used for large-group trips.';
 
   @override
   String get driverTripOfferBadgeOperations => 'Operations';
@@ -1022,7 +1347,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'We need category, expiry date, and one photo for each side of the license.';
 
   @override
-  String get driverRegSnackVehicleYearInvalid => 'Invalid vehicle year.';
+  String get driverRegSnackVehicleYearInvalid => 'Enter a 4-digit year.';
 
   @override
   String get driverRegSnackSelectCatalogBrandModel =>
@@ -1040,7 +1365,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverRegDoneBody =>
-      'Thanks for joining Texi. Your data and documents were registered and are now under review. We will activate your service soon so you can start taking trips. Now sign in with your credentials.';
+      'Thanks for joining TEXIAPP. Your data and documents were registered and are now under review. We will contact you shortly to continue your registration. Now sign in with your credentials.';
 
   @override
   String get driverRegDoneGoLogin => 'Go to sign in';
@@ -1069,14 +1394,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverRegResumeDoneCta => 'Go to home';
 
   @override
-  String get driverRegOnboardingDoneTitle => 'Account active';
+  String get driverRegOnboardingDoneTitle => 'Request sent successfully!';
 
   @override
   String get driverRegOnboardingDoneBody =>
-      'Your account is active. To register your service vehicle, open the menu (⋮) on the home screen and tap “Register service vehicle”. There you can see vehicles you already added or register your first one.';
+      'We\'re already reviewing your details and will contact you very soon. Tap Enter the app to sign in, register your vehicle, or contact support if you need help. You\'re almost there!';
 
   @override
-  String get driverRegOnboardingDoneCta => 'Go to home';
+  String get driverRegOnboardingDoneCta => 'Enter the app';
 
   @override
   String get driverRegRetryLoadCountries => 'Retry loading countries';
@@ -1124,6 +1449,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverRegHintOptional => 'Optional';
 
   @override
+  String get driverRegEmailHelper =>
+      'Choose the email on this phone or type a different one.';
+
+  @override
+  String get driverRegEmailPickFromDevice => 'Use email from this phone';
+
+  @override
+  String get driverRegValidationEmailInvalid => 'Enter a valid email.';
+
+  @override
   String get driverRegValidationRequired => 'Required';
 
   @override
@@ -1152,16 +1487,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverRegSectionContact => 'Contact';
 
   @override
+  String get driverRegSectionContactAddress => 'Contact and address';
+
+  @override
   String get driverRegFieldPhoneNumber => 'Phone number';
 
   @override
-  String get driverRegHintLocalDigitsOnly => 'Local digits only';
+  String get driverRegHintLocalDigitsOnly => 'E.g. 12345678';
+
+  @override
+  String get driverRegHintBoliviaLocalPhone => 'E.g. 70000000';
 
   @override
   String get driverRegChooseCountryFirst => 'Choose country first';
 
   @override
   String get driverRegValidationIncompleteNumber => 'Incomplete number';
+
+  @override
+  String get driverRegValidationBoliviaPhoneInvalid => 'Invalid number';
 
   @override
   String get driverRegSectionAddress => 'Address';
@@ -1174,6 +1518,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverRegSectionPassword => 'Access password';
+
+  @override
+  String get driverRegSectionPasswordHint =>
+      'Create a password to sign in to the app.';
 
   @override
   String get driverRegHintMin8Chars => 'At least 8 characters';
@@ -1251,11 +1599,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverRegSectionLicenseFrontBack => 'License — front and back';
 
   @override
-  String get driverRegSectionActivateAccount => 'Activate your account';
+  String get driverRegSectionActivateAccount => 'Submit your registration';
 
   @override
   String get driverRegSubtitleReviewBeforeContinue =>
-      'Review your data before continuing.';
+      'Review your details and send them for review.';
 
   @override
   String get driverRegSectionYourSummary => 'Your summary';
@@ -1275,7 +1623,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverRegIntroVehicle =>
-      'Complete the data exactly as shown on your policy and plate; then upload photos of all four sides.';
+      'Enter the details as on the plate. Then you will upload four photos of the vehicle.';
 
   @override
   String get driverRegSectionVehicleData => 'Vehicle data';
@@ -1321,6 +1669,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverRegCatalogPickBrandFirst => 'Choose a brand first';
+
+  @override
+  String get driverRegCatalogCustomTitle => 'Your vehicle details';
+
+  @override
+  String get driverRegCatalogCustomHint => 'It will be sent for review.';
+
+  @override
+  String get driverRegCatalogCustomManufacturer => 'Brand';
+
+  @override
+  String get driverRegCatalogCustomModel => 'Model';
+
+  @override
+  String get driverRegCatalogCustomYear => 'Year';
+
+  @override
+  String get driverRegCatalogCustomSave => 'Save';
+
+  @override
+  String driverRegCatalogCustomSummary(
+    String brand,
+    String model,
+    String year,
+  ) {
+    return 'For review: $brand · $model ($year)';
+  }
+
+  @override
+  String get driverRegSnackCatalogCustomRequired =>
+      'Enter brand, model, and year for the Other option.';
 
   @override
   String get driverRegCatalogTechnicalTitle => 'Technical catalogs (reference)';
@@ -1398,6 +1777,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get driverRegErrorSessionUnavailable =>
       'Session unavailable. Please sign in again.';
+
+  @override
+  String get driverRegErrorSecureStorage =>
+      'Could not read local data on this device. Close the app and try again. If it persists, clear the app data in Settings.';
 
   @override
   String get driverRegCatalogCompatEmptyUsesDefault =>
@@ -1510,7 +1893,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverRegPhotoRightHint => 'Side view, full right side.';
 
   @override
-  String get driverRegActionActivate => 'Activate';
+  String get driverRegActionActivate => 'Submit';
 
   @override
   String get driverRegActionFinish => 'Finish';
@@ -1728,14 +2111,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverPlayNotificationDisclosureBody =>
-      'Texi needs to send you notifications when trip requests arrive, trip status changes, or the passenger sends a message while you are online as a driver.';
+      'TEXIAPP needs to send you notifications when trip requests arrive, trip status changes, or the passenger sends a message while you are online as a driver.';
 
   @override
   String get driverPlayLocationDisclosureTitle => 'Location to receive trips';
 
   @override
   String get driverPlayLocationDisclosureBody =>
-      'Texi uses your location to show you on the map, match nearby trip requests, and share your position with the passenger during an active trip.';
+      'TEXIAPP uses your location to show you on the map, match nearby trip requests, and share your position with the passenger during an active trip.';
 
   @override
   String get driverPlayDisclosureContinue => 'Continue';
@@ -1751,7 +2134,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverLegalLoginConjunction => ' and ';
 
   @override
-  String get driverLegalActivatePrefix => 'By activating you accept our ';
+  String get driverLegalActivatePrefix => 'By submitting you accept our ';
 
   @override
   String get driverLegalUsagePolicies => 'usage policies';
@@ -1765,12 +2148,168 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverPlayCameraDisclosureBody =>
-      'Texi uses the camera to capture identity documents, your license, and vehicle photos during registration. Images are sent securely for verification.';
+      'TEXIAPP uses the camera to capture identity documents, your license, and vehicle photos during registration. Images are sent securely for verification.';
 
   @override
   String get driverPlayGalleryDisclosureTitle => 'Photo library access';
 
   @override
   String get driverPlayGalleryDisclosureBody =>
-      'Texi accesses photos you choose from your library for driver registration. Only the image you select is uploaded.';
+      'TEXIAPP accesses photos you choose from your library for driver registration. Only the image you select is uploaded.';
+
+  @override
+  String get driverAppUpdateRequiredTitle => 'Update required';
+
+  @override
+  String get driverAppUpdateRequiredMessage =>
+      'A new version of Texi Driver is available. Update the app to continue.';
+
+  @override
+  String get driverAppUpdateOptionalTitle => 'New version available';
+
+  @override
+  String get driverAppUpdateOptionalMessage =>
+      'An update is available on the Play Store. We recommend installing it for the best experience.';
+
+  @override
+  String get driverAppUpdateOpenStore => 'Go to Play Store';
+
+  @override
+  String get driverAppUpdateLater => 'Later';
+
+  @override
+  String get driverPasswordResetForgotLink => 'Forgot your password?';
+
+  @override
+  String get driverPasswordResetTitle => 'Reset password';
+
+  @override
+  String get driverPasswordResetLead =>
+      'Confirm your number. The fastest option is to send the TEXIAPP WhatsApp verification message. Or we can email you a code.';
+
+  @override
+  String get driverPasswordResetWhatsAppCta => 'Verify with WhatsApp';
+
+  @override
+  String get driverPasswordResetEmailCta => 'Send code to email';
+
+  @override
+  String get driverPasswordResetWaTitle => 'WhatsApp verification';
+
+  @override
+  String get driverPasswordResetWaBody =>
+      'Open WhatsApp and send the prescribed message. When we receive it, return to TEXIAPP to create your new password.';
+
+  @override
+  String get driverPasswordResetWaWaiting =>
+      'Waiting for the WhatsApp message…';
+
+  @override
+  String get driverPasswordResetEmailMissingBody =>
+      'We did not find an email on your account. Enter one to receive the code. We will save it when you reset the password.';
+
+  @override
+  String get driverPasswordResetEmailLabel => 'Email';
+
+  @override
+  String get driverPasswordResetSendCode => 'Send code';
+
+  @override
+  String driverPasswordResetEmailCodeBody(String email) {
+    return 'Enter the code we sent to $email and create your new password.';
+  }
+
+  @override
+  String get driverPasswordResetEmailFallback => 'your email';
+
+  @override
+  String get driverPasswordResetCodeLabel => 'Code';
+
+  @override
+  String get driverPasswordResetNewPasswordBody =>
+      'Number confirmed. Create a new password (at least 8 characters).';
+
+  @override
+  String get driverPasswordResetNewPassword => 'New password';
+
+  @override
+  String get driverPasswordResetConfirmPassword => 'Repeat password';
+
+  @override
+  String get driverPasswordResetSave => 'Save password';
+
+  @override
+  String get driverPasswordResetSuccess =>
+      'Password updated. Sign in with your new password.';
+
+  @override
+  String get driverPasswordResetErrorNotFound =>
+      'There is no driver account with that number.';
+
+  @override
+  String get driverPasswordResetErrorEmailRequired =>
+      'Enter an email to receive the code.';
+
+  @override
+  String get driverPasswordResetErrorOtpInvalid => 'Incorrect or expired code.';
+
+  @override
+  String get driverPasswordResetErrorNotVerified =>
+      'We have not confirmed the WhatsApp message yet. Send it and try again.';
+
+  @override
+  String get driverPasswordResetErrorRateLimit =>
+      'Too many attempts. Wait a few minutes.';
+
+  @override
+  String get driverPasswordResetErrorWaUnavailable =>
+      'WhatsApp is unavailable right now. Try email.';
+
+  @override
+  String get driverPasswordResetErrorEmailConflict =>
+      'That email is already used by another account.';
+
+  @override
+  String get driverPasswordResetErrorMismatch => 'Passwords do not match.';
+
+  @override
+  String get driverPasswordResetErrorExpired =>
+      'The WhatsApp message expired. Try again.';
+
+  @override
+  String get driverChangePasswordTitle => 'Create your password';
+
+  @override
+  String get driverChangePasswordLead =>
+      'Support gave you a temporary password to sign in. For security, create your own password now. This screen only appears after a support reset, not when you recover the password from the app.';
+
+  @override
+  String get driverChangePasswordCurrent => 'Temporary password';
+
+  @override
+  String get driverChangePasswordNew => 'New password';
+
+  @override
+  String get driverChangePasswordConfirm => 'Repeat new password';
+
+  @override
+  String get driverChangePasswordSave => 'Save and continue';
+
+  @override
+  String get driverChangePasswordSuccess => 'Password updated.';
+
+  @override
+  String get driverChangePasswordLogout => 'Sign out';
+
+  @override
+  String get driverChangePasswordErrorCurrent =>
+      'The temporary password is incorrect.';
+
+  @override
+  String get driverChangePasswordErrorSame =>
+      'The new password must be different from the temporary one.';
+
+  @override
+  String get driverChangePasswordErrorGeneric =>
+      'Could not update the password.';
 }

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../config/driver_app_environment.dart';
+import '../storage/driver_secure_storage.dart';
 
 /// Pantallas internas (QA / soporte) visibles solo para números autorizados.
 ///
@@ -26,8 +26,7 @@ class DriverInternalToolsGate {
   }
 
   static Future<bool> asyncAllowsInternalTools() async {
-    const storage = FlutterSecureStorage();
-    final phone = await storage.read(key: storageKeyLoginPhone);
+    final phone = await DriverSecureStorage.read(storageKeyLoginPhone);
     return phoneAllowsInternalTools(phone);
   }
 

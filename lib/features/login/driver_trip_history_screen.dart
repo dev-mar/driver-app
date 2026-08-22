@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../session/driver_operational_profile.dart';
+import '../../core/storage/driver_secure_storage.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/ui/driver_secondary_scaffold.dart';
 import '../../core/utils/money_formatter.dart';
 import '../../gen_l10n/app_localizations.dart';
 
@@ -16,7 +17,6 @@ class DriverTripHistoryScreen extends StatefulWidget {
 }
 
 class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
-  static const _storage = FlutterSecureStorage();
   static const _kStatusKey = 'driver_trip_history_status';
   static const _kDateRangeKey = 'driver_trip_history_date_range';
   static const _kCustomFromKey = 'driver_trip_history_custom_from';
@@ -40,7 +40,7 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
   int _activeLoadRequestId = 0;
   late final PageController _timePageController;
 
-  Future<String?> _token() => _storage.read(key: 'driver_token');
+  Future<String?> _token() => DriverSecureStorage.read('driver_token');
 
   @override
   void initState() {
@@ -67,10 +67,10 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
   }
 
   Future<void> _restoreFilters() async {
-    final storedStatus = await _storage.read(key: _kStatusKey);
-    final storedDateRange = await _storage.read(key: _kDateRangeKey);
-    final storedFrom = await _storage.read(key: _kCustomFromKey);
-    final storedTo = await _storage.read(key: _kCustomToKey);
+    final storedStatus = await DriverSecureStorage.read(_kStatusKey);
+    final storedDateRange = await DriverSecureStorage.read(_kDateRangeKey);
+    final storedFrom = await DriverSecureStorage.read(_kCustomFromKey);
+    final storedTo = await DriverSecureStorage.read(_kCustomToKey);
     final parsedFrom = storedFrom != null
         ? DateTime.tryParse(storedFrom)
         : null;
@@ -97,15 +97,15 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
   }
 
   Future<void> _persistFilters() async {
-    await _storage.write(key: _kStatusKey, value: _status ?? '');
-    await _storage.write(key: _kDateRangeKey, value: _dateRange);
-    await _storage.write(
-      key: _kCustomFromKey,
-      value: _customRange?.start.toIso8601String() ?? '',
+    await DriverSecureStorage.write(_kStatusKey, _status ?? '');
+    await DriverSecureStorage.write(_kDateRangeKey, _dateRange);
+    await DriverSecureStorage.write(
+      _kCustomFromKey,
+      _customRange?.start.toIso8601String() ?? '',
     );
-    await _storage.write(
-      key: _kCustomToKey,
-      value: _customRange?.end.toIso8601String() ?? '',
+    await DriverSecureStorage.write(
+      _kCustomToKey,
+      _customRange?.end.toIso8601String() ?? '',
     );
   }
 
@@ -166,8 +166,8 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
     final total = _response?.total ?? 0;
     final canPrev = _offset > 0;
     final canNext = _offset + _pageSize < total;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.driverTripHistoryTitle)),
+    return DriverSecondaryScaffold(
+      title: l10n.driverTripHistoryTitle,
       body: RefreshIndicator(
         onRefresh: _load,
         child: CustomScrollView(

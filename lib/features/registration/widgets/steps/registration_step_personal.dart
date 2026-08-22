@@ -11,6 +11,7 @@ import '../../driver_registration_controller.dart';
 import '../../registration_flow_bindings.dart';
 import '../../registration_flow_helpers.dart';
 import '../../registration_step_actions.dart';
+import '../registration_email_field.dart';
 import '../registration_flow_chrome.dart';
 import '../registration_section_card.dart';
 import '../registration_soft_info_row.dart';
@@ -23,6 +24,7 @@ class RegistrationStepPersonal extends ConsumerWidget {
     required this.showValidationErrors,
     required this.flow,
     required this.notifier,
+    this.fieldsReadOnly = false,
   });
 
   final RegistrationFlowBindings bindings;
@@ -30,18 +32,22 @@ class RegistrationStepPersonal extends ConsumerWidget {
   final bool showValidationErrors;
   final DriverRegistrationFlowState flow;
   final DriverRegistrationFlowController notifier;
+  final bool fieldsReadOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
 
-        return Theme(
+        return IgnorePointer(
+          ignoring: fieldsReadOnly,
+          child: Theme(
           data: registrationInputTheme(context),
-          child: Form(
+            child: Form(
             key: bindings.formPersonal,
             autovalidateMode: showValidationErrors
                 ? AutovalidateMode.onUserInteraction
                 : AutovalidateMode.disabled,
+            child: AutofillGroup(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -176,6 +182,7 @@ class RegistrationStepPersonal extends ConsumerWidget {
                             controller: bindings.firstNameCtrl,
                             decoration: InputDecoration(labelText: l10n.driverRegFieldFirstName),
                             textCapitalization: TextCapitalization.words,
+                            autofillHints: const [AutofillHints.givenName],
                             validator: (v) =>
                                 v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                           ),
@@ -186,6 +193,7 @@ class RegistrationStepPersonal extends ConsumerWidget {
                             controller: bindings.lastNameCtrl,
                             decoration: InputDecoration(labelText: l10n.driverRegFieldLastName),
                             textCapitalization: TextCapitalization.words,
+                            autofillHints: const [AutofillHints.familyName],
                             validator: (v) =>
                                 v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                           ),
@@ -244,20 +252,20 @@ class RegistrationStepPersonal extends ConsumerWidget {
                       validator: (v) => v == null ? l10n.driverRegValidationSelectOption : null,
                     ),
                     const SizedBox(height: 10),
-                    TextFormField(
+                    RegistrationEmailField(
                       controller: bindings.emailCtrl,
-                      decoration: InputDecoration(
-                        labelText: l10n.driverRegFieldEmail,
-                        hintText: l10n.driverRegHintOptional,
-                      ),
-                      keyboardType: TextInputType.emailAddress,
+                      l10n: l10n,
+                      onChanged: () {
+                        actions.onFormChanged();
+                        unawaited(actions.persistDraft());
+                      },
                     ),
                   ],
                 ),
                 const SizedBox(height: AppFoundation.spacingLg),
                 RegistrationSectionCard(
-                  title: l10n.driverRegSectionContact,
-                  icon: Icons.phone_android_rounded,
+                  title: l10n.driverRegSectionContactAddress,
+                  icon: Icons.contact_phone_rounded,
                   children: [
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,31 +297,50 @@ class RegistrationStepPersonal extends ConsumerWidget {
                             enabled: flow.selectedCountryPhoneCode != null,
                             decoration: InputDecoration(
                               labelText: l10n.driverRegFieldPhoneNumber,
+                              floatingLabelBehavior: FloatingLabelBehavior.always,
                               hintText: flow.selectedCountryPhoneCode != null
-                                  ? l10n.driverRegHintLocalDigitsOnly
+                                  ? (registrationPhoneCountryIsBolivia(
+                                          phoneCode: flow.selectedCountryPhoneCode,
+                                          countryName: flow.selectedCountryName,
+                                        )
+                                      ? l10n.driverRegHintBoliviaLocalPhone
+                                      : l10n.driverRegHintLocalDigitsOnly)
                                   : l10n.driverRegChooseCountryFirst,
                             ),
                             keyboardType: TextInputType.phone,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            inputFormatters: registrationPhoneCountryIsBolivia(
+                              phoneCode: flow.selectedCountryPhoneCode,
+                              countryName: flow.selectedCountryName,
+                            )
+                                ? [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    const BoliviaLocalPhoneInputFormatter(),
+                                  ]
+                                : [FilteringTextInputFormatter.digitsOnly],
                             validator: (v) {
                               if (flow.selectedCountryPhoneCode == null) {
                                 return l10n.driverRegValidationSelectCountry;
                               }
                               final d = (v ?? '').replaceAll(RegExp(r'\D'), '');
-                              if (d.length < 6) return l10n.driverRegValidationIncompleteNumber;
+                              if (registrationPhoneCountryIsBolivia(
+                                phoneCode: flow.selectedCountryPhoneCode,
+                                countryName: flow.selectedCountryName,
+                              )) {
+                                if (!isValidBoliviaLocalMobile(d)) {
+                                  return l10n.driverRegValidationBoliviaPhoneInvalid;
+                                }
+                                return null;
+                              }
+                              if (d.length < 6) {
+                                return l10n.driverRegValidationBoliviaPhoneInvalid;
+                              }
                               return null;
                             },
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                RegistrationSectionCard(
-                  title: l10n.driverRegSectionAddress,
-                  icon: Icons.home_work_outlined,
-                  children: [
+                    const SizedBox(height: 10),
                     TextFormField(
                       controller: bindings.addressCtrl,
                       decoration: InputDecoration(
@@ -329,36 +356,112 @@ class RegistrationStepPersonal extends ConsumerWidget {
                 ),
                 const SizedBox(height: 14),
                 RegistrationSectionCard(
-                  title: l10n.driverRegSectionPassword,
-                  icon: Icons.lock_outline_rounded,
+                  title: l10n.driverRegFieldReferralCode,
+                  icon: Icons.card_giftcard_rounded,
+                  tone: RegistrationSectionTone.accent,
                   children: [
                     TextFormField(
-                      controller: bindings.passwordCtrl,
-                      obscureText: true,
+                      controller: bindings.referralCodeCtrl,
+                      textCapitalization: TextCapitalization.characters,
                       decoration: InputDecoration(
-                        labelText: l10n.driverLoginPassword,
-                        hintText: l10n.driverRegHintMin8Chars,
+                        labelText: l10n.driverRegFieldReferralCode,
+                        hintText: l10n.driverRegFieldReferralCodeHint,
                       ),
-                      validator: (v) =>
-                          v == null || v.length < 8 ? l10n.driverRegValidationMin8Chars : null,
-                    ),
-                    const SizedBox(height: AppFoundation.spacingMd),
-                    TextFormField(
-                      controller: bindings.passwordConfirmCtrl,
-                      obscureText: true,
-                      decoration: InputDecoration(labelText: l10n.driverRegFieldConfirmPassword),
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return l10n.driverRegValidationRequired;
-                        if (v != bindings.passwordCtrl.text) return l10n.driverRegSnackPasswordsMismatch;
-                        return null;
+                      onChanged: (_) {
+                        actions.onFormChanged();
+                        unawaited(actions.persistDraft());
                       },
                     ),
                   ],
                 ),
+                const SizedBox(height: 14),
+                _RegistrationAccessPasswordFields(
+                  bindings: bindings,
+                  l10n: l10n,
+                ),
               ],
             ),
+            ),
           ),
+        ),
         );
   }
+}
 
+class _RegistrationAccessPasswordFields extends StatefulWidget {
+  const _RegistrationAccessPasswordFields({
+    required this.bindings,
+    required this.l10n,
+  });
+
+  final RegistrationFlowBindings bindings;
+  final AppLocalizations l10n;
+
+  @override
+  State<_RegistrationAccessPasswordFields> createState() =>
+      _RegistrationAccessPasswordFieldsState();
+}
+
+class _RegistrationAccessPasswordFieldsState
+    extends State<_RegistrationAccessPasswordFields> {
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = widget.l10n;
+    final bindings = widget.bindings;
+    return RegistrationSectionCard(
+      title: l10n.driverRegSectionPassword,
+      subtitle: l10n.driverRegSectionPasswordHint,
+      icon: Icons.lock_outline_rounded,
+      children: [
+        TextFormField(
+          controller: bindings.passwordCtrl,
+          obscureText: _obscurePassword,
+          decoration: InputDecoration(
+            labelText: l10n.driverLoginPassword,
+            hintText: l10n.driverRegHintMin8Chars,
+            suffixIcon: IconButton(
+              tooltip: l10n.driverLoginPassword,
+              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              icon: Icon(
+                _obscurePassword
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          validator: (v) =>
+              v == null || v.length < 8 ? l10n.driverRegValidationMin8Chars : null,
+        ),
+        const SizedBox(height: AppFoundation.spacingMd),
+        TextFormField(
+          controller: bindings.passwordConfirmCtrl,
+          obscureText: _obscureConfirm,
+          decoration: InputDecoration(
+            labelText: l10n.driverRegFieldConfirmPassword,
+            suffixIcon: IconButton(
+              tooltip: l10n.driverRegFieldConfirmPassword,
+              onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+              icon: Icon(
+                _obscureConfirm
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          validator: (v) {
+            if (v == null || v.isEmpty) return l10n.driverRegValidationRequired;
+            if (v != bindings.passwordCtrl.text) {
+              return l10n.driverRegSnackPasswordsMismatch;
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
 }

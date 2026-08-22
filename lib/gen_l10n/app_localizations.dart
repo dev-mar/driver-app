@@ -287,7 +287,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverLoginRegisterBannerSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Create your account in minutes and start receiving trips with Texi.'**
+  /// **'Create your account in minutes and start receiving trips with TEXIAPP.'**
   String get driverLoginRegisterBannerSubtitle;
 
   /// No description provided for @driverHomeTitle.
@@ -392,11 +392,293 @@ abstract class AppLocalizations {
   /// **'Sign out'**
   String get driverLogout;
 
+  /// No description provided for @driverHomeMenuSectionAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get driverHomeMenuSectionAccount;
+
+  /// No description provided for @driverHomeMenuSectionActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get driverHomeMenuSectionActivity;
+
+  /// No description provided for @driverHomeMenuSectionSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Session'**
+  String get driverHomeMenuSectionSession;
+
+  /// No description provided for @driverHomeMenuTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu'**
+  String get driverHomeMenuTitle;
+
   /// No description provided for @driverEarningsCreditsMenu.
   ///
   /// In en, this message translates to:
   /// **'Earnings & credits'**
   String get driverEarningsCreditsMenu;
+
+  /// No description provided for @driverClubMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Club'**
+  String get driverClubMenu;
+
+  /// No description provided for @driverClubTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Club'**
+  String get driverClubTitle;
+
+  /// No description provided for @driverClubHeroBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'EXCLUSIVE'**
+  String get driverClubHeroBadge;
+
+  /// No description provided for @driverClubHeroHello.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi'**
+  String get driverClubHeroHello;
+
+  /// No description provided for @driverClubHeroHelloName.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi, {name}'**
+  String driverClubHeroHelloName(String name);
+
+  /// No description provided for @driverClubHeroTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Benefits for drivers who already operate.'**
+  String get driverClubHeroTagline;
+
+  /// No description provided for @driverClubHowItWorks.
+  ///
+  /// In en, this message translates to:
+  /// **'What is the Texi Driver Club'**
+  String get driverClubHowItWorks;
+
+  /// No description provided for @driverClubLearnOnWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn more about this benefit'**
+  String get driverClubLearnOnWeb;
+
+  /// No description provided for @driverClubWalletTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Club credit'**
+  String get driverClubWalletTitle;
+
+  /// No description provided for @driverClubExpiresOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Active until {date}'**
+  String driverClubExpiresOn(String date);
+
+  /// No description provided for @driverClubWalletEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No Club credit yet.'**
+  String get driverClubWalletEmptyHint;
+
+  /// No description provided for @driverClubWalletLiveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Used when trips complete.'**
+  String get driverClubWalletLiveHint;
+
+  /// No description provided for @driverClubInviteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite and earn'**
+  String get driverClubInviteTitle;
+
+  /// No description provided for @driverClubInviteSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your code. Grow your network.'**
+  String get driverClubInviteSubtitle;
+
+  /// No description provided for @driverClubYourCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Your code'**
+  String get driverClubYourCode;
+
+  /// No description provided for @driverClubCopyCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get driverClubCopyCode;
+
+  /// No description provided for @driverClubCodeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Code copied'**
+  String get driverClubCodeCopied;
+
+  /// No description provided for @driverClubShareWhatsapp.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp'**
+  String get driverClubShareWhatsapp;
+
+  /// No description provided for @driverClubWhatsappShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Join as a TEXIAPP driver with my code {code}'**
+  String driverClubWhatsappShare(String code);
+
+  /// No description provided for @driverClubEnterCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Were you invited? Enter their code'**
+  String get driverClubEnterCodeHint;
+
+  /// No description provided for @driverClubClaimCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Register code'**
+  String get driverClubClaimCta;
+
+  /// No description provided for @driverClubClaimOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Code registered'**
+  String get driverClubClaimOk;
+
+  /// No description provided for @driverClubInviteesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My guests'**
+  String get driverClubInviteesTitle;
+
+  /// No description provided for @driverClubInviteesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No guests yet.'**
+  String get driverClubInviteesEmpty;
+
+  /// No description provided for @driverClubStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get driverClubStatusPending;
+
+  /// No description provided for @driverClubStatusProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get driverClubStatusProgress;
+
+  /// No description provided for @driverClubStatusDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get driverClubStatusDone;
+
+  /// No description provided for @driverClubBenefitsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'More benefits'**
+  String get driverClubBenefitsTitle;
+
+  /// No description provided for @driverClubLevelsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Levels'**
+  String get driverClubLevelsTitle;
+
+  /// No description provided for @driverClubLevelsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your category is confirmed by the team. These numbers are this month\'s reference.'**
+  String get driverClubLevelsHint;
+
+  /// No description provided for @driverClubMonthTripsValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} trips this month'**
+  String driverClubMonthTripsValue(int count);
+
+  /// No description provided for @driverClubMonthRatingValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{rating} stars this month'**
+  String driverClubMonthRatingValue(String rating);
+
+  /// No description provided for @driverClubMonthRatingEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No ratings this month yet'**
+  String get driverClubMonthRatingEmpty;
+
+  /// No description provided for @driverClubTripsRange.
+  ///
+  /// In en, this message translates to:
+  /// **'{min}–{max} trips'**
+  String driverClubTripsRange(int min, int max);
+
+  /// No description provided for @driverClubTripsFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From {min} trips'**
+  String driverClubTripsFrom(int min);
+
+  /// No description provided for @driverClubRatingFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From {rating} stars'**
+  String driverClubRatingFrom(String rating);
+
+  /// No description provided for @driverClubRatingNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No star minimum'**
+  String get driverClubRatingNone;
+
+  /// No description provided for @driverClubChallengesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Challenges'**
+  String get driverClubChallengesTitle;
+
+  /// No description provided for @driverClubChallengesBlurb.
+  ///
+  /// In en, this message translates to:
+  /// **'Short quests, when they go live.'**
+  String get driverClubChallengesBlurb;
+
+  /// No description provided for @driverClubAdsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle ads'**
+  String get driverClubAdsTitle;
+
+  /// No description provided for @driverClubAdsBlurb.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply when the call opens.'**
+  String get driverClubAdsBlurb;
+
+  /// No description provided for @driverRegFieldReferralCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Referral code (optional)'**
+  String get driverRegFieldReferralCode;
+
+  /// No description provided for @driverRegFieldReferralCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'E.g. CARLOS-782'**
+  String get driverRegFieldReferralCodeHint;
 
   /// No description provided for @driverEarningsCreditsTitle.
   ///
@@ -863,7 +1145,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverProfileOnboardingBody.
   ///
   /// In en, this message translates to:
-  /// **'Review each block\'s status. You can only edit pending items or those flagged for correction.'**
+  /// **'Review each block\'s status. CI, license, and vehicle photos can be changed until the block shows as Verified. A verified block cannot be opened; the summary is below.'**
   String get driverProfileOnboardingBody;
 
   /// No description provided for @driverProfileSectionOnboardingPersonal.
@@ -926,6 +1208,12 @@ abstract class AppLocalizations {
   /// **'Tap to complete or fix'**
   String get driverProfileOnboardingTapEditable;
 
+  /// No description provided for @driverProfileOnboardingTapEditPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to change photos (until approved)'**
+  String get driverProfileOnboardingTapEditPhotos;
+
   /// No description provided for @driverProfileOnboardingTapViewOnly.
   ///
   /// In en, this message translates to:
@@ -935,7 +1223,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverProfileOnboardingTapLocked.
   ///
   /// In en, this message translates to:
-  /// **'Tap to view (verified)'**
+  /// **'Verified. The summary is below.'**
   String get driverProfileOnboardingTapLocked;
 
   /// No description provided for @driverRegProfileSectionReadOnlyBanner.
@@ -943,6 +1231,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This block is under review. You can view the information but cannot save changes until our team processes it.'**
   String get driverRegProfileSectionReadOnlyBanner;
+
+  /// No description provided for @driverRegProfileSectionPhotosEditableBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'You can change the photos until this block is approved. Other details stay locked.'**
+  String get driverRegProfileSectionPhotosEditableBanner;
+
+  /// No description provided for @driverRegActionSavePhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Save photos'**
+  String get driverRegActionSavePhotos;
+
+  /// No description provided for @driverRegSnackChangeAtLeastOnePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change at least one photo to save.'**
+  String get driverRegSnackChangeAtLeastOnePhoto;
 
   /// No description provided for @driverRegProfileSectionLockedBanner.
   ///
@@ -967,6 +1273,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No internet connection. Check your signal and try again.'**
   String get driverRegErrorNoConnection;
+
+  /// No description provided for @driverRegPassengerUpgradeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have a passenger account'**
+  String get driverRegPassengerUpgradeTitle;
+
+  /// No description provided for @driverRegPassengerUpgradeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This number is already registered as a passenger. Open WhatsApp and send the message to confirm it is yours.'**
+  String get driverRegPassengerUpgradeBody;
+
+  /// No description provided for @driverRegPassengerUpgradeBodyCode.
+  ///
+  /// In en, this message translates to:
+  /// **'This number is already registered as a passenger. Enter the verification code to confirm it is yours.'**
+  String get driverRegPassengerUpgradeBodyCode;
+
+  /// No description provided for @driverRegPassengerUpgradeOpenWhatsApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Open WhatsApp'**
+  String get driverRegPassengerUpgradeOpenWhatsApp;
+
+  /// No description provided for @driverRegPassengerUpgradeWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for your WhatsApp message…'**
+  String get driverRegPassengerUpgradeWaiting;
+
+  /// No description provided for @driverRegPassengerUpgradeExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'The message expired. Try again.'**
+  String get driverRegPassengerUpgradeExpired;
+
+  /// No description provided for @driverRegPassengerUpgradeCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code'**
+  String get driverRegPassengerUpgradeCodeHint;
+
+  /// No description provided for @driverRegPassengerUpgradeConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get driverRegPassengerUpgradeConfirm;
+
+  /// No description provided for @driverRegErrorPassengerUpgradeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This number already belongs to a passenger. Confirm it on WhatsApp to register as a driver.'**
+  String get driverRegErrorPassengerUpgradeRequired;
+
+  /// No description provided for @driverRegErrorDuplicatePhoneDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'This number is already registered as a driver. Sign in or recover your access.'**
+  String get driverRegErrorDuplicatePhoneDriver;
+
+  /// No description provided for @driverRegErrorUpgradeOtpInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The code is invalid or expired. Request a new one and try again.'**
+  String get driverRegErrorUpgradeOtpInvalid;
+
+  /// No description provided for @driverRegErrorUpgradeOtpNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no passenger account with this number. Complete registration as a new driver.'**
+  String get driverRegErrorUpgradeOtpNotFound;
+
+  /// No description provided for @driverRegErrorAccountDeletionPending.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is pending deletion. Cancel that request in the passenger app before registering as a driver.'**
+  String get driverRegErrorAccountDeletionPending;
+
+  /// No description provided for @driverRegErrorUpgradeWhatsAppSend.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not send the WhatsApp code. Try again in a few minutes.'**
+  String get driverRegErrorUpgradeWhatsAppSend;
 
   /// No description provided for @driverProfileSectionPersonal.
   ///
@@ -1039,6 +1429,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Name'**
   String get driverProfileFieldName;
+
+  /// No description provided for @driverProfileFieldReferralCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Referral code'**
+  String get driverProfileFieldReferralCode;
+
+  /// No description provided for @driverProfileCopyReferralCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy referral code'**
+  String get driverProfileCopyReferralCode;
+
+  /// No description provided for @driverProfileReferralCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Code copied'**
+  String get driverProfileReferralCopied;
 
   /// No description provided for @driverProfileFieldBirthDate.
   ///
@@ -1321,6 +1729,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New'**
   String get driverTripOfferBadgeNew;
+
+  /// No description provided for @driverTripPaymentCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get driverTripPaymentCash;
+
+  /// No description provided for @driverTripPaymentQr.
+  ///
+  /// In en, this message translates to:
+  /// **'QR'**
+  String get driverTripPaymentQr;
+
+  /// No description provided for @driverTripExtrasTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Passenger notes'**
+  String get driverTripExtrasTitle;
+
+  /// No description provided for @driverTripExtrasHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Informational. Close to return to the request list.'**
+  String get driverTripExtrasHint;
+
+  /// No description provided for @driverTripAddonsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Review preferences and requirements. Close to return to the list.'**
+  String get driverTripAddonsHint;
+
+  /// No description provided for @driverTripExtrasClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get driverTripExtrasClose;
+
+  /// No description provided for @driverTripExtraPet.
+  ///
+  /// In en, this message translates to:
+  /// **'Pet'**
+  String get driverTripExtraPet;
+
+  /// No description provided for @driverTripExtraPetAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Pet on board.'**
+  String get driverTripExtraPetAlert;
+
+  /// No description provided for @driverTripExtraPetDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'The passenger is traveling with a pet.'**
+  String get driverTripExtraPetDetail;
+
+  /// No description provided for @driverTripExtraChildSeat.
+  ///
+  /// In en, this message translates to:
+  /// **'Child seat'**
+  String get driverTripExtraChildSeat;
+
+  /// No description provided for @driverTripExtraWheelchair.
+  ///
+  /// In en, this message translates to:
+  /// **'Wheelchair'**
+  String get driverTripExtraWheelchair;
+
+  /// No description provided for @driverTripExtraWheelchairAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Passenger with a wheelchair.'**
+  String get driverTripExtraWheelchairAlert;
+
+  /// No description provided for @driverTripExtraWheelchairDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs trunk space for a folding wheelchair. Please assist if needed.'**
+  String get driverTripExtraWheelchairDetail;
+
+  /// No description provided for @driverTripExtraOver4.
+  ///
+  /// In en, this message translates to:
+  /// **'More than 4 people'**
+  String get driverTripExtraOver4;
+
+  /// No description provided for @driverTripExtraLuggageAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'With luggage.'**
+  String get driverTripExtraLuggageAlert;
+
+  /// No description provided for @driverTripExtraLuggageDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'The passenger has bags. Keep the trunk empty for luggage.'**
+  String get driverTripExtraLuggageDetail;
+
+  /// No description provided for @driverTripExtraAcAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Air conditioning.'**
+  String get driverTripExtraAcAlert;
+
+  /// No description provided for @driverTripExtraAcDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'The passenger asked to travel with A/C.'**
+  String get driverTripExtraAcDetail;
+
+  /// No description provided for @driverTripSpecialSeats6Alert.
+  ///
+  /// In en, this message translates to:
+  /// **'Large group (up to 6 passengers)'**
+  String get driverTripSpecialSeats6Alert;
+
+  /// No description provided for @driverTripSpecialSeats6Detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a roomy vehicle confirmed for 6 passengers.'**
+  String get driverTripSpecialSeats6Detail;
+
+  /// No description provided for @driverTripSpecialRoofRackAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Roof rack required'**
+  String get driverTripSpecialRoofRackAlert;
+
+  /// No description provided for @driverTripSpecialRoofRackDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'The passenger will carry roof cargo. Have straps/bungees ready.'**
+  String get driverTripSpecialRoofRackDetail;
+
+  /// No description provided for @driverTripSpecialCargoAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Cargo / merchandise trip'**
+  String get driverTripSpecialCargoAlert;
+
+  /// No description provided for @driverTripSpecialCargoDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Cargo space occupied. Includes extra time for loading and unloading.'**
+  String get driverTripSpecialCargoDetail;
+
+  /// No description provided for @driverRegFieldSixSeats.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle with 6 seats'**
+  String get driverRegFieldSixSeats;
+
+  /// No description provided for @driverRegHintSixSeats.
+  ///
+  /// In en, this message translates to:
+  /// **'Check if your car can carry up to 6 passengers. Used for large-group trips.'**
+  String get driverRegHintSixSeats;
 
   /// No description provided for @driverTripOfferBadgeOperations.
   ///
@@ -1895,7 +2459,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegSnackVehicleYearInvalid.
   ///
   /// In en, this message translates to:
-  /// **'Invalid vehicle year.'**
+  /// **'Enter a 4-digit year.'**
   String get driverRegSnackVehicleYearInvalid;
 
   /// No description provided for @driverRegSnackSelectCatalogBrandModel.
@@ -1925,7 +2489,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegDoneBody.
   ///
   /// In en, this message translates to:
-  /// **'Thanks for joining Texi. Your data and documents were registered and are now under review. We will activate your service soon so you can start taking trips. Now sign in with your credentials.'**
+  /// **'Thanks for joining TEXIAPP. Your data and documents were registered and are now under review. We will contact you shortly to continue your registration. Now sign in with your credentials.'**
   String get driverRegDoneBody;
 
   /// No description provided for @driverRegDoneGoLogin.
@@ -1979,19 +2543,19 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegOnboardingDoneTitle.
   ///
   /// In en, this message translates to:
-  /// **'Account active'**
+  /// **'Request sent successfully!'**
   String get driverRegOnboardingDoneTitle;
 
   /// No description provided for @driverRegOnboardingDoneBody.
   ///
   /// In en, this message translates to:
-  /// **'Your account is active. To register your service vehicle, open the menu (⋮) on the home screen and tap “Register service vehicle”. There you can see vehicles you already added or register your first one.'**
+  /// **'We\'re already reviewing your details and will contact you very soon. Tap Enter the app to sign in, register your vehicle, or contact support if you need help. You\'re almost there!'**
   String get driverRegOnboardingDoneBody;
 
   /// No description provided for @driverRegOnboardingDoneCta.
   ///
   /// In en, this message translates to:
-  /// **'Go to home'**
+  /// **'Enter the app'**
   String get driverRegOnboardingDoneCta;
 
   /// No description provided for @driverRegRetryLoadCountries.
@@ -2084,6 +2648,24 @@ abstract class AppLocalizations {
   /// **'Optional'**
   String get driverRegHintOptional;
 
+  /// No description provided for @driverRegEmailHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the email on this phone or type a different one.'**
+  String get driverRegEmailHelper;
+
+  /// No description provided for @driverRegEmailPickFromDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Use email from this phone'**
+  String get driverRegEmailPickFromDevice;
+
+  /// No description provided for @driverRegValidationEmailInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email.'**
+  String get driverRegValidationEmailInvalid;
+
   /// No description provided for @driverRegValidationRequired.
   ///
   /// In en, this message translates to:
@@ -2132,6 +2714,12 @@ abstract class AppLocalizations {
   /// **'Contact'**
   String get driverRegSectionContact;
 
+  /// No description provided for @driverRegSectionContactAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact and address'**
+  String get driverRegSectionContactAddress;
+
   /// No description provided for @driverRegFieldPhoneNumber.
   ///
   /// In en, this message translates to:
@@ -2141,8 +2729,14 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegHintLocalDigitsOnly.
   ///
   /// In en, this message translates to:
-  /// **'Local digits only'**
+  /// **'E.g. 12345678'**
   String get driverRegHintLocalDigitsOnly;
+
+  /// No description provided for @driverRegHintBoliviaLocalPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'E.g. 70000000'**
+  String get driverRegHintBoliviaLocalPhone;
 
   /// No description provided for @driverRegChooseCountryFirst.
   ///
@@ -2155,6 +2749,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Incomplete number'**
   String get driverRegValidationIncompleteNumber;
+
+  /// No description provided for @driverRegValidationBoliviaPhoneInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid number'**
+  String get driverRegValidationBoliviaPhoneInvalid;
 
   /// No description provided for @driverRegSectionAddress.
   ///
@@ -2179,6 +2779,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Access password'**
   String get driverRegSectionPassword;
+
+  /// No description provided for @driverRegSectionPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a password to sign in to the app.'**
+  String get driverRegSectionPasswordHint;
 
   /// No description provided for @driverRegHintMin8Chars.
   ///
@@ -2321,13 +2927,13 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegSectionActivateAccount.
   ///
   /// In en, this message translates to:
-  /// **'Activate your account'**
+  /// **'Submit your registration'**
   String get driverRegSectionActivateAccount;
 
   /// No description provided for @driverRegSubtitleReviewBeforeContinue.
   ///
   /// In en, this message translates to:
-  /// **'Review your data before continuing.'**
+  /// **'Review your details and send them for review.'**
   String get driverRegSubtitleReviewBeforeContinue;
 
   /// No description provided for @driverRegSectionYourSummary.
@@ -2363,7 +2969,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegIntroVehicle.
   ///
   /// In en, this message translates to:
-  /// **'Complete the data exactly as shown on your policy and plate; then upload photos of all four sides.'**
+  /// **'Enter the details as on the plate. Then you will upload four photos of the vehicle.'**
   String get driverRegIntroVehicle;
 
   /// No description provided for @driverRegSectionVehicleData.
@@ -2455,6 +3061,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose a brand first'**
   String get driverRegCatalogPickBrandFirst;
+
+  /// No description provided for @driverRegCatalogCustomTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your vehicle details'**
+  String get driverRegCatalogCustomTitle;
+
+  /// No description provided for @driverRegCatalogCustomHint.
+  ///
+  /// In en, this message translates to:
+  /// **'It will be sent for review.'**
+  String get driverRegCatalogCustomHint;
+
+  /// No description provided for @driverRegCatalogCustomManufacturer.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand'**
+  String get driverRegCatalogCustomManufacturer;
+
+  /// No description provided for @driverRegCatalogCustomModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get driverRegCatalogCustomModel;
+
+  /// No description provided for @driverRegCatalogCustomYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get driverRegCatalogCustomYear;
+
+  /// No description provided for @driverRegCatalogCustomSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get driverRegCatalogCustomSave;
+
+  /// No description provided for @driverRegCatalogCustomSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'For review: {brand} · {model} ({year})'**
+  String driverRegCatalogCustomSummary(String brand, String model, String year);
+
+  /// No description provided for @driverRegSnackCatalogCustomRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter brand, model, and year for the Other option.'**
+  String get driverRegSnackCatalogCustomRequired;
 
   /// No description provided for @driverRegCatalogTechnicalTitle.
   ///
@@ -2581,6 +3235,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Session unavailable. Please sign in again.'**
   String get driverRegErrorSessionUnavailable;
+
+  /// No description provided for @driverRegErrorSecureStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read local data on this device. Close the app and try again. If it persists, clear the app data in Settings.'**
+  String get driverRegErrorSecureStorage;
 
   /// No description provided for @driverRegCatalogCompatEmptyUsesDefault.
   ///
@@ -2789,7 +3449,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegActionActivate.
   ///
   /// In en, this message translates to:
-  /// **'Activate'**
+  /// **'Submit'**
   String get driverRegActionActivate;
 
   /// No description provided for @driverRegActionFinish.
@@ -3182,7 +3842,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverPlayNotificationDisclosureBody.
   ///
   /// In en, this message translates to:
-  /// **'Texi needs to send you notifications when trip requests arrive, trip status changes, or the passenger sends a message while you are online as a driver.'**
+  /// **'TEXIAPP needs to send you notifications when trip requests arrive, trip status changes, or the passenger sends a message while you are online as a driver.'**
   String get driverPlayNotificationDisclosureBody;
 
   /// No description provided for @driverPlayLocationDisclosureTitle.
@@ -3194,7 +3854,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverPlayLocationDisclosureBody.
   ///
   /// In en, this message translates to:
-  /// **'Texi uses your location to show you on the map, match nearby trip requests, and share your position with the passenger during an active trip.'**
+  /// **'TEXIAPP uses your location to show you on the map, match nearby trip requests, and share your position with the passenger during an active trip.'**
   String get driverPlayLocationDisclosureBody;
 
   /// No description provided for @driverPlayDisclosureContinue.
@@ -3224,7 +3884,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverLegalActivatePrefix.
   ///
   /// In en, this message translates to:
-  /// **'By activating you accept our '**
+  /// **'By submitting you accept our '**
   String get driverLegalActivatePrefix;
 
   /// No description provided for @driverLegalUsagePolicies.
@@ -3248,7 +3908,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverPlayCameraDisclosureBody.
   ///
   /// In en, this message translates to:
-  /// **'Texi uses the camera to capture identity documents, your license, and vehicle photos during registration. Images are sent securely for verification.'**
+  /// **'TEXIAPP uses the camera to capture identity documents, your license, and vehicle photos during registration. Images are sent securely for verification.'**
   String get driverPlayCameraDisclosureBody;
 
   /// No description provided for @driverPlayGalleryDisclosureTitle.
@@ -3260,8 +3920,278 @@ abstract class AppLocalizations {
   /// No description provided for @driverPlayGalleryDisclosureBody.
   ///
   /// In en, this message translates to:
-  /// **'Texi accesses photos you choose from your library for driver registration. Only the image you select is uploaded.'**
+  /// **'TEXIAPP accesses photos you choose from your library for driver registration. Only the image you select is uploaded.'**
   String get driverPlayGalleryDisclosureBody;
+
+  /// No description provided for @driverAppUpdateRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update required'**
+  String get driverAppUpdateRequiredTitle;
+
+  /// No description provided for @driverAppUpdateRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A new version of Texi Driver is available. Update the app to continue.'**
+  String get driverAppUpdateRequiredMessage;
+
+  /// No description provided for @driverAppUpdateOptionalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New version available'**
+  String get driverAppUpdateOptionalTitle;
+
+  /// No description provided for @driverAppUpdateOptionalMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'An update is available on the Play Store. We recommend installing it for the best experience.'**
+  String get driverAppUpdateOptionalMessage;
+
+  /// No description provided for @driverAppUpdateOpenStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Play Store'**
+  String get driverAppUpdateOpenStore;
+
+  /// No description provided for @driverAppUpdateLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get driverAppUpdateLater;
+
+  /// No description provided for @driverPasswordResetForgotLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot your password?'**
+  String get driverPasswordResetForgotLink;
+
+  /// No description provided for @driverPasswordResetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset password'**
+  String get driverPasswordResetTitle;
+
+  /// No description provided for @driverPasswordResetLead.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your number. The fastest option is to send the TEXIAPP WhatsApp verification message. Or we can email you a code.'**
+  String get driverPasswordResetLead;
+
+  /// No description provided for @driverPasswordResetWhatsAppCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify with WhatsApp'**
+  String get driverPasswordResetWhatsAppCta;
+
+  /// No description provided for @driverPasswordResetEmailCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Send code to email'**
+  String get driverPasswordResetEmailCta;
+
+  /// No description provided for @driverPasswordResetWaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp verification'**
+  String get driverPasswordResetWaTitle;
+
+  /// No description provided for @driverPasswordResetWaBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open WhatsApp and send the prescribed message. When we receive it, return to TEXIAPP to create your new password.'**
+  String get driverPasswordResetWaBody;
+
+  /// No description provided for @driverPasswordResetWaWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the WhatsApp message…'**
+  String get driverPasswordResetWaWaiting;
+
+  /// No description provided for @driverPasswordResetEmailMissingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We did not find an email on your account. Enter one to receive the code. We will save it when you reset the password.'**
+  String get driverPasswordResetEmailMissingBody;
+
+  /// No description provided for @driverPasswordResetEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get driverPasswordResetEmailLabel;
+
+  /// No description provided for @driverPasswordResetSendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send code'**
+  String get driverPasswordResetSendCode;
+
+  /// No description provided for @driverPasswordResetEmailCodeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code we sent to {email} and create your new password.'**
+  String driverPasswordResetEmailCodeBody(String email);
+
+  /// No description provided for @driverPasswordResetEmailFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'your email'**
+  String get driverPasswordResetEmailFallback;
+
+  /// No description provided for @driverPasswordResetCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get driverPasswordResetCodeLabel;
+
+  /// No description provided for @driverPasswordResetNewPasswordBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Number confirmed. Create a new password (at least 8 characters).'**
+  String get driverPasswordResetNewPasswordBody;
+
+  /// No description provided for @driverPasswordResetNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get driverPasswordResetNewPassword;
+
+  /// No description provided for @driverPasswordResetConfirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat password'**
+  String get driverPasswordResetConfirmPassword;
+
+  /// No description provided for @driverPasswordResetSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save password'**
+  String get driverPasswordResetSave;
+
+  /// No description provided for @driverPasswordResetSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password updated. Sign in with your new password.'**
+  String get driverPasswordResetSuccess;
+
+  /// No description provided for @driverPasswordResetErrorNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no driver account with that number.'**
+  String get driverPasswordResetErrorNotFound;
+
+  /// No description provided for @driverPasswordResetErrorEmailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an email to receive the code.'**
+  String get driverPasswordResetErrorEmailRequired;
+
+  /// No description provided for @driverPasswordResetErrorOtpInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect or expired code.'**
+  String get driverPasswordResetErrorOtpInvalid;
+
+  /// No description provided for @driverPasswordResetErrorNotVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'We have not confirmed the WhatsApp message yet. Send it and try again.'**
+  String get driverPasswordResetErrorNotVerified;
+
+  /// No description provided for @driverPasswordResetErrorRateLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attempts. Wait a few minutes.'**
+  String get driverPasswordResetErrorRateLimit;
+
+  /// No description provided for @driverPasswordResetErrorWaUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp is unavailable right now. Try email.'**
+  String get driverPasswordResetErrorWaUnavailable;
+
+  /// No description provided for @driverPasswordResetErrorEmailConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'That email is already used by another account.'**
+  String get driverPasswordResetErrorEmailConflict;
+
+  /// No description provided for @driverPasswordResetErrorMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match.'**
+  String get driverPasswordResetErrorMismatch;
+
+  /// No description provided for @driverPasswordResetErrorExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'The WhatsApp message expired. Try again.'**
+  String get driverPasswordResetErrorExpired;
+
+  /// No description provided for @driverChangePasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your password'**
+  String get driverChangePasswordTitle;
+
+  /// No description provided for @driverChangePasswordLead.
+  ///
+  /// In en, this message translates to:
+  /// **'Support gave you a temporary password to sign in. For security, create your own password now. This screen only appears after a support reset, not when you recover the password from the app.'**
+  String get driverChangePasswordLead;
+
+  /// No description provided for @driverChangePasswordCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporary password'**
+  String get driverChangePasswordCurrent;
+
+  /// No description provided for @driverChangePasswordNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get driverChangePasswordNew;
+
+  /// No description provided for @driverChangePasswordConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat new password'**
+  String get driverChangePasswordConfirm;
+
+  /// No description provided for @driverChangePasswordSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save and continue'**
+  String get driverChangePasswordSave;
+
+  /// No description provided for @driverChangePasswordSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password updated.'**
+  String get driverChangePasswordSuccess;
+
+  /// No description provided for @driverChangePasswordLogout.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get driverChangePasswordLogout;
+
+  /// No description provided for @driverChangePasswordErrorCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'The temporary password is incorrect.'**
+  String get driverChangePasswordErrorCurrent;
+
+  /// No description provided for @driverChangePasswordErrorSame.
+  ///
+  /// In en, this message translates to:
+  /// **'The new password must be different from the temporary one.'**
+  String get driverChangePasswordErrorSame;
+
+  /// No description provided for @driverChangePasswordErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update the password.'**
+  String get driverChangePasswordErrorGeneric;
 }
 
 class _AppLocalizationsDelegate

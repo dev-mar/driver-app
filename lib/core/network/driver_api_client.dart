@@ -1,20 +1,17 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../config/driver_backend_config.dart';
 import '../device/driver_device_telemetry.dart';
+import '../storage/driver_secure_storage.dart';
 import 'driver_http_resilience.dart';
 import 'driver_session_guard.dart';
 
 /// Cliente HTTP autenticado del conductor (Bearer + retry + telemetría).
 class DriverApiClient {
   DriverApiClient({
-    FlutterSecureStorage? storage,
     String? baseUrl,
-  })  : _storage = storage ?? const FlutterSecureStorage(),
-        _baseUrl = baseUrl ?? DriverBackendConfig.baseUrl;
+  }) : _baseUrl = baseUrl ?? DriverBackendConfig.baseUrl;
 
-  final FlutterSecureStorage _storage;
   final String _baseUrl;
 
   static const String tokenStorageKey = 'driver_token';
@@ -79,7 +76,7 @@ class DriverApiClient {
     return dio;
   }
 
-  Future<String?> readToken() => _storage.read(key: tokenStorageKey);
+  Future<String?> readToken() => DriverSecureStorage.read(tokenStorageKey);
 
   Future<String> requireToken() async {
     final token = await readToken();
@@ -185,7 +182,7 @@ class DriverApiClient {
 
   /// Renueva access token vía `POST /api/v2/auth/refresh`. Devuelve `false` si falla.
   Future<bool> tryRefreshSession() async {
-    final refreshToken = await _storage.read(key: refreshTokenStorageKey);
+    final refreshToken = await DriverSecureStorage.read(refreshTokenStorageKey);
     if (refreshToken == null || refreshToken.isEmpty) return false;
     try {
       final telemetry = await DriverDeviceTelemetry.toApiPayload();
@@ -203,11 +200,11 @@ class DriverApiClient {
       final token = body['token']?.toString();
       final newRefreshToken = body['refresh_token']?.toString();
       if (token == null || token.isEmpty) return false;
-      await _storage.write(key: tokenStorageKey, value: token);
+      await DriverSecureStorage.write(tokenStorageKey, token);
       if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
-        await _storage.write(
-          key: refreshTokenStorageKey,
-          value: newRefreshToken,
+        await DriverSecureStorage.write(
+          refreshTokenStorageKey,
+          newRefreshToken,
         );
       }
       return true;

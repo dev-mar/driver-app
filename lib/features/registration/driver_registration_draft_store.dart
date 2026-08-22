@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../core/storage/driver_secure_storage.dart';
 
 class DriverRegistrationDraft {
   const DriverRegistrationDraft({
@@ -221,23 +221,27 @@ class DriverRegistrationDraft {
 class DriverRegistrationDraftStore {
   DriverRegistrationDraftStore._();
 
-  static const _storage = FlutterSecureStorage();
   static const _key = 'driver_registration_flow_draft_v1';
 
   static Future<void> save(DriverRegistrationDraft draft) async {
     final raw = jsonEncode(draft.toJson());
-    await _storage.write(key: _key, value: raw);
+    await DriverSecureStorage.write(_key, raw);
   }
 
   static Future<DriverRegistrationDraft?> load() async {
-    final raw = await _storage.read(key: _key);
-    if (raw == null || raw.isEmpty) return null;
-    final decoded = jsonDecode(raw);
-    if (decoded is! Map<String, dynamic>) return null;
-    return DriverRegistrationDraft.fromJson(decoded);
+    try {
+      final raw = await DriverSecureStorage.read(_key);
+      if (raw == null || raw.isEmpty) return null;
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return null;
+      return DriverRegistrationDraft.fromJson(decoded);
+    } catch (_) {
+      await clear();
+      return null;
+    }
   }
 
   static Future<void> clear() async {
-    await _storage.delete(key: _key);
+    await DriverSecureStorage.delete(_key);
   }
 }

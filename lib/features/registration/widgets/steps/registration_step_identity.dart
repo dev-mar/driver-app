@@ -1,5 +1,6 @@
 // GENERATED — editar con cuidado; regenerar: node tool/extract_registration_steps.mjs
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -18,11 +19,15 @@ class RegistrationStepIdentity extends ConsumerWidget {
     required this.bindings,
     required this.actions,
     required this.showValidationErrors,
+    this.fieldsReadOnly = false,
+    this.photosLocked = false,
   });
 
   final RegistrationFlowBindings bindings;
   final RegistrationStepActions actions;
   final bool showValidationErrors;
+  final bool fieldsReadOnly;
+  final bool photosLocked;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,8 +52,12 @@ class RegistrationStepIdentity extends ConsumerWidget {
                   children: [
                     TextFormField(
                       controller: bindings.docNumberCtrl,
+                      enabled: !fieldsReadOnly,
                       decoration: InputDecoration(labelText: l10n.driverRegFieldDocumentNumber),
                       keyboardType: TextInputType.text,
+                      inputFormatters: [
+                        LengthLimitingTextInputFormatter(15),
+                      ],
                       validator: (v) =>
                           v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                     ),
@@ -56,14 +65,19 @@ class RegistrationStepIdentity extends ConsumerWidget {
                     TextFormField(
                       controller: bindings.docExpireCtrl,
                       readOnly: true,
+                      enabled: !fieldsReadOnly,
                       decoration: InputDecoration(
                         labelText: l10n.driverRegFieldDocumentExpiry,
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.event_rounded),
-                          onPressed: () => actions.pickDateToField(bindings.docExpireCtrl, future: true),
+                          onPressed: fieldsReadOnly
+                              ? null
+                              : () => actions.pickDateToField(bindings.docExpireCtrl, future: true),
                         ),
                       ),
-                      onTap: () => actions.pickDateToField(bindings.docExpireCtrl, future: true),
+                      onTap: fieldsReadOnly
+                          ? null
+                          : () => actions.pickDateToField(bindings.docExpireCtrl, future: true),
                       validator: (v) =>
                           v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                     ),
@@ -77,7 +91,13 @@ class RegistrationStepIdentity extends ConsumerWidget {
                   children: [
                     RegistrationCarnetUploadTile(
                       kind: RegistrationCarnetSlotKind.idFront,
-                      isSet: bindings.idFrontB64 != null,
+                      isSet: bindings.idFrontB64 != null ||
+                          (bindings.idFrontPreviewUrl != null &&
+                              bindings.idFrontPreviewUrl!.isNotEmpty),
+                      previewUrl: bindings.idFrontB64 == null
+                          ? bindings.idFrontPreviewUrl
+                          : null,
+                      enabled: !photosLocked,
                       onTap: () async {
                         final b64 = await pickImageAsBase64(context);
                         actions.applyPickedImage(b64, (v) => bindings.idFrontB64 = v);
@@ -90,7 +110,13 @@ class RegistrationStepIdentity extends ConsumerWidget {
                     const SizedBox(height: 12),
                     RegistrationCarnetUploadTile(
                       kind: RegistrationCarnetSlotKind.idBack,
-                      isSet: bindings.idBackB64 != null,
+                      isSet: bindings.idBackB64 != null ||
+                          (bindings.idBackPreviewUrl != null &&
+                              bindings.idBackPreviewUrl!.isNotEmpty),
+                      previewUrl: bindings.idBackB64 == null
+                          ? bindings.idBackPreviewUrl
+                          : null,
+                      enabled: !photosLocked,
                       onTap: () async {
                         final b64 = await pickImageAsBase64(context);
                         actions.applyPickedImage(b64, (v) => bindings.idBackB64 = v);
@@ -121,6 +147,10 @@ class RegistrationStepIdentity extends ConsumerWidget {
                   children: [
                     RegistrationProfilePhotoCircleSlot(
                       base64Image: bindings.faceB64,
+                      previewUrl: bindings.faceB64 == null
+                          ? bindings.facePreviewUrl
+                          : null,
+                      enabled: !photosLocked,
                       onTap: () async {
                         final b64 = await pickImageAsBase64(
                           context,

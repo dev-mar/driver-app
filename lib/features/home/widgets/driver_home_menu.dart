@@ -17,6 +17,7 @@ import '../../login/driver_realtime_controller.dart';
 import '../../session/driver_operational_profile.dart';
 import 'driver_connection_phase_chip.dart';
 import 'driver_home_mini_profile_avatar.dart';
+import 'driver_home_overflow_sheet.dart';
 
 /// Errores de permisos/GPS al activar online: hint contextual en home.
 const kDriverOnlinePermissionHintCodes = <String>{
@@ -32,7 +33,7 @@ bool driverIsProminentOnlineGateError(String? code) {
       code == 'DRIVER_ACCOUNT_BLOCKED';
 }
 
-/// Menú overflow del AppBar (perfil, historial, créditos, logout).
+/// Acceso al menú del AppBar (perfil, historial, créditos, logout).
 class DriverHomeAppBarMenu extends ConsumerWidget {
   const DriverHomeAppBarMenu({super.key, required this.onLogout});
 
@@ -41,48 +42,25 @@ class DriverHomeAppBarMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final canClub = ref.watch(driverOperationalProfileProvider).asData?.value.canOperateAsDriver == true;
 
-    return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert_rounded),
-      onSelected: (value) {
-        switch (value) {
-          case 'settings':
-            context.pushNamed(AppRouter.settings);
-          case 'profile':
-            context.goNamed(AppRouter.profile);
-          case 'add_vehicle':
-            context.pushNamed(AppRouter.myVehicles);
-          case 'trip_history':
-            context.pushNamed(AppRouter.tripHistory);
-          case 'earnings_credits':
-            context.pushNamed(AppRouter.earningsCredits);
-          case 'logout':
-            onLogout();
-        }
-      },
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: 'settings',
-          child: Text(l10n.driverSettingsTitle),
+    return Padding(
+      padding: const EdgeInsets.only(right: 4),
+      child: IconButton(
+        style: IconButton.styleFrom(
+          backgroundColor: AppColors.surfaceCard,
+          foregroundColor: AppColors.textPrimary,
         ),
-        PopupMenuItem(
-          value: 'profile',
-          child: Text(l10n.driverProfileMenu),
-        ),
-        PopupMenuItem(
-          value: 'trip_history',
-          child: Text(l10n.driverTripHistoryMenu),
-        ),
-        PopupMenuItem(
-          value: 'earnings_credits',
-          child: Text(l10n.driverEarningsCreditsMenu),
-        ),
-        PopupMenuItem(
-          value: 'add_vehicle',
-          child: Text(l10n.driverHomeMenuAddVehicle),
-        ),
-        PopupMenuItem(value: 'logout', child: Text(l10n.driverLogout)),
-      ],
+        icon: const Icon(Icons.grid_view_rounded),
+        tooltip: l10n.driverHomeMenuTitle,
+        onPressed: () {
+          showDriverHomeOverflowSheet(
+            context: context,
+            canClub: canClub,
+            onLogout: onLogout,
+          );
+        },
+      ),
     );
   }
 }

@@ -2,19 +2,19 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
 import '../../core/device/driver_device_telemetry.dart';
 import '../../core/media/driver_app_media_uploader.dart';
 import '../../core/network/driver_api_client.dart';
 import '../../core/notifications/driver_push_token_service.dart';
+import '../../core/storage/driver_secure_storage.dart';
 import 'driver_registration_http_interceptor.dart';
 import 'driver_registration_models.dart';
 
 class DriverRegistrationException implements Exception {
-  DriverRegistrationException(this.message, {this.details});
+  DriverRegistrationException(this.message, {this.details, this.code});
   final String message;
   final String? details;
+  final String? code;
 
   @override
   String toString() => details != null ? '$message ($details)' : message;
@@ -25,17 +25,14 @@ class DriverRegistrationRepository {
   DriverRegistrationRepository({
     Dio? geoDio,
     Dio? usersDio,
-    FlutterSecureStorage? storage,
   })  : _geoDio = geoDio ?? DriverApiClient.createGeoDio(),
         _usersDio = usersDio ??
             DriverApiClient.createUsersDio(
               interceptors: [DriverRegistrationRequestIdInterceptor()],
-            ),
-        _storage = storage ?? const FlutterSecureStorage();
+            );
 
   final Dio _geoDio;
   final Dio _usersDio;
-  final FlutterSecureStorage _storage;
 
   late final DriverAppMediaUploader _mediaUploader =
       DriverAppMediaUploader(apiDio: _usersDio);
@@ -138,7 +135,7 @@ class DriverRegistrationRepository {
     for (final k in accessKeys) {
       final v = m[k];
       if (v != null && v.toString().isNotEmpty) {
-        await _storage.write(key: _tokenKey, value: v.toString());
+        await DriverSecureStorage.write(_tokenKey, v.toString());
         savedAccess = true;
         break;
       }
@@ -147,7 +144,7 @@ class DriverRegistrationRepository {
     for (final k in refreshKeys) {
       final v = m[k];
       if (v != null && v.toString().isNotEmpty) {
-        await _storage.write(key: _refreshTokenKey, value: v.toString());
+        await DriverSecureStorage.write(_refreshTokenKey, v.toString());
         break;
       }
     }
@@ -167,7 +164,7 @@ class DriverRegistrationRepository {
 
   /// Renueva access token durante registro largo (misma ruta que login operativo).
   Future<bool> _refreshAccessToken() async {
-    final refresh = await _storage.read(key: _refreshTokenKey);
+    final refresh = await DriverSecureStorage.read(_refreshTokenKey);
     if (refresh == null || refresh.isEmpty) return false;
     try {
       final response = await _usersDio.post<Map<String, dynamic>>(
@@ -204,12 +201,12 @@ class DriverRegistrationRepository {
 
   /// Si ya hay token (p. ej. guardado por personal-info o login).
   Future<bool> hasDriverToken() async {
-    final t = await _storage.read(key: _tokenKey);
+    final t = await DriverSecureStorage.read(_tokenKey);
     return t != null && t.isNotEmpty;
   }
 
   Future<String> _requireBearerToken() async {
-    final token = await _storage.read(key: _tokenKey);
+    final token = await DriverSecureStorage.read(_tokenKey);
     if (token == null || token.isEmpty) {
       throw DriverRegistrationException(
         'Sesión no disponible. Completa el paso anterior o vuelve a abrir el registro.',
@@ -276,6 +273,18 @@ class DriverRegistrationRepository {
       return '$msg ($code)';
     }
     return msg ?? 'Error del servidor';
+  }
+
+  String? _extractErrorCode(dynamic data) {
+    if (data is! Map) return null;
+    final code = data['code']?.toString().trim();
+    if (code != null && code.isNotEmpty) return code;
+    final err = data['error'];
+    if (err is Map) {
+      final ec = err['code']?.toString().trim();
+      if (ec != null && ec.isNotEmpty) return ec;
+    }
+    return null;
   }
 
   /// Mensaje útil cuando el cuerpo no es JSON o viene vacío (p. ej. 500 HTML).
@@ -436,7 +445,10 @@ class DriverRegistrationRepository {
       final data = response.data;
       if (data == null) throw DriverRegistrationException('Respuesta vacía');
       if (data['success'] != true) {
-        throw DriverRegistrationException(_extractErrorMessage(data));
+        throw DriverRegistrationException(
+          _extractErrorMessage(data),
+          code: _extractErrorCode(data),
+        );
       }
       final inner = data['data'];
       if (inner is! Map) {
@@ -451,7 +463,68 @@ class DriverRegistrationRepository {
       return (uuid: uuid, tokenSaved: tokenSaved, presignUploadAvailable: presign);
     } on DioException catch (e) {
       final d = e.response?.data;
-      throw DriverRegistrationException(_extractErrorMessage(d));
+      throw DriverRegistrationException(
+        _extractErrorMessage(d),
+        code: _extractErrorCode(d),
+      );
+    }
+  }
+
+  Future<PassengerUpgradeChallenge> issuePassengerUpgradeOtp(
+    String phoneNumber,
+  ) async {
+    try {
+      final telemetry = await DriverDeviceTelemetry.toApiPayload();
+      final response = await _usersDio.post<Map<String, dynamic>>(
+        '/api/v2/driver/registration/passenger-upgrade-otp',
+        data: <String, dynamic>{
+          'phone_number': phoneNumber,
+          ...telemetry,
+        },
+      );
+      final data = response.data;
+      if (data == null) throw DriverRegistrationException('Respuesta vacía');
+      if (data['success'] != true) {
+        throw DriverRegistrationException(
+          _extractErrorMessage(data),
+          code: _extractErrorCode(data),
+        );
+      }
+      final inner = data['data'];
+      return PassengerUpgradeChallenge.fromApiData(
+        inner is Map ? Map<String, dynamic>.from(inner) : null,
+      );
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      throw DriverRegistrationException(
+        _extractErrorMessage(d),
+        code: _extractErrorCode(d),
+      );
+    }
+  }
+
+  /// Polling público del inbound WhatsApp (mismo contrato que login pasajero).
+  Future<String?> getPassengerUpgradeChallengeStatus({
+    required String phoneE164,
+    required String challengeId,
+  }) async {
+    try {
+      final response = await _usersDio.get<Map<String, dynamic>>(
+        '/api/v2/auth/challenge-status',
+        queryParameters: <String, String>{
+          'phone_e164': phoneE164,
+          'challenge_id': challengeId,
+        },
+      );
+      final data = response.data;
+      if (data == null || data['success'] != true) return null;
+      final inner = data['data'];
+      if (inner is! Map) return null;
+      final status = inner['status']?.toString().trim();
+      if (status == null || status.isEmpty) return null;
+      return status;
+    } on DioException {
+      return null;
     }
   }
 
@@ -462,7 +535,7 @@ class DriverRegistrationRepository {
         final uuid = body['uuid']?.toString();
         final docType = body['document_type'];
         final idempotencyKey = (uuid != null && uuid.isNotEmpty && docType != null)
-            ? 'app-doc-$uuid-$docType'
+            ? 'app-doc-$uuid-$docType-${DateTime.now().millisecondsSinceEpoch}'
             : null;
         final headers = <String, dynamic>{
           'Authorization': 'Bearer $bearer',
@@ -537,7 +610,7 @@ class DriverRegistrationRepository {
 
   /// Estado para reanudar registro (misma fuente que la app usa al cerrarse a mitad de flujo).
   Future<DriverRegistrationStatusDto> fetchRegistrationStatus({String? uuid}) async {
-    final token = await _storage.read(key: _tokenKey);
+    final token = await DriverSecureStorage.read(_tokenKey);
     if (token == null || token.isEmpty) {
       throw DriverRegistrationException('Sesión no disponible.');
     }
@@ -568,7 +641,7 @@ class DriverRegistrationRepository {
   /// Vehículos del conductor en flota (solo texto / etiquetas; sin galería).
   /// Origen: `GET /api/v2/vehicles`.
   Future<List<DriverVehicleSummary>> fetchMyVehicleSummaries() async {
-    final token = await _storage.read(key: _tokenKey);
+    final token = await DriverSecureStorage.read(_tokenKey);
     if (token == null || token.isEmpty) {
       throw DriverRegistrationException('Sesión no disponible. Inicia sesión de nuevo.');
     }
@@ -613,7 +686,7 @@ class DriverRegistrationRepository {
   /// Origen: `GET /api/v2/vehicles/catalog` en dos partes (`scope=registration` + `scope=extensions`)
   /// para evitar un JSON único demasiado grande (proxies que cortan el cuerpo).
   Future<VehicleCatalog> fetchVehicleCatalog() async {
-    final token = await _storage.read(key: _tokenKey);
+    final token = await DriverSecureStorage.read(_tokenKey);
     if (token == null || token.isEmpty) {
       throw DriverRegistrationException('Sesión no disponible. Inicia sesión de nuevo.');
     }
@@ -679,7 +752,7 @@ class DriverRegistrationRepository {
   /// Registro de vehículo canónico. Origen: `POST /api/v2/vehicles`.
   /// Devuelve el UUID del activo (mismo valor en `public.vehicles.uuid` para fotos).
   Future<String> submitVehicle(Map<String, dynamic> body) async {
-    final token = await _storage.read(key: _tokenKey);
+    final token = await DriverSecureStorage.read(_tokenKey);
     if (token == null || token.isEmpty) {
       throw DriverRegistrationException('Sesión no disponible. Inicia sesión de nuevo.');
     }
@@ -715,7 +788,7 @@ class DriverRegistrationRepository {
 
   /// Fotos del vehículo: `POST /api/v2/vehicles/images` (cada ítem: `image_storage_key` o `image`).
   Future<void> submitVehicleImages(Map<String, dynamic> body) async {
-    final token = await _storage.read(key: _tokenKey);
+    final token = await DriverSecureStorage.read(_tokenKey);
     if (token == null || token.isEmpty) {
       throw DriverRegistrationException('Sesión no disponible.');
     }
@@ -742,7 +815,7 @@ class DriverRegistrationRepository {
 
   /// Cancela registro incompleto (`DELETE /api/v2/driver/registration/session`).
   Future<void> abortRegistrationSession() async {
-    final token = await _storage.read(key: _tokenKey);
+    final token = await DriverSecureStorage.read(_tokenKey);
     if (token == null || token.isEmpty) {
       throw DriverRegistrationException('Sesión no disponible.');
     }
@@ -767,7 +840,7 @@ class DriverRegistrationRepository {
 
   /// Soft-archive del vehículo en curso (`POST /api/v2/vehicles/:id/archive`).
   Future<void> archiveVehicleInProgress(String vehicleAssetId) async {
-    final token = await _storage.read(key: _tokenKey);
+    final token = await DriverSecureStorage.read(_tokenKey);
     if (token == null || token.isEmpty) {
       throw DriverRegistrationException('Sesión no disponible.');
     }
@@ -797,8 +870,39 @@ class DriverRegistrationRepository {
     }
   }
 
+  /// Visor de evidencias: `GET /api/v2/driver/registered-images`.
+  Future<Map<String, dynamic>> fetchRegisteredImages() async {
+    final token = await DriverSecureStorage.read(_tokenKey);
+    if (token == null || token.isEmpty) {
+      throw DriverRegistrationException('Sesión no disponible. Inicia sesión de nuevo.');
+    }
+    try {
+      final response = await _usersDio.get<Map<String, dynamic>>(
+        '/api/v2/driver/registered-images',
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+        ),
+      );
+      final data = response.data;
+      if (data == null) {
+        throw DriverRegistrationException('Respuesta vacía (imágenes registradas)');
+      }
+      if (data['success'] != true) {
+        throw DriverRegistrationException(_extractErrorMessage(data));
+      }
+      final raw = data['data'];
+      if (raw is! Map) {
+        throw DriverRegistrationException('Formato inválido (imágenes registradas)');
+      }
+      return Map<String, dynamic>.from(raw);
+    } on DioException catch (e) {
+      _logDioIfDebug('fetchRegisteredImages', e);
+      throw DriverRegistrationException(_messageFromDioException(e));
+    }
+  }
+
   Future<void> clearStoredAuthTokens() async {
-    await _storage.delete(key: _tokenKey);
-    await _storage.delete(key: _refreshTokenKey);
+    await DriverSecureStorage.delete(_tokenKey);
+    await DriverSecureStorage.delete(_refreshTokenKey);
   }
 }

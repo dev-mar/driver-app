@@ -19,6 +19,9 @@ enum ProfileChecklistEditPolicy {
 
   bool get allowsSave => this == ProfileChecklistEditPolicy.editable;
   bool get isReadOnlyView => this != ProfileChecklistEditPolicy.editable;
+
+  /// Fotos de CI / licencia / vehículo: editables hasta que el bloque esté verificado.
+  bool get allowsPhotoEdit => this != ProfileChecklistEditPolicy.locked;
 }
 
 String checklistKeyForFlowStep(int flowStep) {

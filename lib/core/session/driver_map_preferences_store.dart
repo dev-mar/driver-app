@@ -1,12 +1,12 @@
 import 'dart:convert';
 
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../storage/driver_secure_storage.dart';
 
 class DriverMapPreferencesStore {
   DriverMapPreferencesStore._();
 
-  static const FlutterSecureStorage _storage = FlutterSecureStorage();
   static const String _tokenKey = 'driver_token';
   static const String _globalNamespace = 'global';
   static const List<String> _baseKeys = [
@@ -21,7 +21,7 @@ class DriverMapPreferencesStore {
 
   static Future<String> resolveNamespaceFromCurrentSession() async {
     try {
-      final token = await _storage.read(key: _tokenKey);
+      final token = await DriverSecureStorage.read(_tokenKey);
       if (token == null || token.isEmpty) return _globalNamespace;
       final identity = _extractIdentityFromJwt(token);
       if (identity == null || identity.isEmpty) return _globalNamespace;

@@ -6,6 +6,8 @@ import '../../../core/ui/driver_ui_states.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../gen_l10n/app_localizations.dart';
 import '../../login/driver_trip_offer.dart';
+import 'driver_trip_payment_chip.dart';
+import 'driver_trip_extras_icons.dart';
 
 class DriverTripOfferCard extends StatelessWidget {
   final AppLocalizations l10n;
@@ -64,7 +66,6 @@ class DriverTripOfferCard extends StatelessWidget {
     final hasPassenger = (offer.passengerName ?? '').isNotEmpty;
     final passengerRatingValue = offer.passengerRating ?? 5.0;
     final hasRating = !isWebDispatch;
-    final showChips = hasRouteEta || hasTripKm;
     final badgeColor = isWebDispatch ? _operationsAccent : AppColors.primary;
 
     final originText = (offer.originAddress ?? '').isNotEmpty
@@ -185,30 +186,39 @@ class DriverTripOfferCard extends StatelessWidget {
                         ),
                       ),
                     ],
-                    if (showChips) ...[
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          if (hasRouteEta)
-                            DriverOfferMetricChip(
-                              icon: Icons.schedule_rounded,
-                              label: _formatDurationWithUnit(
-                                context,
-                                offer.etaToDestinationMinutes,
-                              ),
-                              large: true,
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        DriverTripPaymentChip(
+                          l10n: l10n,
+                          paymentMethod: offer.paymentMethod,
+                        ),
+                        if (offer.tripExtras.isNotEmpty ||
+                            offer.tripSpecials.isNotEmpty)
+                          DriverTripExtrasIcons(
+                            l10n: l10n,
+                            extras: offer.tripExtras,
+                            specials: offer.tripSpecials,
+                          ),
+                        if (hasRouteEta)
+                          DriverOfferMetricChip(
+                            icon: Icons.schedule_rounded,
+                            label: _formatDurationWithUnit(
+                              context,
+                              offer.etaToDestinationMinutes,
                             ),
-                          if (hasTripKm)
-                            DriverOfferMetricChip(
-                              icon: Icons.route_rounded,
-                              label: _formatDistance(offer.tripDistanceKm),
-                              large: true,
-                            ),
-                        ],
-                      ),
-                    ],
+                            large: true,
+                          ),
+                        if (hasTripKm)
+                          DriverOfferMetricChip(
+                            icon: Icons.route_rounded,
+                            label: _formatDistance(offer.tripDistanceKm),
+                            large: true,
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),

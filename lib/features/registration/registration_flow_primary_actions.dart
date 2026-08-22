@@ -20,6 +20,7 @@ import 'registration_flow_completion.dart';
 import 'registration_flow_draft_service.dart';
 import 'registration_flow_helpers.dart';
 import 'registration_flow_mode.dart';
+import 'registration_passenger_upgrade_otp_dialog.dart';
 
 typedef RegistrationInvalidStepValidation = void Function();
 
@@ -38,7 +39,15 @@ Future<void> handleRegistrationPrimaryAction({
   if (flow.loading) return;
   notifier.clearError();
 
-  if (mode.profileReadOnly) {
+  if (mode.profilePhotosLocked) {
+    if (context.mounted) {
+      dismissRegistrationToProfile(context: context, ref: ref, l10n: l10n);
+    }
+    return;
+  }
+  if (mode.profileCompletionUx &&
+      mode.profileFieldsReadOnly &&
+      flow.step == 0) {
     if (context.mounted) {
       dismissRegistrationToProfile(context: context, ref: ref, l10n: l10n);
     }
@@ -82,6 +91,10 @@ Future<void> handleRegistrationPrimaryAction({
         );
         return;
       }
+      if (!isValidBoliviaLocalMobile(form.phoneLocalCtrl.text)) {
+        onInvalidStepValidation();
+        return;
+      }
       if (flow.selectedLocalityId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -110,7 +123,75 @@ Future<void> handleRegistrationPrimaryAction({
         address: form.addressCtrl.text.trim(),
         genderApiValue: form.genderValue ?? 'Other',
         password: form.passwordCtrl.text,
+        referralCode: form.referralCodeCtrl.text.trim(),
       );
+      if (!context.mounted) return;
+      var stUpgrade = ref.read(driverRegistrationFlowControllerProvider);
+      if (stUpgrade.passengerUpgradeOtpRequired) {
+        final phone = composeRegistrationFullPhone(form, flow);
+        final challenge = await notifier.requestPassengerUpgradeOtp(phone);
+        if (!context.mounted) return;
+        if (challenge == null) return;
+        if (challenge.isWhatsAppInbound) {
+          final inbound = await showPassengerUpgradeWhatsAppInboundDialog(
+            context: context,
+            l10n: l10n,
+            waDeepLink: challenge.waDeepLink,
+            pollStatus: () => notifier.pollPassengerUpgradeChallenge(
+              phoneE164: phone,
+              challengeId: challenge.challengeId!,
+            ),
+          );
+          if (!context.mounted) return;
+          if (inbound != PassengerUpgradeInboundResult.verified) {
+            notifier.clearPassengerUpgradePrompt();
+            if (inbound == PassengerUpgradeInboundResult.expired) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(l10n.driverRegPassengerUpgradeExpired),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+            return;
+          }
+          await notifier.submitPersonalInfo(
+            firstName: form.firstNameCtrl.text.trim(),
+            lastName: form.lastNameCtrl.text.trim(),
+            email: form.emailCtrl.text.trim(),
+            birthDateIso: form.birthDateCtrl.text.trim(),
+            phoneNumber: phone,
+            localityId: flow.selectedLocalityId!,
+            address: form.addressCtrl.text.trim(),
+            genderApiValue: form.genderValue ?? 'Other',
+            password: form.passwordCtrl.text,
+            referralCode: form.referralCodeCtrl.text.trim(),
+          );
+        } else {
+          final code = await showPassengerUpgradeOtpDialog(
+            context: context,
+            l10n: l10n,
+          );
+          if (!context.mounted) return;
+          if (code == null || code.trim().isEmpty) {
+            notifier.clearPassengerUpgradePrompt();
+            return;
+          }
+          await notifier.submitPersonalInfo(
+            firstName: form.firstNameCtrl.text.trim(),
+            lastName: form.lastNameCtrl.text.trim(),
+            email: form.emailCtrl.text.trim(),
+            birthDateIso: form.birthDateCtrl.text.trim(),
+            phoneNumber: phone,
+            localityId: flow.selectedLocalityId!,
+            address: form.addressCtrl.text.trim(),
+            genderApiValue: form.genderValue ?? 'Other',
+            password: form.passwordCtrl.text,
+            referralCode: form.referralCodeCtrl.text.trim(),
+            upgradeVerificationCode: code.trim(),
+          );
+        }
+      }
       unawaited(persistDraft());
       if (!context.mounted) return;
       final st0 = ref.read(driverRegistrationFlowControllerProvider);
@@ -119,13 +200,29 @@ Future<void> handleRegistrationPrimaryAction({
       }
       return;
     case 1:
-      if (!form.formId.currentState!.validate()) {
+      if (mode.profileCompletionUx && mode.profileFieldsReadOnly) {
+        final hasNew = form.idFrontB64 != null ||
+            form.idBackB64 != null ||
+            form.faceB64 != null;
+        if (!hasNew) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.driverRegSnackChangeAtLeastOnePhoto),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
+      } else if (!form.formId.currentState!.validate()) {
         onInvalidStepValidation();
         return;
       }
-      if (form.idFrontB64 == null ||
-          form.idBackB64 == null ||
-          form.faceB64 == null ||
+      if ((form.idFrontB64 == null &&
+              (form.idFrontStorageKey == null || form.idFrontStorageKey!.isEmpty)) ||
+          (form.idBackB64 == null &&
+              (form.idBackStorageKey == null || form.idBackStorageKey!.isEmpty)) ||
+          (form.faceB64 == null &&
+              (form.faceStorageKey == null || form.faceStorageKey!.isEmpty)) ||
           form.docExpireCtrl.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -140,9 +237,12 @@ Future<void> handleRegistrationPrimaryAction({
       await notifier.submitIdentityDocuments(
         uuid: uuid1,
         documentNumber: form.docNumberCtrl.text.trim(),
-        frontB64: form.idFrontB64!,
-        backB64: form.idBackB64!,
-        faceB64: form.faceB64!,
+        frontB64: form.idFrontB64,
+        backB64: form.idBackB64,
+        faceB64: form.faceB64,
+        frontStorageKey: form.idFrontStorageKey,
+        backStorageKey: form.idBackStorageKey,
+        faceStorageKey: form.faceStorageKey,
         expireDateIso: form.docExpireCtrl.text.trim(),
       );
       unawaited(persistDraft());
@@ -153,13 +253,28 @@ Future<void> handleRegistrationPrimaryAction({
       }
       return;
     case 2:
-      if (!form.formLicense.currentState!.validate()) {
+      if (mode.profileCompletionUx && mode.profileFieldsReadOnly) {
+        final hasNew = form.licFrontB64 != null || form.licBackB64 != null;
+        if (!hasNew) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.driverRegSnackChangeAtLeastOnePhoto),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
+      } else if (!form.formLicense.currentState!.validate()) {
         onInvalidStepValidation();
         return;
       }
-      if (form.licenseCategory == null ||
-          form.licFrontB64 == null ||
-          form.licBackB64 == null ||
+      final licenseTypeId = form.licenseCategory?.id ??
+          flow.registeredLicenseDocumentTypeId;
+      if (licenseTypeId == null ||
+          (form.licFrontB64 == null &&
+              (form.licFrontStorageKey == null || form.licFrontStorageKey!.isEmpty)) ||
+          (form.licBackB64 == null &&
+              (form.licBackStorageKey == null || form.licBackStorageKey!.isEmpty)) ||
           form.licenseExpireCtrl.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -174,9 +289,11 @@ Future<void> handleRegistrationPrimaryAction({
       await notifier.submitLicenseDocuments(
         uuid: uuid2,
         documentNumber: form.docNumberCtrl.text.trim(),
-        licenseCategoryTypeId: form.licenseCategory!.id,
-        frontB64: form.licFrontB64!,
-        backB64: form.licBackB64!,
+        licenseCategoryTypeId: licenseTypeId,
+        frontB64: form.licFrontB64,
+        backB64: form.licBackB64,
+        frontStorageKey: form.licFrontStorageKey,
+        backStorageKey: form.licBackStorageKey,
         expireDateIso: form.licenseExpireCtrl.text.trim(),
       );
       unawaited(persistDraft());
@@ -213,6 +330,35 @@ Future<void> handleRegistrationPrimaryAction({
       unawaited(persistDraft());
       return;
     case 4:
+      if (mode.profileCompletionUx && flow.carUuid != null) {
+        final hasNew = form.carFrontB64 != null ||
+            form.carBackB64 != null ||
+            form.carLeftB64 != null ||
+            form.carRightB64 != null;
+        if (!hasNew) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.driverRegSnackChangeAtLeastOnePhoto),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
+        await notifier.submitVehicleImagesChanged(
+          carId: flow.carUuid!,
+          frontB64: form.carFrontB64,
+          backB64: form.carBackB64,
+          leftB64: form.carLeftB64,
+          rightB64: form.carRightB64,
+        );
+        unawaited(persistDraft());
+        if (!context.mounted) return;
+        final stV = ref.read(driverRegistrationFlowControllerProvider);
+        if (stV.globalError == null) {
+          dismissRegistrationToProfile(context: context, ref: ref, l10n: l10n);
+        }
+        return;
+      }
       if (!form.formVehicle.currentState!.validate()) {
         onInvalidStepValidation();
         return;
@@ -240,11 +386,39 @@ Future<void> handleRegistrationPrimaryAction({
         );
         return;
       }
-      final y = int.tryParse(form.vehicleYearCtrl.text.trim());
-      if (y == null) {
+      final yearText = form.vehicleYearCtrl.text.trim();
+      if (!isValidVehicleModelYearText(yearText)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.driverRegSnackVehicleYearInvalid),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+      final y = int.parse(yearText);
+      final cat = flow.vehicleCatalog;
+      var needsCustom = false;
+      if (cat != null) {
+        for (final m in cat.manufacturers) {
+          if (m.id == flow.catalogManufacturerId && m.isCatchAll) {
+            needsCustom = true;
+            break;
+          }
+        }
+        if (!needsCustom) {
+          for (final e in cat.vehicleModels) {
+            if (e.id == flow.catalogVehicleModelId && e.isCatchAll) {
+              needsCustom = true;
+              break;
+            }
+          }
+        }
+      }
+      if (needsCustom && flow.catalogCustomProposal == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.driverRegSnackCatalogCustomRequired),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -255,14 +429,45 @@ Future<void> handleRegistrationPrimaryAction({
         model: form.vehicleModelCtrl.text.trim(),
         year: y,
         color: form.vehicleColorCtrl.text.trim(),
-        insurancePolicy: form.vehicleInsuranceCtrl.text.trim(),
         licensePlate: form.vehiclePlateCtrl.text.trim().toUpperCase(),
-        titleDeed: form.vehicleTitleCtrl.text.trim(),
         vin: form.vehicleVinCtrl.text.trim().toUpperCase(),
       );
       unawaited(persistDraft());
       return;
     case 5:
+      if (mode.profileCompletionUx) {
+        final hasNew = form.carFrontB64 != null ||
+            form.carBackB64 != null ||
+            form.carLeftB64 != null ||
+            form.carRightB64 != null;
+        if (!hasNew) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.driverRegSnackChangeAtLeastOnePhoto),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
+        final carIdProfile = flow.carUuid;
+        if (carIdProfile == null) return;
+        await notifier.submitVehicleImagesChanged(
+          carId: carIdProfile,
+          frontB64: form.carFrontB64,
+          backB64: form.carBackB64,
+          leftB64: form.carLeftB64,
+          rightB64: form.carRightB64,
+        );
+        unawaited(persistDraft());
+        if (!context.mounted) return;
+        final stP = ref.read(driverRegistrationFlowControllerProvider);
+        if (stP.globalError != null) return;
+        HapticFeedback.mediumImpact();
+        unawaited(DriverRegistrationDraftStore.clear());
+        unawaited(DriverRegistrationDraftMediaStore.clearAll());
+        dismissRegistrationToProfile(context: context, ref: ref, l10n: l10n);
+        return;
+      }
       if (form.carFrontB64 == null ||
           form.carBackB64 == null ||
           form.carLeftB64 == null ||

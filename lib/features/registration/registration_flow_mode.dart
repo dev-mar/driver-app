@@ -1,6 +1,6 @@
-/// Modos de lanzamiento del flujo de registro conductor.
 import '../profile/profile_checklist_edit_policy.dart';
 
+/// Modos de lanzamiento del flujo de registro conductor.
 class RegistrationFlowMode {
   const RegistrationFlowMode({
     required this.profileCompletionUx,
@@ -25,7 +25,22 @@ class RegistrationFlowMode {
   ProfileChecklistEditPolicy get profileEditPolicy =>
       ProfileChecklistEditPolicy.fromUiStatus(profileSectionUiStatus);
 
-  bool get profileReadOnly => profileCompletionUx && profileEditPolicy.isReadOnlyView;
+  /// Datos del bloque (número, fechas, catálogo): solo lectura en revisión o verificado.
+  bool get profileFieldsReadOnly =>
+      profileCompletionUx && profileEditPolicy.isReadOnlyView;
+
+  /// Fotos bloqueadas solo cuando el bloque ya está verificado (texto verde).
+  bool get profilePhotosLocked =>
+      profileCompletionUx && profileEditPolicy == ProfileChecklistEditPolicy.locked;
+
+  bool get profileCanSavePhotos {
+    if (!profileCompletionUx || profilePhotosLocked) return false;
+    final step = openFromProfileStep;
+    return step == 1 || step == 2 || step == 4 || step == 5;
+  }
+
+  /// Todo el formulario congelado (verificado). En revisión las fotos siguen activas.
+  bool get profileReadOnly => profilePhotosLocked;
 
   factory RegistrationFlowMode.fromLaunchParams({
     required bool resumeAfterLogin,

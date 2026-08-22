@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// Origen de la oferta (`trip:offer` / FCM). Aditivo; ausente = flujo app pasajero.
 abstract final class DriverTripOfferSource {
   static const String adminWebDispatch = 'admin_web_dispatch';
@@ -41,6 +43,15 @@ class DriverTripOffer {
   /// `targeted_driver` | `broadcast_match`.
   final String? dispatchMode;
 
+  /// `cash` | `qr`. Ausente = efectivo.
+  final String paymentMethod;
+
+  /// Preferencias informativas. Ausente = ninguno.
+  final List<String> tripExtras;
+
+  /// Requerimientos especiales (con recargo). Ausente = ninguno.
+  final List<String> tripSpecials;
+
   const DriverTripOffer({
     required this.tripId,
     this.offeredPrice,
@@ -55,6 +66,9 @@ class DriverTripOffer {
     this.tripDistanceKm,
     this.requestSource,
     this.dispatchMode,
+    this.paymentMethod = 'cash',
+    this.tripExtras = const [],
+    this.tripSpecials = const [],
   });
 
   bool get isAdminWebDispatch =>
@@ -87,5 +101,85 @@ DriverTripOffer driverTripOfferFromMap(Map<dynamic, dynamic> data) {
     tripDistanceKm: _parseOfferDouble(data['tripDistanceKm']),
     requestSource: data['requestSource']?.toString(),
     dispatchMode: data['dispatchMode']?.toString(),
+    paymentMethod: normalizeDriverTripPaymentMethod(
+      data['paymentMethod'] ?? data['payment_method'],
+    ),
+    tripExtras: parseDriverTripExtras(
+      data['tripExtras'] ?? data['passenger_extras'] ?? data['extras'],
+    ),
+    tripSpecials: parseDriverTripSpecials(
+      data['tripSpecials'] ?? data['passenger_specials'] ?? data['specials'],
+    ),
   );
+}
+
+String normalizeDriverTripPaymentMethod(dynamic raw) {
+  final v = raw?.toString().trim().toLowerCase() ?? '';
+  return v == 'qr' ? 'qr' : 'cash';
+}
+
+String normalizeDriverTripExtraCode(dynamic raw) {
+  final v = raw?.toString().trim().toLowerCase().replaceAll('-', '_') ?? '';
+  if (v == 'childseat') return 'child_seat';
+  if (v == 'over4' || v == 'extra_passengers') return 'over_4';
+  if (v == 'pets') return 'pet';
+  if (v == 'bags' || v == 'maletas') return 'luggage';
+  if (v == 'air_conditioning') return 'ac';
+  const allowed = {
+    'pet',
+    'child_seat',
+    'wheelchair',
+    'over_4',
+    'luggage',
+    'ac',
+  };
+  return allowed.contains(v) ? v : '';
+}
+
+String normalizeDriverTripSpecialCode(dynamic raw) {
+  final v = raw?.toString().trim().toLowerCase().replaceAll('-', '_') ?? '';
+  if (v == 'seats6' || v == 'six_seats') return 'seats_6';
+  if (v == 'roofrack' || v == 'parrilla') return 'roof_rack';
+  if (v == 'merchandise') return 'cargo';
+  const allowed = {'seats_6', 'roof_rack', 'cargo'};
+  return allowed.contains(v) ? v : '';
+}
+
+/// Parsea `tripExtras` desde socket (lista) o FCM (JSON string). Ausente = [].
+List<String> parseDriverTripExtras(dynamic raw) {
+  return _parseDriverAddonList(raw, normalizeDriverTripExtraCode);
+}
+
+/// Parsea `tripSpecials` desde socket (lista) o FCM (JSON string). Ausente = [].
+List<String> parseDriverTripSpecials(dynamic raw) {
+  return _parseDriverAddonList(raw, normalizeDriverTripSpecialCode);
+}
+
+List<String> _parseDriverAddonList(
+  dynamic raw,
+  String Function(dynamic) normalize,
+) {
+  if (raw == null) return const [];
+  dynamic value = raw;
+  if (value is String) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return const [];
+    if (trimmed.startsWith('[')) {
+      try {
+        value = jsonDecode(trimmed);
+      } catch (_) {
+        return const [];
+      }
+    } else {
+      final mapped = normalize(trimmed);
+      return mapped.isEmpty ? const [] : [mapped];
+    }
+  }
+  if (value is! List) return const [];
+  final out = <String>[];
+  for (final item in value) {
+    final mapped = normalize(item);
+    if (mapped.isNotEmpty && !out.contains(mapped)) out.add(mapped);
+  }
+  return out;
 }

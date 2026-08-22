@@ -8,6 +8,8 @@ import '../../../gen_l10n/app_localizations.dart';
 import '../../login/driver_realtime_state.dart';
 import 'driver_active_trip_nav_buttons.dart';
 import 'driver_active_trip_status_helpers.dart';
+import 'driver_trip_payment_chip.dart';
+import 'driver_trip_extras_icons.dart';
 
 class DriverActiveTripCard extends StatelessWidget {
   final DriverActiveTrip trip;
@@ -154,16 +156,60 @@ class DriverActiveTripCard extends StatelessWidget {
                       ),
                       if (trip.estimatedPrice != null) ...[
                         const SizedBox(height: 4),
-                        Text(
-                          l10n.driverTripEstimatedPrice(
-                            formatMoney(
-                              trip.estimatedPrice,
-                              currencyCode: trip.currencyCode,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                l10n.driverTripEstimatedPrice(
+                                  formatMoney(
+                                    trip.estimatedPrice,
+                                    currencyCode: trip.currencyCode,
+                                  ),
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                            DriverTripPaymentChip(
+                              l10n: l10n,
+                              paymentMethod: trip.paymentMethod,
+                            ),
+                          ],
+                        ),
+                        if (trip.tripExtras.isNotEmpty ||
+                            trip.tripSpecials.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: DriverTripExtrasIcons(
+                              l10n: l10n,
+                              extras: trip.tripExtras,
+                              specials: trip.tripSpecials,
                             ),
                           ),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
+                        ],
+                      ] else ...[
+                        const SizedBox(height: 6),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: [
+                              DriverTripPaymentChip(
+                                l10n: l10n,
+                                paymentMethod: trip.paymentMethod,
+                              ),
+                              if (trip.tripExtras.isNotEmpty ||
+                                  trip.tripSpecials.isNotEmpty)
+                                DriverTripExtrasIcons(
+                                  l10n: l10n,
+                                  extras: trip.tripExtras,
+                                  specials: trip.tripSpecials,
+                                ),
+                            ],
                           ),
                         ),
                       ],

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/login/driver_login_screen.dart';
+import '../../features/login/driver_password_reset_screen.dart';
+import '../../features/login/driver_change_password_screen.dart';
 import '../../features/login/driver_home_screen.dart';
 import '../../features/login/driver_trip_history_screen.dart';
 import '../../features/earnings/driver_earnings_credits_screen.dart';
+import '../../features/club/driver_club_screen.dart';
+import '../session/driver_must_change_password_gate.dart';
 import '../session/driver_registration_resume_gate.dart';
 import '../../features/profile/driver_profile_screen.dart';
 import '../../features/profile/driver_registered_images_screen.dart';
@@ -12,6 +15,7 @@ import '../../features/registration/driver_my_vehicles_screen.dart';
 import '../../features/registration/driver_registration_flow_screen.dart';
 import '../../features/settings/driver_app_settings_screen.dart';
 import '../session/driver_internal_tools_gate.dart';
+import '../storage/driver_secure_storage.dart';
 
 /// Clave de almacenamiento del token de conductor (misma que login).
 const String _kDriverTokenKey = 'driver_token';
@@ -23,30 +27,26 @@ class AppRouter {
   AppRouter._();
 
   static const String login = 'driver_login';
+  static const String forgotPassword = 'driver_forgot_password';
+  static const String changePassword = 'driver_change_password';
   static const String home = 'driver_home';
   static const String register = 'driver_register';
   static const String profile = 'driver_profile';
   static const String registeredImages = 'driver_registered_images';
   static const String tripHistory = 'driver_trip_history';
   static const String earningsCredits = 'driver_earnings_credits';
+  static const String club = 'driver_club';
   static const String myVehicles = 'driver_my_vehicles';
   static const String settings = 'driver_settings';
 
-  static const _storage = FlutterSecureStorage();
-
   static Future<bool> _hasStoredToken() async {
     try {
-      // Evita que Flutter quede "colgado" en el redirect inicial si en
-      // algunos dispositivos FlutterSecureStorage tarda demasiado (o bloquea)
-      // leyendo desde KeyStore.
-      final token = await _storage
-          .read(key: _kDriverTokenKey)
-          .timeout(const Duration(seconds: 3));
+      final token = await DriverSecureStorage.read(
+        _kDriverTokenKey,
+        timeout: const Duration(seconds: 3),
+      );
       return token != null && token.isNotEmpty;
     } catch (e) {
-      // Si hay cualquier problema con el almacenamiento seguro (casos raros
-      // de KeyStore en algunos dispositivos), tratamos como "sin sesión"
-      // para evitar que la app se quede en negro al arrancar.
       debugPrint('[AppRouter] Error leyendo token seguro: $e');
       return false;
     }
@@ -57,6 +57,17 @@ class AppRouter {
     redirect: (BuildContext context, GoRouterState state) async {
       final hasToken = await _hasStoredToken();
       final location = state.matchedLocation;
+      if (hasToken && await DriverMustChangePasswordGate.needsChange()) {
+        if (location != '/change-password') return '/change-password';
+        return null;
+      }
+      if (location == '/change-password') {
+        if (!hasToken) return '/login';
+        if (await DriverRegistrationResumeGate.needsResume()) {
+          return '/register?resumeAfterLogin=1';
+        }
+        return '/home';
+      }
       if (location == '/login' && hasToken) {
         if (await DriverRegistrationResumeGate.needsResume()) {
           return '/register?resumeAfterLogin=1';
@@ -74,6 +85,7 @@ class AppRouter {
       if (location == '/my-vehicles' && !hasToken) return '/login';
       if (location == '/settings' && !hasToken) return '/login';
       if (location == '/earnings-credits' && !hasToken) return '/login';
+      if (location == '/club' && !hasToken) return '/login';
       if (location == '/trip-history' && !hasToken) return '/login';
       if (location == '/registered-images') {
         if (!hasToken) return '/login';
@@ -94,6 +106,31 @@ class AppRouter {
         path: '/login',
         name: login,
         builder: (context, state) => const DriverLoginScreen(),
+      ),
+      GoRoute(
+        path: '/change-password',
+        name: changePassword,
+        builder: (context, state) => const DriverChangePasswordScreen(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        name: forgotPassword,
+        builder: (context, state) {
+          final extra = state.extra;
+          var countryCode = '+591';
+          var phoneLocal = '';
+          if (extra is Map) {
+            final m = Map<String, dynamic>.from(extra);
+            final cc = m['countryCode']?.toString().trim();
+            final ph = m['phoneLocal']?.toString().trim();
+            if (cc != null && cc.isNotEmpty) countryCode = cc;
+            if (ph != null) phoneLocal = ph;
+          }
+          return DriverPasswordResetScreen(
+            initialCountryCode: countryCode,
+            initialPhoneLocal: phoneLocal,
+          );
+        },
       ),
       GoRoute(
         path: '/register',
@@ -163,6 +200,11 @@ class AppRouter {
         path: '/earnings-credits',
         name: earningsCredits,
         builder: (context, state) => const DriverEarningsCreditsScreen(),
+      ),
+      GoRoute(
+        path: '/club',
+        name: club,
+        builder: (context, state) => const DriverClubScreen(),
       ),
       GoRoute(
         path: '/profile',

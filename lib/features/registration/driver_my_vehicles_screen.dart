@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_foundation.dart';
+import '../../core/ui/driver_secondary_scaffold.dart';
+import '../../core/utils/service_type_display.dart';
 import '../../gen_l10n/app_localizations.dart';
 import 'driver_registration_controller.dart';
 import 'driver_registration_models.dart';
@@ -103,17 +105,15 @@ class _DriverMyVehiclesScreenState extends ConsumerState<DriverMyVehiclesScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final addLocked = _hasRegisteredVehicle;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.driverMyVehiclesTitle),
-        actions: [
-          IconButton(
-            tooltip: l10n.driverMyVehiclesRefreshTooltip,
-            onPressed: _loading ? null : _load,
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-        ],
-      ),
+    return DriverSecondaryScaffold(
+      title: l10n.driverMyVehiclesTitle,
+      actions: [
+        IconButton(
+          tooltip: l10n.driverMyVehiclesRefreshTooltip,
+          onPressed: _loading ? null : _load,
+          icon: const Icon(Icons.refresh_rounded),
+        ),
+      ],
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _loading ? null : _onAddVehiclePressed,
         backgroundColor: addLocked
@@ -236,7 +236,10 @@ class _VehicleSummaryCard extends StatelessWidget {
       summary.vehicleTypeLabel,
       summary.vehicleCategoryLabel,
     ].whereType<String>().where((s) => s.trim().isNotEmpty).join(' · ');
-    final services = summary.enabledServiceLabels?.trim();
+    final services = displayEnabledServiceLabels(
+      summary.enabledServiceLabels,
+      l10n,
+    );
     final status = summary.status.trim();
 
     return Card(
@@ -289,7 +292,7 @@ class _VehicleSummaryCard extends StatelessWidget {
                   style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
                 ),
               ),
-            if (services != null && services.isNotEmpty)
+            if (services.isNotEmpty)
               Padding(
                 padding: EdgeInsets.only(top: AppFoundation.spacingXs),
                 child: Text(

@@ -1,21 +1,20 @@
 import 'dart:math';
 
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../storage/driver_secure_storage.dart';
 
 /// UUID estable por instalación (Keystore/Keychain). No usar IMEI/MAC.
 class DriverDeviceIdentity {
   DriverDeviceIdentity._();
 
-  static const _storage = FlutterSecureStorage();
   static const _storageKey = 'driver_stable_device_id';
 
   static Future<String> stableDeviceId() async {
-    final existing = await _storage.read(key: _storageKey);
+    final existing = await DriverSecureStorage.read(_storageKey);
     if (existing != null && existing.trim().isNotEmpty) {
       return existing.trim();
     }
     final created = _generateUuidV4();
-    await _storage.write(key: _storageKey, value: created);
+    await DriverSecureStorage.write(_storageKey, created);
     return created;
   }
 

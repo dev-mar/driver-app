@@ -13,7 +13,6 @@ import '../registration_flow_helpers.dart';
 import '../registration_flow_mode.dart';
 import '../registration_step_actions.dart';
 import '../registration_flow_step_metadata.dart';
-import '../../profile/profile_checklist_edit_policy.dart';
 import 'registration_flow_chrome.dart';
 import 'registration_flow_step_router.dart';
 
@@ -128,20 +127,25 @@ class RegistrationFlowScaffold extends ConsumerWidget {
             Expanded(
               child: Column(
                 children: [
-                  if (mode.profileReadOnly) ...[
+                  if (mode.profileFieldsReadOnly) ...[
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                       child: RegistrationStepIntroBanner(
-                        message: mode.profileEditPolicy ==
-                                ProfileChecklistEditPolicy.locked
+                        message: mode.profilePhotosLocked
                             ? l10n.driverRegProfileSectionLockedBanner
-                            : l10n.driverRegProfileSectionReadOnlyBanner,
+                            : (mode.profileCanSavePhotos ||
+                                    flow.step == 1 ||
+                                    flow.step == 2 ||
+                                    flow.step == 4 ||
+                                    flow.step == 5
+                                ? l10n.driverRegProfileSectionPhotosEditableBanner
+                                : l10n.driverRegProfileSectionReadOnlyBanner),
                       ),
                     ),
                   ],
                   Expanded(
                     child: AbsorbPointer(
-                      absorbing: mode.profileReadOnly,
+                      absorbing: mode.profilePhotosLocked,
                       child: AnimatedSwitcher(
                         duration: AppMotion.stepSwitcher,
                         switchInCurve: AppMotion.standard,
@@ -177,6 +181,10 @@ class RegistrationFlowScaffold extends ConsumerWidget {
                                   actions: actions,
                                   showValidationErrors: showValidationErrors,
                                   showTechnicalCatalogs: showTechnicalCatalogs,
+                                  fieldsReadOnly: mode.profileFieldsReadOnly,
+                                  photosLocked: mode.profilePhotosLocked,
+                                  embedVehiclePhotos: mode.profileCompletionUx &&
+                                      (flow.step == 4),
                                 ),
                                 if (!mode.profileCompletionUx &&
                                     !mode.addVehicleOnly &&
@@ -206,7 +214,13 @@ class RegistrationFlowScaffold extends ConsumerWidget {
                       ? registrationFlowStepLabels(l10n).length - 1
                       : 3),
               profileCompletionMode: mode.profileCompletionUx,
-              profileReadOnly: mode.profileReadOnly,
+              profileReadOnly: mode.profilePhotosLocked,
+              profileSavePhotos: mode.profileCompletionUx &&
+                  !mode.profilePhotosLocked &&
+                  (flow.step == 1 ||
+                      flow.step == 2 ||
+                      flow.step == 4 ||
+                      flow.step == 5),
               onBack: onBack,
               onContinue: onContinue,
             ),

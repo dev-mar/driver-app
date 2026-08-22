@@ -248,9 +248,8 @@ function buildWidget(step, body) {
         controller: bindings.vehicleYearCtrl,
         decoration: InputDecoration(labelText: l10n.driverRegFieldYear),
         keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        validator: (v) =>
-            v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
+        inputFormatters: vehicleYearInputFormatters,
+        validator: (v) => validateVehicleModelYear(v, l10n),
       ),
       const SizedBox(height: 10),
       TextFormField(

@@ -233,6 +233,38 @@ void _bindDriverRealtimeSocketHandlers(
                 rawRouteEnc != null && rawRouteEnc.toString().trim().isNotEmpty
                 ? rawRouteEnc.toString().trim()
                 : null;
+            String? paymentFromOffer;
+            List<String> extrasFromOffer = const [];
+            List<String> specialsFromOffer = const [];
+            if (tripId != null) {
+              for (final o in state.pendingOffers) {
+                if (o.tripId == tripId) {
+                  paymentFromOffer = o.paymentMethod;
+                  extrasFromOffer = o.tripExtras;
+                  specialsFromOffer = o.tripSpecials;
+                  break;
+                }
+              }
+            }
+            final paymentMethod = normalizeDriverTripPaymentMethod(
+              data['paymentMethod'] ??
+                  data['payment_method'] ??
+                  paymentFromOffer,
+            );
+            final parsedExtras = parseDriverTripExtras(
+              data['tripExtras'] ??
+                  data['passenger_extras'] ??
+                  data['extras'],
+            );
+            final tripExtras =
+                parsedExtras.isNotEmpty ? parsedExtras : extrasFromOffer;
+            final parsedSpecials = parseDriverTripSpecials(
+              data['tripSpecials'] ??
+                  data['passenger_specials'] ??
+                  data['specials'],
+            );
+            final tripSpecials =
+                parsedSpecials.isNotEmpty ? parsedSpecials : specialsFromOffer;
             _rt._logVerbose(
               'trip:accepted recibido tripId=$tripId status=$status '
               'pickup=($pickupLat,$pickupLng) dest=($destLat,$destLng)',
@@ -261,6 +293,9 @@ void _bindDriverRealtimeSocketHandlers(
                   tripDistanceKm: tripDistanceKm,
                   etaToDestinationMinutes: etaToDestinationMinutes,
                   routeOverviewEncoded: routeOverviewEncoded,
+                  paymentMethod: paymentMethod,
+                  tripExtras: tripExtras,
+                  tripSpecials: tripSpecials,
                 ),
                 processingTripAction: null,
                 tripErrorMessage: null,
@@ -786,12 +821,26 @@ void _bindDriverRealtimeSocketHandlers(
                   ? etaDestRaw.toDouble()
                   : null;
               final rawRouteEncAck = activeTripData['routeOverviewEncoded'];
-              final routeOverviewEncoded =
-                  rawRouteEncAck != null &&
-                      rawRouteEncAck.toString().trim().isNotEmpty
-                  ? rawRouteEncAck.toString().trim()
-                  : null;
-              if (tripId != null) {
+                  final routeOverviewEncoded =
+                      rawRouteEncAck != null &&
+                          rawRouteEncAck.toString().trim().isNotEmpty
+                      ? rawRouteEncAck.toString().trim()
+                      : null;
+                  final paymentMethod = normalizeDriverTripPaymentMethod(
+                    activeTripData['paymentMethod'] ??
+                        activeTripData['payment_method'],
+                  );
+                  final ackExtras = parseDriverTripExtras(
+                    activeTripData['tripExtras'] ??
+                        activeTripData['passenger_extras'] ??
+                        activeTripData['extras'],
+                  );
+                  final ackSpecials = parseDriverTripSpecials(
+                    activeTripData['tripSpecials'] ??
+                        activeTripData['passenger_specials'] ??
+                        activeTripData['specials'],
+                  );
+                  if (tripId != null) {
                 if (_rt._shouldIgnoreRestoreTrip(tripId)) {
                   state = state.copyWith(
                     activeTrip: null,
@@ -817,6 +866,9 @@ void _bindDriverRealtimeSocketHandlers(
                     tripDistanceKm: tripDistanceKm,
                     etaToDestinationMinutes: etaToDestinationMinutes,
                     routeOverviewEncoded: routeOverviewEncoded,
+                    paymentMethod: paymentMethod,
+                    tripExtras: ackExtras,
+                    tripSpecials: ackSpecials,
                   );
                   // El ack a veces trae solo status/coords; no pisar direcciÃ³n/pasajero ya mostrados.
                   final mergedTrip =
@@ -847,6 +899,13 @@ void _bindDriverRealtimeSocketHandlers(
                           routeOverviewEncoded:
                               routeOverviewEncoded ??
                               existingTrip.routeOverviewEncoded,
+                          paymentMethod: paymentMethod,
+                          tripExtras: ackExtras.isNotEmpty
+                              ? ackExtras
+                              : existingTrip.tripExtras,
+                          tripSpecials: ackSpecials.isNotEmpty
+                              ? ackSpecials
+                              : existingTrip.tripSpecials,
                         )
                       : parsedTrip;
   

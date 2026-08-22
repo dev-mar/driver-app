@@ -10,5 +10,17 @@ String displayServiceTypeName(String raw, AppLocalizations l10n) {
       s.contains('economic')) {
     return l10n.serviceTypeNameStandard;
   }
-  return raw;
+  return raw.trim();
+}
+
+/// Lista de servicios (coma, punto medio, barra) con el mismo mapeo visual.
+String displayEnabledServiceLabels(String? raw, AppLocalizations l10n) {
+  final t = (raw ?? '').trim();
+  if (t.isEmpty) return '';
+  return t
+      .split(RegExp(r'\s*[,·|/]\s*'))
+      .map((part) => part.trim())
+      .where((part) => part.isNotEmpty)
+      .map((part) => displayServiceTypeName(part, l10n))
+      .join(' · ');
 }

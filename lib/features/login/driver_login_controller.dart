@@ -1,12 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core/network/driver_api_client.dart';
+import '../../core/storage/driver_secure_storage.dart';
 import '../../core/notifications/driver_push_token_service.dart';
 import '../../core/session/driver_session_expulsion.dart';
 import '../../core/device/driver_device_telemetry.dart';
 import '../../core/session/driver_internal_tools_gate.dart';
 import '../../core/session/driver_map_preferences_store.dart';
+import '../../core/session/driver_must_change_password_gate.dart';
 import '../../core/session/driver_registration_resume_gate.dart';
 
 final driverLoginControllerProvider =
@@ -36,7 +37,6 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
       : _api = apiClient ?? DriverApiClient(),
         super(DriverLoginState());
 
-  static const _storage = FlutterSecureStorage();
   final DriverApiClient _api;
 
   /// [driverRegistrationInProgress]: el conductor aún debe cargar vehículo; el backend
@@ -85,16 +85,19 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
       }
       final refreshToken = payload['refresh_token']?.toString();
 
-      await _storage.write(key: DriverApiClient.tokenStorageKey, value: token);
+      await DriverSecureStorage.write(DriverApiClient.tokenStorageKey, token);
       if (refreshToken != null && refreshToken.isNotEmpty) {
-        await _storage.write(
-          key: DriverApiClient.refreshTokenStorageKey,
-          value: refreshToken,
+        await DriverSecureStorage.write(
+          DriverApiClient.refreshTokenStorageKey,
+          refreshToken,
         );
       }
-      await _storage.write(
-        key: DriverInternalToolsGate.storageKeyLoginPhone,
-        value: fullPhone,
+      await DriverSecureStorage.write(
+        DriverInternalToolsGate.storageKeyLoginPhone,
+        fullPhone,
+      );
+      await DriverMustChangePasswordGate.persistFromPayload(
+        Map<String, dynamic>.from(payload),
       );
       DriverRegistrationResumeGate.invalidate();
       resetDriverSessionExpulsionState();
@@ -156,24 +159,25 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
       for (final k in keys) {
         final v = map[k];
         if (v != null && v.toString().isNotEmpty) {
-          await _storage.write(
-            key: DriverApiClient.tokenStorageKey,
-            value: v.toString(),
+          await DriverSecureStorage.write(
+            DriverApiClient.tokenStorageKey,
+            v.toString(),
           );
           for (final rk in refreshKeys) {
             final rv = map[rk];
             if (rv != null && rv.toString().isNotEmpty) {
-              await _storage.write(
-                key: DriverApiClient.refreshTokenStorageKey,
-                value: rv.toString(),
+              await DriverSecureStorage.write(
+                DriverApiClient.refreshTokenStorageKey,
+                rv.toString(),
               );
               break;
             }
           }
-          await _storage.write(
-            key: DriverInternalToolsGate.storageKeyLoginPhone,
-            value: fullPhone,
+          await DriverSecureStorage.write(
+            DriverInternalToolsGate.storageKeyLoginPhone,
+            fullPhone,
           );
+          await DriverMustChangePasswordGate.persistFromPayload(map);
           DriverRegistrationResumeGate.invalidate();
           resetDriverSessionExpulsionState();
           DriverPushTokenService.instance.syncTokenIfPossible();
@@ -189,9 +193,10 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
     DriverRegistrationResumeGate.invalidate();
     await DriverPushTokenService.instance.revokeAllOnServerIfPossible();
     await DriverMapPreferencesStore.clearMapPreferencesForCurrentSession();
-    await _storage.delete(key: DriverApiClient.tokenStorageKey);
-    await _storage.delete(key: DriverApiClient.refreshTokenStorageKey);
-    await _storage.delete(key: DriverInternalToolsGate.storageKeyLoginPhone);
+    await DriverSecureStorage.delete(DriverApiClient.tokenStorageKey);
+    await DriverSecureStorage.delete(DriverApiClient.refreshTokenStorageKey);
+    await DriverSecureStorage.delete(DriverInternalToolsGate.storageKeyLoginPhone);
+    await DriverMustChangePasswordGate.clear();
     state = DriverLoginState();
   }
 

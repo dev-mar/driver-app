@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -7,6 +9,7 @@ import '../driver_registration_models.dart';
 import '../../../core/ui/horizontal_edge_fade.dart';
 import 'registration_section_card.dart';
 import 'registration_soft_info_row.dart';
+import 'vehicle_catalog_custom_sheet.dart';
 
 /// Resuelve el nombre mostrado de un `service_type` del catálogo (fallback localizado).
 String vehicleCatalogServiceTypeLabel(
@@ -45,8 +48,13 @@ class DriverVehicleCatalogSection extends StatelessWidget {
     required this.onSelectCompatServiceType,
     required this.onSetCatalogTransportMode,
     required this.onSetCatalogManufacturer,
-    required     this.onSetCatalogVehicleModel,
+    required this.onSetCatalogVehicleModel,
     this.onPickCatalogModel,
+    this.catalogCustomProposal,
+    this.onCatalogCustomProposal,
+    this.onApplyCatalogCustomSelection,
+    this.onResolvedCustomVehicleSpec,
+    this.existingYearText,
     this.afterCatalogBrandModelFields = const [],
   });
 
@@ -76,6 +84,19 @@ class DriverVehicleCatalogSection extends StatelessWidget {
   final void Function(int? modelId) onSetCatalogVehicleModel;
   final void Function(CatalogVehicleModelEntry model, String manufacturerName)?
       onPickCatalogModel;
+  final VehicleCatalogCustomProposal? catalogCustomProposal;
+  final void Function(VehicleCatalogCustomProposal? proposal)? onCatalogCustomProposal;
+  final void Function({
+    int? manufacturerId,
+    int? modelId,
+    required VehicleCatalogCustomProposal proposal,
+  })? onApplyCatalogCustomSelection;
+  final void Function({
+    required String brand,
+    required String model,
+    required String year,
+  })? onResolvedCustomVehicleSpec;
+  final String? existingYearText;
 
   /// Tras marca/modelo del catálogo: año, color, o campos manuales si aplica.
   final List<Widget> afterCatalogBrandModelFields;
@@ -88,7 +109,7 @@ class DriverVehicleCatalogSection extends StatelessWidget {
         : <VehicleCatalogCategory>[];
     final category = cat?.categoryById(selectedVehicleCategoryId);
     final allowedServiceIds = category != null && cat != null
-        ? filterServiceTypeIdsForVehicleRegistration(cat, category.serviceTypeIds)
+        ? registrationServiceTypeIdsForCategory(cat, category)
         : const <int>[];
 
     final mode = (catalogTransportMode ?? 'road_vehicle').toLowerCase();
@@ -360,7 +381,22 @@ class DriverVehicleCatalogSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          ..._brandModelFields(cat, mode, selectedVehicleTypeId),
+          _CatalogBrandModelFields(
+            l10n: l10n,
+            catalog: cat,
+            mode: mode,
+            selectedVehicleTypeId: selectedVehicleTypeId,
+            catalogManufacturerId: catalogManufacturerId,
+            catalogVehicleModelId: catalogVehicleModelId,
+            catalogCustomProposal: catalogCustomProposal,
+            existingYearText: existingYearText,
+            onSetCatalogManufacturer: onSetCatalogManufacturer,
+            onSetCatalogVehicleModel: onSetCatalogVehicleModel,
+            onPickCatalogModel: onPickCatalogModel,
+            onCatalogCustomProposal: onCatalogCustomProposal,
+            onApplyCatalogCustomSelection: onApplyCatalogCustomSelection,
+            onResolvedCustomVehicleSpec: onResolvedCustomVehicleSpec,
+          ),
           ...afterCatalogBrandModelFields,
         ],
         if (showExtended &&
@@ -429,96 +465,6 @@ class DriverVehicleCatalogSection extends StatelessWidget {
     AppLocalizations l10n,
   ) =>
       vehicleCatalogServiceTypeLabel(catalog, serviceTypeId, l10n);
-
-  List<Widget> _brandModelFields(
-    VehicleCatalog cat,
-    String mode,
-    int? selectedVehicleTypeId,
-  ) {
-    final mfrs = List<CatalogManufacturer>.from(
-      cat.manufacturersForRegistrationFilters(
-        vehicleTypeId: selectedVehicleTypeId,
-        transportMode: mode,
-      ),
-    )..sort((a, b) => a.name.compareTo(b.name));
-
-    final models = cat
-        .modelsForRegistrationFilters(
-          vehicleTypeId: selectedVehicleTypeId,
-          transportMode: mode,
-        )
-        .where((e) => e.manufacturerId == catalogManufacturerId)
-        .toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
-
-    return [
-      DropdownButtonFormField<int>(
-        key: ValueKey<String>('mfr-$mode-${mfrs.length}'),
-        initialValue:
-            mfrs.any((m) => m.id == catalogManufacturerId) && catalogManufacturerId != null
-                ? catalogManufacturerId
-                : null,
-        decoration: InputDecoration(
-          labelText: l10n.driverRegCatalogPickBrand,
-        ),
-        items: mfrs
-            .map(
-              (m) => DropdownMenuItem(
-                value: m.id,
-                child: Text(m.name),
-              ),
-            )
-            .toList(),
-        onChanged: (v) => onSetCatalogManufacturer(v),
-      ),
-      const SizedBox(height: 10),
-      DropdownButtonFormField<int>(
-        key: ValueKey<String>(
-          'mdl-$mode-${catalogManufacturerId ?? 0}-${models.length}',
-        ),
-        initialValue: catalogManufacturerId == null
-            ? null
-            : (models.any((m) => m.id == catalogVehicleModelId)
-                ? catalogVehicleModelId
-                : null),
-        decoration: InputDecoration(
-          labelText: catalogManufacturerId == null
-              ? l10n.driverRegCatalogPickBrandFirst
-              : l10n.driverRegCatalogPickModel,
-        ),
-        items: models
-            .map(
-              (m) => DropdownMenuItem(
-                value: m.id,
-                child: Text(m.name),
-              ),
-            )
-            .toList(),
-        onChanged: catalogManufacturerId == null
-            ? null
-            : (v) {
-                onSetCatalogVehicleModel(v);
-                if (v == null || onPickCatalogModel == null) return;
-                CatalogVehicleModelEntry? entry;
-                for (final e in models) {
-                  if (e.id == v) {
-                    entry = e;
-                    break;
-                  }
-                }
-                if (entry == null) return;
-                String mname = '';
-                for (final m in mfrs) {
-                  if (m.id == entry.manufacturerId) {
-                    mname = m.name;
-                    break;
-                  }
-                }
-                onPickCatalogModel!(entry, mname);
-              },
-      ),
-    ];
-  }
 
   Widget _techBlock(String title, String body) {
     return Padding(
@@ -602,6 +548,339 @@ class _ServiceTypePill extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CatalogBrandModelFields extends StatefulWidget {
+  const _CatalogBrandModelFields({
+    required this.l10n,
+    required this.catalog,
+    required this.mode,
+    required this.selectedVehicleTypeId,
+    required this.catalogManufacturerId,
+    required this.catalogVehicleModelId,
+    required this.catalogCustomProposal,
+    required this.existingYearText,
+    required this.onSetCatalogManufacturer,
+    required this.onSetCatalogVehicleModel,
+    this.onPickCatalogModel,
+    this.onCatalogCustomProposal,
+    this.onApplyCatalogCustomSelection,
+    this.onResolvedCustomVehicleSpec,
+  });
+
+  final AppLocalizations l10n;
+  final VehicleCatalog catalog;
+  final String mode;
+  final int? selectedVehicleTypeId;
+  final int? catalogManufacturerId;
+  final int? catalogVehicleModelId;
+  final VehicleCatalogCustomProposal? catalogCustomProposal;
+  final String? existingYearText;
+  final void Function(int? manufacturerId) onSetCatalogManufacturer;
+  final void Function(int? modelId) onSetCatalogVehicleModel;
+  final void Function(CatalogVehicleModelEntry model, String manufacturerName)?
+      onPickCatalogModel;
+  final void Function(VehicleCatalogCustomProposal? proposal)? onCatalogCustomProposal;
+  final void Function({
+    int? manufacturerId,
+    int? modelId,
+    required VehicleCatalogCustomProposal proposal,
+  })? onApplyCatalogCustomSelection;
+  final void Function({
+    required String brand,
+    required String model,
+    required String year,
+  })? onResolvedCustomVehicleSpec;
+
+  @override
+  State<_CatalogBrandModelFields> createState() => _CatalogBrandModelFieldsState();
+}
+
+class _CatalogBrandModelFieldsState extends State<_CatalogBrandModelFields> {
+  int _dropdownGeneration = 0;
+
+  void _resetDropdowns() {
+    setState(() => _dropdownGeneration++);
+  }
+
+  CatalogVehicleModelEntry? _catchAllModelFor(int manufacturerId) {
+    final models = widget.catalog.modelsSortedCatchAllLast(
+      vehicleTypeId: widget.selectedVehicleTypeId,
+      transportMode: widget.mode,
+      manufacturerId: manufacturerId,
+    );
+    for (final e in models) {
+      if (e.isCatchAll) return e;
+    }
+    return models.isEmpty ? null : models.first;
+  }
+
+  void _applyDraft({
+    required VehicleCatalogCustomDraft draft,
+    required String kind,
+    required int manufacturerId,
+    int? modelId,
+    String? selectedManufacturerName,
+  }) {
+    final proposal = VehicleCatalogCustomProposal(
+      kind: kind,
+      proposedManufacturerName: draft.manufacturerName,
+      proposedModelName: draft.modelName,
+      proposedModelYear: draft.year,
+      selectedManufacturerId: manufacturerId,
+      selectedManufacturerName: selectedManufacturerName ?? draft.manufacturerName,
+    );
+    final apply = widget.onApplyCatalogCustomSelection;
+    if (apply != null) {
+      apply(
+        manufacturerId: manufacturerId,
+        modelId: modelId,
+        proposal: proposal,
+      );
+    } else {
+      widget.onSetCatalogManufacturer(manufacturerId);
+      if (modelId != null) widget.onSetCatalogVehicleModel(modelId);
+      widget.onCatalogCustomProposal?.call(proposal);
+    }
+    widget.onResolvedCustomVehicleSpec?.call(
+      brand: draft.manufacturerName,
+      model: draft.modelName,
+      year: '${draft.year}',
+    );
+  }
+
+  Future<void> _onManufacturerChanged(
+    List<CatalogManufacturer> mfrs,
+    int? v,
+  ) async {
+    if (v == null) {
+      widget.onSetCatalogManufacturer(null);
+      widget.onCatalogCustomProposal?.call(null);
+      return;
+    }
+    CatalogManufacturer? mfr;
+    for (final m in mfrs) {
+      if (m.id == v) {
+        mfr = m;
+        break;
+      }
+    }
+    if (mfr == null) return;
+    if (!mfr.isCatchAll) {
+      widget.onSetCatalogManufacturer(v);
+      widget.onCatalogCustomProposal?.call(null);
+      return;
+    }
+    if (!mounted) return;
+    final existing = widget.catalogCustomProposal;
+    final draft = await showVehicleCatalogCustomSheet(
+      context,
+      manufacturerEditable: true,
+      manufacturerName: existing?.kind == 'manufacturer_and_model'
+          ? existing!.proposedManufacturerName
+          : null,
+      modelName: existing?.kind == 'manufacturer_and_model'
+          ? existing!.proposedModelName
+          : null,
+      yearText: existing?.proposedModelYear != null
+          ? '${existing!.proposedModelYear}'
+          : widget.existingYearText,
+    );
+    if (draft == null) {
+      _resetDropdowns();
+      return;
+    }
+    _applyDraft(
+      draft: draft,
+      kind: 'manufacturer_and_model',
+      manufacturerId: v,
+      modelId: _catchAllModelFor(v)?.id,
+      selectedManufacturerName: draft.manufacturerName,
+    );
+  }
+
+  Future<void> _onModelChanged(
+    List<CatalogManufacturer> mfrs,
+    List<CatalogVehicleModelEntry> models,
+    int? v,
+  ) async {
+    if (v == null) {
+      widget.onSetCatalogVehicleModel(null);
+      widget.onCatalogCustomProposal?.call(null);
+      return;
+    }
+    CatalogVehicleModelEntry? entry;
+    for (final e in models) {
+      if (e.id == v) {
+        entry = e;
+        break;
+      }
+    }
+    if (entry == null) return;
+    String mname = '';
+    CatalogManufacturer? mfr;
+    for (final m in mfrs) {
+      if (m.id == entry.manufacturerId) {
+        mfr = m;
+        mname = m.name;
+        break;
+      }
+    }
+    if (!entry.isCatchAll) {
+      widget.onSetCatalogVehicleModel(v);
+      widget.onCatalogCustomProposal?.call(null);
+      widget.onPickCatalogModel?.call(entry, mname);
+      return;
+    }
+    if (!mounted) return;
+    final existing = widget.catalogCustomProposal;
+    final draft = await showVehicleCatalogCustomSheet(
+      context,
+      manufacturerEditable: false,
+      manufacturerName: mname,
+      modelName: existing?.kind == 'model_only' ? existing!.proposedModelName : null,
+      yearText: existing?.proposedModelYear != null
+          ? '${existing!.proposedModelYear}'
+          : widget.existingYearText,
+    );
+    if (draft == null) {
+      _resetDropdowns();
+      return;
+    }
+    _applyDraft(
+      draft: draft,
+      kind: 'model_only',
+      manufacturerId: widget.catalogManufacturerId ?? entry.manufacturerId,
+      modelId: v,
+      selectedManufacturerName: mfr?.name ?? mname,
+    );
+  }
+
+  Future<void> _editExistingProposal() async {
+    final existing = widget.catalogCustomProposal;
+    if (existing == null) return;
+    final manufacturerEditable = existing.kind == 'manufacturer_and_model';
+    final draft = await showVehicleCatalogCustomSheet(
+      context,
+      manufacturerEditable: manufacturerEditable,
+      manufacturerName: existing.proposedManufacturerName,
+      modelName: existing.proposedModelName,
+      yearText: '${existing.proposedModelYear}',
+    );
+    if (draft == null || !mounted) return;
+    _applyDraft(
+      draft: draft,
+      kind: existing.kind,
+      manufacturerId: existing.selectedManufacturerId ?? widget.catalogManufacturerId ?? 0,
+      modelId: widget.catalogVehicleModelId,
+      selectedManufacturerName: manufacturerEditable
+          ? draft.manufacturerName
+          : existing.selectedManufacturerName,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cat = widget.catalog;
+    final mfrs = cat.manufacturersSortedCatchAllLast(
+      vehicleTypeId: widget.selectedVehicleTypeId,
+      transportMode: widget.mode,
+    );
+    final models = cat.modelsSortedCatchAllLast(
+      vehicleTypeId: widget.selectedVehicleTypeId,
+      transportMode: widget.mode,
+      manufacturerId: widget.catalogManufacturerId,
+    );
+    CatalogManufacturer? selectedMfr;
+    if (widget.catalogManufacturerId != null) {
+      for (final m in mfrs) {
+        if (m.id == widget.catalogManufacturerId) {
+          selectedMfr = m;
+          break;
+        }
+      }
+    }
+    final hideModelDropdown = selectedMfr?.isCatchAll == true;
+    final proposal = widget.catalogCustomProposal;
+    final l10n = widget.l10n;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DropdownButtonFormField<int>(
+          key: ValueKey<String>(
+            'mfr-${widget.mode}-${widget.catalogManufacturerId ?? 0}-${mfrs.length}-$_dropdownGeneration',
+          ),
+          initialValue:
+              mfrs.any((m) => m.id == widget.catalogManufacturerId) &&
+                      widget.catalogManufacturerId != null
+                  ? widget.catalogManufacturerId
+                  : null,
+          decoration: InputDecoration(
+            labelText: l10n.driverRegCatalogPickBrand,
+          ),
+          items: mfrs
+              .map(
+                (m) => DropdownMenuItem(
+                  value: m.id,
+                  child: Text(
+                    m.name,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: (v) => unawaited(_onManufacturerChanged(mfrs, v)),
+        ),
+        if (!hideModelDropdown) ...[
+          const SizedBox(height: 10),
+          DropdownButtonFormField<int>(
+            key: ValueKey<String>(
+              'mdl-${widget.mode}-${widget.catalogManufacturerId ?? 0}-${widget.catalogVehicleModelId ?? 0}-${models.length}-$_dropdownGeneration',
+            ),
+            initialValue: widget.catalogManufacturerId == null
+                ? null
+                : (models.any((m) => m.id == widget.catalogVehicleModelId)
+                    ? widget.catalogVehicleModelId
+                    : null),
+            decoration: InputDecoration(
+              labelText: widget.catalogManufacturerId == null
+                  ? l10n.driverRegCatalogPickBrandFirst
+                  : l10n.driverRegCatalogPickModel,
+            ),
+            items: models
+                .map(
+                  (m) => DropdownMenuItem(
+                    value: m.id,
+                    child: Text(
+                      m.name,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: widget.catalogManufacturerId == null
+                ? null
+                : (v) => unawaited(_onModelChanged(mfrs, models, v)),
+          ),
+        ],
+        if (proposal != null) ...[
+          const SizedBox(height: 10),
+          InkWell(
+            onTap: () => unawaited(_editExistingProposal()),
+            borderRadius: BorderRadius.circular(8),
+            child: RegistrationSoftInfoRow(
+              text: l10n.driverRegCatalogCustomSummary(
+                proposal.proposedManufacturerName,
+                proposal.proposedModelName,
+                '${proposal.proposedModelYear}',
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -43,6 +43,36 @@ void main() {
       });
 
       expect(offer.isAdminWebDispatch, isFalse);
+      expect(offer.tripExtras, isEmpty);
+      expect(offer.paymentMethod, 'cash');
+    });
+
+    test('parsea tripExtras desde lista y desde JSON FCM', () {
+      final fromList = driverTripOfferFromMap({
+        'tripId': 't-1',
+        'tripExtras': ['pet', 'over_4', 'pet', 'unknown', 'luggage'],
+      });
+      expect(fromList.tripExtras, ['pet', 'over_4', 'luggage']);
+
+      final fromJson = driverTripOfferFromMap({
+        'tripId': 't-2',
+        'tripExtras': '["child_seat","wheelchair"]',
+      });
+      expect(fromJson.tripExtras, ['child_seat', 'wheelchair']);
+    });
+
+    test('parsea tripSpecials desde lista y JSON FCM', () {
+      final fromList = driverTripOfferFromMap({
+        'tripId': 't-3',
+        'tripSpecials': ['seats_6', 'cargo', 'seats_6', 'unknown'],
+      });
+      expect(fromList.tripSpecials, ['seats_6', 'cargo']);
+
+      final fromJson = driverTripOfferFromMap({
+        'tripId': 't-4',
+        'tripSpecials': '["roof_rack"]',
+      });
+      expect(fromJson.tripSpecials, ['roof_rack']);
     });
   });
 }

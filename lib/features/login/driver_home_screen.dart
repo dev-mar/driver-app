@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../gen_l10n/app_localizations.dart';
+import '../../core/version/driver_app_version_gate.dart';
 import '../home/driver_home_build_effects.dart';
 import '../home/driver_home_lifecycle_mixin.dart';
 import '../home/driver_home_online_errors.dart';
@@ -30,6 +31,10 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
   void initState() {
     super.initState();
     initDriverHomeLifecycle();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(DriverAppVersionGate.runStartupCheck(context));
+    });
   }
 
   @override

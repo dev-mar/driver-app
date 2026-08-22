@@ -11,21 +11,23 @@ class DriverDeviceTelemetry {
 
   static Future<Map<String, dynamic>> toApiPayload() async {
     final payload = <String, dynamic>{};
-    final info = await _readDeviceInfo();
-    final appVersion = await _readAppVersion();
-    final networkType = await _readNetworkType();
-    final deviceId = await DriverDeviceIdentity.stableDeviceId();
-
-    payload['device_id'] = deviceId;
-    if (info['app_instance_id'] != null) {
-      payload['app_instance_id'] = info['app_instance_id'];
-    }
-    if (info['platform'] != null) payload['platform'] = info['platform'];
-    if (appVersion != null) payload['app_version'] = appVersion;
-    if (info['os_version'] != null) payload['os_version'] = info['os_version'];
-    if (info['brand'] != null) payload['brand'] = info['brand'];
-    if (info['model'] != null) payload['model'] = info['model'];
-    if (networkType != null) payload['network_type'] = networkType;
+    try {
+      final info = await _readDeviceInfo();
+      final appVersion = await _readAppVersion();
+      final networkType = await _readNetworkType();
+      try {
+        payload['device_id'] = await DriverDeviceIdentity.stableDeviceId();
+      } catch (_) {}
+      if (info['app_instance_id'] != null) {
+        payload['app_instance_id'] = info['app_instance_id'];
+      }
+      if (info['platform'] != null) payload['platform'] = info['platform'];
+      if (appVersion != null) payload['app_version'] = appVersion;
+      if (info['os_version'] != null) payload['os_version'] = info['os_version'];
+      if (info['brand'] != null) payload['brand'] = info['brand'];
+      if (info['model'] != null) payload['model'] = info['model'];
+      if (networkType != null) payload['network_type'] = networkType;
+    } catch (_) {}
 
     return payload;
   }

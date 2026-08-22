@@ -64,8 +64,8 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
   bool _isAuthSocketErrorCode(String code) => code == 'AUTH';
 
   Future<bool> _tryRefreshDriverSession() async {
-    final refreshToken = await DriverRealtimeController._storage.read(
-      key: 'driver_refresh_token',
+    final refreshToken = await DriverSecureStorage.read(
+      'driver_refresh_token',
     );
     if (refreshToken == null || refreshToken.isEmpty) {
       debugPrint('[DRIVER_RT] No hay refresh token para renovar sesión.');
@@ -92,8 +92,9 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
     _rt._lastTouchReconnect = null;
     _rt._pendingTripCompletedTripId = null;
     await DriverMapPreferencesStore.clearMapPreferencesForCurrentSession();
-    await DriverRealtimeController._storage.delete(key: 'driver_token');
-    await DriverRealtimeController._storage.delete(key: 'driver_refresh_token');
+    await DriverSecureStorage.delete('driver_token');
+    await DriverSecureStorage.delete('driver_refresh_token');
+    await DriverMustChangePasswordGate.clear();
     await _goOffline(
       internal: true,
       preserveTripState: false,
@@ -313,8 +314,8 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
         throw const DriverRealtimeException('NO_INTERNET');
       }
 
-      final token = await DriverRealtimeController._storage.read(
-        key: 'driver_token',
+      final token = await DriverSecureStorage.read(
+        'driver_token',
       );
       if (token == null || token.isEmpty) {
         debugPrint('[DRIVER_RT] Token de conductor vacío o nulo.');

@@ -36,16 +36,7 @@ class RegistrationStepAccess extends ConsumerWidget {
         final location = formatRegistrationServiceLocation(flow);
         final email = bindings.emailCtrl.text.trim();
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            RegistrationStepHeroCard(
-              icon: Icons.verified_user_outlined,
-              title: l10n.driverRegSectionActivateAccount,
-              subtitle: l10n.driverRegSubtitleReviewBeforeContinue,
-            ),
-            const SizedBox(height: 14),
-            RegistrationSectionCard(
+        return RegistrationSectionCard(
               title: l10n.driverRegSectionYourSummary,
               icon: Icons.fact_check_outlined,
               subtitle: l10n.driverRegSubtitleProfileWorkZone,
@@ -81,9 +72,7 @@ class RegistrationStepAccess extends ConsumerWidget {
                   text: l10n.driverRegIdentityLicenseRegistered,
                 ),
               ],
-            ),
-          ],
-        );
+            );
   }
 
 }

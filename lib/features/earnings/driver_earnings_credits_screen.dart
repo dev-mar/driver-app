@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../core/network/driver_api_client.dart';
+import '../../core/storage/driver_secure_storage.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/ui/driver_secondary_scaffold.dart';
 import '../../core/utils/money_formatter.dart';
 import '../../gen_l10n/app_localizations.dart';
 import '../login/driver_trip_history_screen.dart'
@@ -19,7 +20,6 @@ class DriverEarningsCreditsScreen extends StatefulWidget {
 }
 
 class _DriverEarningsCreditsScreenState extends State<DriverEarningsCreditsScreen> {
-  static const _storage = FlutterSecureStorage();
   static const _kRangeKey = 'driver_earnings_date_range';
   static const _kCustomFromKey = 'driver_earnings_custom_from';
   static const _kCustomToKey = 'driver_earnings_custom_to';
@@ -46,9 +46,9 @@ class _DriverEarningsCreditsScreenState extends State<DriverEarningsCreditsScree
   }
 
   Future<void> _restoreFilters() async {
-    final stored = await _storage.read(key: _kRangeKey);
-    final fromS = await _storage.read(key: _kCustomFromKey);
-    final toS = await _storage.read(key: _kCustomToKey);
+    final stored = await DriverSecureStorage.read(_kRangeKey);
+    final fromS = await DriverSecureStorage.read(_kCustomFromKey);
+    final toS = await DriverSecureStorage.read(_kCustomToKey);
     final from = fromS != null ? DateTime.tryParse(fromS) : null;
     final to = toS != null ? DateTime.tryParse(toS) : null;
     if (!mounted) return;
@@ -63,14 +63,14 @@ class _DriverEarningsCreditsScreenState extends State<DriverEarningsCreditsScree
   }
 
   Future<void> _persistFilters() async {
-    await _storage.write(key: _kRangeKey, value: _dateRange);
-    await _storage.write(
-      key: _kCustomFromKey,
-      value: _customRange?.start.toIso8601String() ?? '',
+    await DriverSecureStorage.write(_kRangeKey, _dateRange);
+    await DriverSecureStorage.write(
+      _kCustomFromKey,
+      _customRange?.start.toIso8601String() ?? '',
     );
-    await _storage.write(
-      key: _kCustomToKey,
-      value: _customRange?.end.toIso8601String() ?? '',
+    await DriverSecureStorage.write(
+      _kCustomToKey,
+      _customRange?.end.toIso8601String() ?? '',
     );
   }
 
@@ -227,10 +227,8 @@ class _DriverEarningsCreditsScreenState extends State<DriverEarningsCreditsScree
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.driverEarningsCreditsTitle),
-      ),
+    return DriverSecondaryScaffold(
+      title: l10n.driverEarningsCreditsTitle,
       body: RefreshIndicator(
         onRefresh: _load,
         child: CustomScrollView(

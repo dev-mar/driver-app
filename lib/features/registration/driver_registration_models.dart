@@ -320,6 +320,11 @@ class CatalogManufacturer {
       metadata: _metadataMap(json['metadata']) ?? const {},
     );
   }
+
+  bool get isCatchAll {
+    if (metadata['is_catalog_catch_all'] == true) return true;
+    return code.toUpperCase().startsWith('OTHER_NOT_LISTED');
+  }
 }
 
 class CatalogVehicleModelEntry {
@@ -370,6 +375,42 @@ class CatalogVehicleModelEntry {
           json['segmentTransportMode']?.toString(),
     );
   }
+
+  bool get isCatchAll {
+    if (metadata['is_catalog_catch_all'] == true) return true;
+    final c = code.toUpperCase();
+    return c == 'OTHER_MODEL_NOT_LISTED' || c.startsWith('OTHER_CATCH_ALL');
+  }
+}
+
+class VehicleCatalogCustomProposal {
+  const VehicleCatalogCustomProposal({
+    required this.kind,
+    required this.proposedManufacturerName,
+    required this.proposedModelName,
+    required this.proposedModelYear,
+    this.selectedManufacturerId,
+    this.selectedManufacturerName,
+  });
+
+  /// `manufacturer_and_model` | `model_only`
+  final String kind;
+  final String proposedManufacturerName;
+  final String proposedModelName;
+  final int proposedModelYear;
+  final int? selectedManufacturerId;
+  final String? selectedManufacturerName;
+
+  Map<String, dynamic> toApiJson() => <String, dynamic>{
+        'kind': kind,
+        'proposed_manufacturer_name': proposedManufacturerName,
+        'proposed_model_name': proposedModelName,
+        'proposed_model_year': proposedModelYear,
+        if (selectedManufacturerId != null)
+          'selected_manufacturer_id': selectedManufacturerId,
+        if (selectedManufacturerName != null)
+          'selected_manufacturer_name': selectedManufacturerName,
+      };
 }
 
 class CatalogEmissionNorm {
@@ -654,6 +695,42 @@ class VehicleCatalog {
     }).toList(growable: false);
   }
 
+  static int _catchAllLast(bool aCatch, bool bCatch, String aName, String bName) {
+    if (aCatch != bCatch) return aCatch ? 1 : -1;
+    return aName.toLowerCase().compareTo(bName.toLowerCase());
+  }
+
+  List<CatalogManufacturer> manufacturersSortedCatchAllLast({
+    required int? vehicleTypeId,
+    required String transportMode,
+  }) {
+    final list = List<CatalogManufacturer>.from(
+      manufacturersForRegistrationFilters(
+        vehicleTypeId: vehicleTypeId,
+        transportMode: transportMode,
+      ),
+    );
+    list.sort(
+      (a, b) => _catchAllLast(a.isCatchAll, b.isCatchAll, a.name, b.name),
+    );
+    return list;
+  }
+
+  List<CatalogVehicleModelEntry> modelsSortedCatchAllLast({
+    required int? vehicleTypeId,
+    required String transportMode,
+    required int? manufacturerId,
+  }) {
+    final list = modelsForRegistrationFilters(
+      vehicleTypeId: vehicleTypeId,
+      transportMode: transportMode,
+    ).where((e) => e.manufacturerId == manufacturerId).toList();
+    list.sort(
+      (a, b) => _catchAllLast(a.isCatchAll, b.isCatchAll, a.name, b.name),
+    );
+    return list;
+  }
+
   List<VehicleCatalogCategory> categoriesForType(int vehicleTypeId) {
     return vehicleCategories
         .where((c) => c.vehicleTypeId == vehicleTypeId)
@@ -854,6 +931,29 @@ List<int> filterServiceTypeIdsForVehicleRegistration(
     if (!registrationExcludedServiceType(st)) out.add(id);
   }
   return out;
+}
+
+/// Servicios visibles para una categoría en el alta. Si la categoría no tiene
+/// ninguno tras filtrar exclusivo (p. ej. SUV solo tenía comfort/exclusive),
+/// hereda los de otra categoría del mismo tipo (Sedán / taxi).
+List<int> registrationServiceTypeIdsForCategory(
+  VehicleCatalog catalog,
+  VehicleCatalogCategory category,
+) {
+  final direct = filterServiceTypeIdsForVehicleRegistration(
+    catalog,
+    category.serviceTypeIds,
+  );
+  if (direct.isNotEmpty) return direct;
+  for (final c in catalog.categoriesForType(category.vehicleTypeId)) {
+    if (c.id == category.id) continue;
+    final ids = filterServiceTypeIdsForVehicleRegistration(
+      catalog,
+      c.serviceTypeIds,
+    );
+    if (ids.isNotEmpty) return ids;
+  }
+  return const [];
 }
 
 /// Lista para modo `compatibility_mode` (dropdown único).
@@ -1163,5 +1263,41 @@ extension DriverRegistrationStatusProfileRouting on DriverRegistrationStatusDto 
     }
 
     return step;
+  }
+}
+
+/// Respuesta de `POST …/passenger-upgrade-otp` (canal aditivo).
+class PassengerUpgradeChallenge {
+  const PassengerUpgradeChallenge({
+    required this.channel,
+    this.waDeepLink,
+    this.challengeId,
+    this.expiresIn,
+  });
+
+  final String channel;
+  final String? waDeepLink;
+  final String? challengeId;
+  final int? expiresIn;
+
+  bool get isWhatsAppInbound =>
+      channel == 'whatsapp_inbound' &&
+      challengeId != null &&
+      challengeId!.isNotEmpty;
+
+  static PassengerUpgradeChallenge fromApiData(Map<String, dynamic>? data) {
+    final channel = data?['verification_channel']?.toString().trim();
+    final challengeId = data?['challenge_id']?.toString().trim();
+    final waDeepLink = data?['wa_deep_link']?.toString().trim();
+    return PassengerUpgradeChallenge(
+      channel: (channel != null && channel.isNotEmpty) ? channel : 'code',
+      waDeepLink: (waDeepLink != null && waDeepLink.isNotEmpty)
+          ? waDeepLink
+          : null,
+      challengeId: (challengeId != null && challengeId.isNotEmpty)
+          ? challengeId
+          : null,
+      expiresIn: _parsePositiveInt(data?['expires_in']),
+    );
   }
 }

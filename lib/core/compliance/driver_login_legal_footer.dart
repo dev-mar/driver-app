@@ -11,7 +11,7 @@ import 'driver_legal_links.dart';
 enum DriverLegalNoticeTone {
   /// Login: una línea con enlaces inline.
   compact,
-  /// Pantalla Activar: microcopy aún más corto.
+  /// Pantalla de envío a revisión: microcopy aún más corto.
   activate,
   /// Compat: se renderiza como [activate].
   emphasized,

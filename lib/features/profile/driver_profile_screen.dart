@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -10,6 +11,7 @@ import '../../core/network/driver_profile_api_providers.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_motion.dart';
+import '../../core/ui/driver_secondary_scaffold.dart';
 import '../../core/ui/texi_circular_avatar.dart';
 import '../../gen_l10n/app_localizations.dart';
 import 'profile_checklist_edit_policy.dart';
@@ -118,15 +120,13 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
         if (didPop) return;
         _goHome(context);
       },
-      child: Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
+      child: DriverSecondaryScaffold(
+        title: l10n.driverProfileTitle,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           tooltip: l10n.driverProfileBack,
           onPressed: () => _goHome(context),
         ),
-        title: Text(l10n.driverProfileTitle),
         actions: [
           IconButton(
             tooltip: l10n.driverProfileRefreshTooltip,
@@ -134,8 +134,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
             icon: const Icon(Icons.refresh_rounded),
           ),
         ],
-      ),
-      body: FutureBuilder<_ProfileScreenData>(
+        body: FutureBuilder<_ProfileScreenData>(
         future: _futureProfile,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -213,6 +212,14 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   child: _ProfileInfoCard(
                     title: l10n.driverProfileSectionPersonal,
                     children: [
+                      _InfoRow(
+                        label: l10n.driverProfileFieldReferralCode,
+                        value: p.referralCode ?? '',
+                        emptyPlaceholder: l10n.driverProfileValueEmpty,
+                        copyable: (p.referralCode ?? '').trim().isNotEmpty,
+                        copyTooltip: l10n.driverProfileCopyReferralCode,
+                        copiedMessage: l10n.driverProfileReferralCopied,
+                      ),
                       _InfoRow(
                         label: l10n.driverProfileFieldName,
                         value: p.displayName(l10n),
@@ -320,26 +327,13 @@ class _ProfileScreenData {
 class _DriverAppCreditsVm {
   const _DriverAppCreditsVm({
     required this.balance,
-    required this.programEnabled,
-    required this.deductionMode,
-    required this.percentValue,
-    required this.fixedAmount,
   });
 
   final double balance;
-  final bool programEnabled;
-  final String deductionMode;
-  final double percentValue;
-  final double fixedAmount;
 
   factory _DriverAppCreditsVm.fromJson(Map<String, dynamic> json) {
-    final modeRaw = json['deductionMode']?.toString() ?? 'percent';
     return _DriverAppCreditsVm(
       balance: (json['balance'] as num?)?.toDouble() ?? 0,
-      programEnabled: json['programEnabled'] == true,
-      deductionMode: modeRaw == 'fixed' ? 'fixed' : 'percent',
-      percentValue: (json['percentValue'] as num?)?.toDouble() ?? 0,
-      fixedAmount: (json['fixedAmount'] as num?)?.toDouble() ?? 0,
     );
   }
 }
@@ -394,32 +388,6 @@ class _DriverAppCreditsCard extends StatelessWidget {
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              credits!.programEnabled
-                  ? l10n.driverAppCreditsProgramOn
-                  : l10n.driverAppCreditsProgramOff,
-              style: TextStyle(
-                fontSize: 12.5,
-                color: credits!.programEnabled
-                    ? AppColors.success
-                    : AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            if (credits!.programEnabled) ...[
-              const SizedBox(height: 6),
-              Text(
-                credits!.deductionMode == 'fixed'
-                    ? l10n.driverAppCreditsDetailFixed(fmt.format(credits!.fixedAmount))
-                    : l10n.driverAppCreditsDetailPercent(fmt.format(credits!.percentValue)),
-                style: TextStyle(
-                  fontSize: 12.5,
-                  color: AppColors.textSecondary.withValues(alpha: 0.92),
-                  height: 1.3,
-                ),
-              ),
-            ],
           ],
         ],
       ),
@@ -685,15 +653,34 @@ class _InfoRow extends StatelessWidget {
     required this.label,
     required this.value,
     required this.emptyPlaceholder,
+    this.copyable = false,
+    this.copyTooltip,
+    this.copiedMessage,
   });
 
   final String label;
   final String value;
   final String emptyPlaceholder;
+  final bool copyable;
+  final String? copyTooltip;
+  final String? copiedMessage;
+
+  Future<void> _copy(BuildContext context) async {
+    final text = value.trim();
+    if (text.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: text));
+    HapticFeedback.lightImpact();
+    final msg = copiedMessage;
+    if (!context.mounted || msg == null || msg.isEmpty) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final show = value.trim().isEmpty ? emptyPlaceholder : value;
+    final canCopy = copyable && value.trim().isNotEmpty;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
@@ -704,7 +691,7 @@ class _InfoRow extends StatelessWidget {
           border: Border.all(color: AppColors.border.withValues(alpha: 0.45)),
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SizedBox(
               width: 118,
@@ -732,6 +719,18 @@ class _InfoRow extends StatelessWidget {
                 ),
               ),
             ),
+            if (canCopy)
+              IconButton(
+                tooltip: copyTooltip ?? label,
+                onPressed: () => _copy(context),
+                icon: Icon(
+                  Icons.copy_rounded,
+                  size: 18,
+                  color: AppColors.textSecondary.withValues(alpha: 0.9),
+                ),
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              ),
           ],
         ),
       ),
@@ -864,15 +863,6 @@ class _RegistrationOnboardingChecklist extends StatelessWidget {
               fontSize: 14,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            l10n.driverProfileOnboardingBody,
-            style: TextStyle(
-              color: AppColors.textSecondary.withValues(alpha: 0.95),
-              fontSize: 12.5,
-              height: 1.4,
-            ),
-          ),
           const SizedBox(height: 12),
           for (var i = 0; i < items.length; i++) ...[
             if (i > 0) const SizedBox(height: 8),
@@ -904,6 +894,11 @@ class _ChecklistRow extends StatelessWidget {
       case ProfileChecklistEditPolicy.editable:
         return l10n.driverProfileOnboardingTapEditable;
       case ProfileChecklistEditPolicy.readOnly:
+        if (item.key == 'identity' ||
+            item.key == 'license' ||
+            item.key == 'vehicle') {
+          return l10n.driverProfileOnboardingTapEditPhotos;
+        }
         return l10n.driverProfileOnboardingTapViewOnly;
       case ProfileChecklistEditPolicy.locked:
         return l10n.driverProfileOnboardingTapLocked;
@@ -916,12 +911,15 @@ class _ChecklistRow extends StatelessWidget {
     final st = _checklistStatusStyle(item.uiStatus);
     final label = _checklistStatusLabel(l10n, item.uiStatus);
     final step = _flowStepForChecklistKey(item.key);
+    final locked =
+        ProfileChecklistEditPolicy.fromUiStatus(item.uiStatus) ==
+            ProfileChecklistEditPolicy.locked;
     return Material(
       color: AppColors.surface.withValues(alpha: 0.4),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        onTap: () => onOpenStep(step, item.uiStatus),
+        onTap: locked ? null : () => onOpenStep(step, item.uiStatus),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           child: Row(
@@ -948,14 +946,16 @@ class _ChecklistRow extends StatelessWidget {
                         fontSize: 13.5,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _tapHint(l10n),
-                      style: TextStyle(
-                        color: AppColors.textSecondary.withValues(alpha: 0.9),
-                        fontSize: 11.5,
+                    if (!locked) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        _tapHint(l10n),
+                        style: TextStyle(
+                          color: AppColors.textSecondary.withValues(alpha: 0.9),
+                          fontSize: 11.5,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -978,12 +978,14 @@ class _ChecklistRow extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 2),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 22,
-                color: AppColors.textSecondary.withValues(alpha: 0.75),
-              ),
+              if (!locked) ...[
+                const SizedBox(width: 2),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 22,
+                  color: AppColors.textSecondary.withValues(alpha: 0.75),
+                ),
+              ],
             ],
           ),
         ),
@@ -1249,6 +1251,7 @@ class _DriverProfileViewModel {
     required this.gender,
     required this.birthDate,
     required this.pictureProfile,
+    this.referralCode,
     this.registrationChecklist,
     this.registrationCountryId,
   });
@@ -1262,6 +1265,7 @@ class _DriverProfileViewModel {
   final String gender;
   final String birthDate;
   final String? pictureProfile;
+  final String? referralCode;
   final List<_ProfileRegistrationChecklistItem>? registrationChecklist;
   final int? registrationCountryId;
 
@@ -1314,6 +1318,8 @@ class _DriverProfileViewModel {
       }
       checklist = list;
     }
+    final rawReferral = json['club_referral_code'] ?? json['referralCode'];
+    final referral = rawReferral?.toString().trim();
     return _DriverProfileViewModel(
       firstName: read('first_name'),
       lastName: read('last_name'),
@@ -1324,6 +1330,7 @@ class _DriverProfileViewModel {
       gender: read('gender'),
       birthDate: read('birth_date'),
       pictureProfile: (picture == null || picture.isEmpty) ? null : picture,
+      referralCode: (referral == null || referral.isEmpty) ? null : referral,
       registrationChecklist: checklist,
       registrationCountryId: countryId,
     );

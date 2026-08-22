@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 
+/// Tono visual de la tarjeta. [accent] distingue un bloque sin romper el resto del flujo.
+enum RegistrationSectionTone { standard, accent }
+
 /// Tarjeta de sección del flujo de registro (icono, título, subtítulo opcional, cuerpo).
 /// Reutilizable en cualquier paso que siga el mismo patrón visual.
 class RegistrationSectionCard extends StatelessWidget {
@@ -11,22 +14,34 @@ class RegistrationSectionCard extends StatelessWidget {
     required this.icon,
     required this.children,
     this.subtitle,
+    this.tone = RegistrationSectionTone.standard,
   });
 
   final String title;
   final IconData icon;
   final String? subtitle;
   final List<Widget> children;
+  final RegistrationSectionTone tone;
 
   @override
   Widget build(BuildContext context) {
+    final isAccent = tone == RegistrationSectionTone.accent;
+    final fill = isAccent
+        ? Color.alphaBlend(
+            AppColors.primary.withValues(alpha: 0.16),
+            AppColors.surfaceCard,
+          )
+        : AppColors.surfaceCard;
+    final border = isAccent
+        ? AppColors.primary.withValues(alpha: 0.48)
+        : AppColors.border.withValues(alpha: 0.5);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: fill,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+        border: Border.all(color: border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.35),
@@ -44,7 +59,7 @@ class RegistrationSectionCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
+                  color: AppColors.primary.withValues(alpha: isAccent ? 0.24 : 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: AppColors.primary, size: 20),

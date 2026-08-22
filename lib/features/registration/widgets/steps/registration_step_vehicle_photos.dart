@@ -15,11 +15,15 @@ class RegistrationStepVehiclePhotos extends ConsumerWidget {
     required this.bindings,
     required this.actions,
     required this.showValidationErrors,
+    this.photosLocked = false,
+    this.showIntro = true,
   });
 
   final RegistrationFlowBindings bindings;
   final RegistrationStepActions actions;
   final bool showValidationErrors;
+  final bool photosLocked;
+  final bool showIntro;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,8 +32,10 @@ class RegistrationStepVehiclePhotos extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            RegistrationStepIntroBanner(message: l10n.driverRegIntroVehiclePhotos),
-            const SizedBox(height: 14),
+            if (showIntro) ...[
+              RegistrationStepIntroBanner(message: l10n.driverRegIntroVehiclePhotos),
+              const SizedBox(height: 14),
+            ],
             RegistrationSectionCard(
               title: l10n.driverRegSectionVehicleViews,
               icon: Icons.grid_view_rounded,
@@ -51,8 +57,14 @@ class RegistrationStepVehiclePhotos extends ConsumerWidget {
                           title: l10n.driverRegPhotoFrontTitle,
                           hint: l10n.driverRegPhotoFrontHint,
                           icon: Icons.directions_car_filled_rounded,
-                          isDone: bindings.carFrontB64 != null,
+                          isDone: bindings.carFrontB64 != null ||
+                              (bindings.carFrontPreviewUrl != null &&
+                                  bindings.carFrontPreviewUrl!.isNotEmpty),
                           previewBase64: bindings.carFrontB64,
+                          previewUrl: bindings.carFrontB64 == null
+                              ? bindings.carFrontPreviewUrl
+                              : null,
+                          enabled: !photosLocked,
                           onTap: () async {
                             final b64 = await pickImageAsBase64(
                               context,
@@ -65,8 +77,14 @@ class RegistrationStepVehiclePhotos extends ConsumerWidget {
                           title: l10n.driverRegPhotoRearTitle,
                           hint: l10n.driverRegPhotoRearHint,
                           icon: Icons.directions_car_rounded,
-                          isDone: bindings.carBackB64 != null,
+                          isDone: bindings.carBackB64 != null ||
+                              (bindings.carBackPreviewUrl != null &&
+                                  bindings.carBackPreviewUrl!.isNotEmpty),
                           previewBase64: bindings.carBackB64,
+                          previewUrl: bindings.carBackB64 == null
+                              ? bindings.carBackPreviewUrl
+                              : null,
+                          enabled: !photosLocked,
                           onTap: () async {
                             final b64 = await pickImageAsBase64(
                               context,
@@ -79,8 +97,14 @@ class RegistrationStepVehiclePhotos extends ConsumerWidget {
                           title: l10n.driverRegPhotoLeftTitle,
                           hint: l10n.driverRegPhotoLeftHint,
                           icon: Icons.arrow_back_rounded,
-                          isDone: bindings.carLeftB64 != null,
+                          isDone: bindings.carLeftB64 != null ||
+                              (bindings.carLeftPreviewUrl != null &&
+                                  bindings.carLeftPreviewUrl!.isNotEmpty),
                           previewBase64: bindings.carLeftB64,
+                          previewUrl: bindings.carLeftB64 == null
+                              ? bindings.carLeftPreviewUrl
+                              : null,
+                          enabled: !photosLocked,
                           onTap: () async {
                             final b64 = await pickImageAsBase64(
                               context,
@@ -93,8 +117,14 @@ class RegistrationStepVehiclePhotos extends ConsumerWidget {
                           title: l10n.driverRegPhotoRightTitle,
                           hint: l10n.driverRegPhotoRightHint,
                           icon: Icons.arrow_forward_rounded,
-                          isDone: bindings.carRightB64 != null,
+                          isDone: bindings.carRightB64 != null ||
+                              (bindings.carRightPreviewUrl != null &&
+                                  bindings.carRightPreviewUrl!.isNotEmpty),
                           previewBase64: bindings.carRightB64,
+                          previewUrl: bindings.carRightB64 == null
+                              ? bindings.carRightPreviewUrl
+                              : null,
+                          enabled: !photosLocked,
                           onTap: () async {
                             final b64 = await pickImageAsBase64(
                               context,

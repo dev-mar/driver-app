@@ -1,3 +1,4 @@
+import 'driver_registration_models.dart';
 import 'registration_flow_bindings.dart';
 
 bool registrationFieldIsBlank(String? value) {
@@ -24,7 +25,11 @@ String? registrationNormalizeIsoDate(String? raw) {
   }
   final parsed = DateTime.tryParse(s);
   if (parsed == null) return null;
-  return parsed.toIso8601String().split('T').first;
+  final utc = parsed.isUtc ? parsed : parsed.toUtc();
+  final y = utc.year.toString().padLeft(4, '0');
+  final m = utc.month.toString().padLeft(2, '0');
+  final d = utc.day.toString().padLeft(2, '0');
+  return '$y-$m-$d';
 }
 
 /// Extrae la parte local del teléfono a partir de E.164 y el código de país (sin +).
@@ -187,5 +192,114 @@ bool registrationFormStepNeedsServerRehydrate({
           form.carRightB64 == null;
     default:
       return false;
+  }
+}
+
+int? registrationParseLicenseDocumentTypeId(Map<String, dynamic> profile) {
+  final raw = profile['license_document_type_id'] ??
+      profile['license_category_document_type_id'] ??
+      profile['license_document_type'];
+  if (raw is int) return raw > 1 ? raw : null;
+  if (raw is num) {
+    final n = raw.toInt();
+    return n > 1 ? n : null;
+  }
+  final parsed = int.tryParse(raw?.toString().trim() ?? '');
+  if (parsed == null || parsed <= 1) return null;
+  return parsed;
+}
+
+/// Recupera la categoría de licencia registrada (no editable desde perfil).
+void applyLicenseCategoryFromProfile({
+  required RegistrationFlowBindings form,
+  required List<DriverLicenseCategory> categories,
+  int? documentTypeId,
+}) {
+  if (documentTypeId == null || documentTypeId <= 1) return;
+  final list = categories.isNotEmpty
+      ? categories
+      : DriverLicenseCategory.legacyBoliviaFallback;
+  for (final item in list) {
+    if (item.id == documentTypeId) {
+      form.licenseCategory = item;
+      return;
+    }
+  }
+  form.licenseCategory = DriverLicenseCategory(
+    id: documentTypeId,
+    label: 'Cat. $documentTypeId',
+  );
+}
+
+void applyRegisteredImagesToForm({
+  required RegistrationFlowBindings form,
+  required Map<String, dynamic> data,
+}) {
+  void applyDoc(Map<String, dynamic> doc) {
+    final code = doc['definition_code']?.toString() ?? '';
+    final imgs = doc['images'];
+    if (imgs is! List) return;
+    for (final raw in imgs) {
+      if (raw is! Map) continue;
+      final key = raw['key']?.toString() ?? '';
+      final url = raw['image_url']?.toString();
+      final sk = raw['storage_key']?.toString();
+      if (code == 'DRIVER_IDENTITY') {
+        if (key == 'front_image') {
+          form.idFrontPreviewUrl ??= (url != null && url.isNotEmpty) ? url : null;
+          form.idFrontStorageKey ??= (sk != null && sk.isNotEmpty) ? sk : null;
+        } else if (key == 'back_image') {
+          form.idBackPreviewUrl ??= (url != null && url.isNotEmpty) ? url : null;
+          form.idBackStorageKey ??= (sk != null && sk.isNotEmpty) ? sk : null;
+        } else if (key == 'face_image') {
+          form.facePreviewUrl ??= (url != null && url.isNotEmpty) ? url : null;
+          form.faceStorageKey ??= (sk != null && sk.isNotEmpty) ? sk : null;
+        }
+      } else if (code == 'DRIVER_LICENSE') {
+        if (key == 'front_image') {
+          form.licFrontPreviewUrl ??= (url != null && url.isNotEmpty) ? url : null;
+          form.licFrontStorageKey ??= (sk != null && sk.isNotEmpty) ? sk : null;
+        } else if (key == 'back_image') {
+          form.licBackPreviewUrl ??= (url != null && url.isNotEmpty) ? url : null;
+          form.licBackStorageKey ??= (sk != null && sk.isNotEmpty) ? sk : null;
+        }
+      }
+    }
+  }
+
+  final docs = data['documents'];
+  if (docs is List) {
+    for (final d in docs) {
+      if (d is Map) applyDoc(Map<String, dynamic>.from(d));
+    }
+  }
+
+  final vehicles = data['vehicles'];
+  if (vehicles is List && vehicles.isNotEmpty) {
+    final first = vehicles.first;
+    if (first is Map) {
+      final imgs = first['images'];
+      if (imgs is List) {
+        for (final raw in imgs) {
+          if (raw is! Map) continue;
+          final key = raw['key']?.toString() ?? '';
+          final url = raw['image_url']?.toString();
+          final sk = raw['storage_key']?.toString();
+          if (key == 'vehicle_front') {
+            form.carFrontPreviewUrl ??= (url != null && url.isNotEmpty) ? url : null;
+            form.carFrontStorageKey ??= (sk != null && sk.isNotEmpty) ? sk : null;
+          } else if (key == 'vehicle_back') {
+            form.carBackPreviewUrl ??= (url != null && url.isNotEmpty) ? url : null;
+            form.carBackStorageKey ??= (sk != null && sk.isNotEmpty) ? sk : null;
+          } else if (key == 'vehicle_left') {
+            form.carLeftPreviewUrl ??= (url != null && url.isNotEmpty) ? url : null;
+            form.carLeftStorageKey ??= (sk != null && sk.isNotEmpty) ? sk : null;
+          } else if (key == 'vehicle_right') {
+            form.carRightPreviewUrl ??= (url != null && url.isNotEmpty) ? url : null;
+            form.carRightStorageKey ??= (sk != null && sk.isNotEmpty) ? sk : null;
+          }
+        }
+      }
+    }
   }
 }

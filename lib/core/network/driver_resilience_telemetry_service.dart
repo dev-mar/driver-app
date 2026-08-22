@@ -1,14 +1,12 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
 import '../config/driver_backend_config.dart';
+import '../storage/driver_secure_storage.dart';
 
 class DriverResilienceTelemetryService {
   DriverResilienceTelemetryService._();
 
-  static const FlutterSecureStorage _storage = FlutterSecureStorage();
   static final Dio _dio = Dio(
     BaseOptions(
       baseUrl: DriverBackendConfig.baseUrl,
@@ -38,7 +36,7 @@ class DriverResilienceTelemetryService {
     if (prev != null && now.difference(prev) < _cooldown) return;
     _lastSentByKey[dedupeKey] = now;
 
-    final token = await _storage.read(key: 'driver_token');
+    final token = await DriverSecureStorage.read('driver_token');
     if (token == null || token.isEmpty) return;
     try {
       final payload = <String, dynamic>{

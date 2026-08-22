@@ -12,6 +12,7 @@ class RegistrationFlowBindings {
   final firstNameCtrl = TextEditingController();
   final lastNameCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
+  final referralCodeCtrl = TextEditingController();
   final phoneLocalCtrl = TextEditingController();
   final birthDateCtrl = TextEditingController();
   final addressCtrl = TextEditingController();
@@ -45,12 +46,33 @@ class RegistrationFlowBindings {
   String? carLeftB64;
   String? carRightB64;
 
+  String? idFrontPreviewUrl;
+  String? idBackPreviewUrl;
+  String? facePreviewUrl;
+  String? licFrontPreviewUrl;
+  String? licBackPreviewUrl;
+  String? carFrontPreviewUrl;
+  String? carBackPreviewUrl;
+  String? carLeftPreviewUrl;
+  String? carRightPreviewUrl;
+
+  String? idFrontStorageKey;
+  String? idBackStorageKey;
+  String? faceStorageKey;
+  String? licFrontStorageKey;
+  String? licBackStorageKey;
+  String? carFrontStorageKey;
+  String? carBackStorageKey;
+  String? carLeftStorageKey;
+  String? carRightStorageKey;
+
   final draftImagePaths = <String, String?>{};
 
   void dispose() {
     firstNameCtrl.dispose();
     lastNameCtrl.dispose();
     emailCtrl.dispose();
+    referralCodeCtrl.dispose();
     phoneLocalCtrl.dispose();
     birthDateCtrl.dispose();
     addressCtrl.dispose();

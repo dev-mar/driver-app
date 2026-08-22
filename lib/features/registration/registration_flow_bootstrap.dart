@@ -25,7 +25,12 @@ Future<void> _restoreLocalDraftIfPresent({
 }) async {
   if (mode.galleryCompletionOnly || mode.addVehicleOnly) return;
 
-  final draft = await DriverRegistrationDraftStore.load();
+  DriverRegistrationDraft? draft;
+  try {
+    draft = await DriverRegistrationDraftStore.load();
+  } catch (_) {
+    return;
+  }
   if (draft == null || !isMounted()) return;
 
   await draftService.restoreIntoForm(draft, notifier);

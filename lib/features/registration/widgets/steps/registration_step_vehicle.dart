@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_foundation.dart';
 import '../../../../core/ui/horizontal_edge_fade.dart';
 import '../../../../gen_l10n/app_localizations.dart';
@@ -25,6 +26,7 @@ class RegistrationStepVehicle extends ConsumerWidget {
     required this.flow,
     required this.notifier,
     required this.showTechnicalCatalogs,
+    this.fieldsReadOnly = false,
   });
 
   final RegistrationFlowBindings bindings;
@@ -33,6 +35,7 @@ class RegistrationStepVehicle extends ConsumerWidget {
   final DriverRegistrationFlowState flow;
   final DriverRegistrationFlowController notifier;
   final bool showTechnicalCatalogs;
+  final bool fieldsReadOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,14 +43,18 @@ class RegistrationStepVehicle extends ConsumerWidget {
 
         final integratedCatalog = useIntegratedCatalogVehicleFields(flow);
 
-        return Theme(
+        return IgnorePointer(
+          ignoring: fieldsReadOnly,
+          child: Theme(
           data: registrationInputTheme(context),
           child: Form(
             key: bindings.formVehicle,
             autovalidateMode: showValidationErrors
                 ? AutovalidateMode.onUserInteraction
                 : AutovalidateMode.disabled,
-            child: Column(
+            child: fieldsReadOnly
+                ? _vehicleReadonlyDetails(context, l10n)
+                : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 RegistrationStepIntroBanner(message: l10n.driverRegIntroVehicle),
@@ -64,6 +71,7 @@ class RegistrationStepVehicle extends ConsumerWidget {
                   catalogTransportMode: flow.catalogTransportMode,
                   catalogManufacturerId: flow.catalogManufacturerId,
                   catalogVehicleModelId: flow.catalogVehicleModelId,
+                  catalogCustomProposal: flow.catalogCustomProposal,
                   showTechnicalCatalogs: showTechnicalCatalogs,
                   onReloadCatalog: notifier.loadVehicleCatalog,
                   onSelectVehicleType: notifier.selectVehicleCatalogType,
@@ -73,6 +81,20 @@ class RegistrationStepVehicle extends ConsumerWidget {
                   onSetCatalogTransportMode: notifier.setCatalogTransportMode,
                   onSetCatalogManufacturer: notifier.setCatalogManufacturerId,
                   onSetCatalogVehicleModel: notifier.setCatalogVehicleModelId,
+                  onCatalogCustomProposal: notifier.setCatalogCustomProposal,
+                  onApplyCatalogCustomSelection: notifier.applyCatalogCustomSelection,
+                  existingYearText: bindings.vehicleYearCtrl.text,
+                  onResolvedCustomVehicleSpec: ({
+                    required String brand,
+                    required String model,
+                    required String year,
+                  }) {
+                    bindings.vehicleBrandCtrl.text = brand;
+                    bindings.vehicleModelCtrl.text = model;
+                    bindings.vehicleYearCtrl.text = year;
+                    actions.onFormChanged();
+                    unawaited(actions.persistDraft());
+                  },
                   onPickCatalogModel: (entry, manufacturerName) {
                     onPickCatalogModel(manufacturerName, entry);
                   },
@@ -112,9 +134,8 @@ class RegistrationStepVehicle extends ConsumerWidget {
                         controller: bindings.vehicleYearCtrl,
                         decoration: InputDecoration(labelText: l10n.driverRegFieldYear),
                         keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        validator: (v) =>
-                            v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
+                        inputFormatters: vehicleYearInputFormatters,
+                        validator: (v) => validateVehicleModelYear(v, l10n),
                       ),
                       const SizedBox(height: 10),
                       TextFormField(
@@ -148,6 +169,40 @@ class RegistrationStepVehicle extends ConsumerWidget {
                                 },
                               );
                             },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (flow.canDeclareSixPassengerSeats) ...[
+                  const SizedBox(height: AppFoundation.spacingLg),
+                  RegistrationSectionCard(
+                    title: l10n.driverRegFieldSixSeats,
+                    icon: Icons.event_seat_rounded,
+                    children: [
+                      SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        value: flow.supportsSixPassengers,
+                        onChanged: (v) {
+                          HapticFeedback.selectionClick();
+                          notifier.setSupportsSixPassengers(v);
+                          actions.onFormChanged();
+                          unawaited(actions.persistDraft());
+                        },
+                        title: Text(
+                          l10n.driverRegFieldSixSeats,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14.5,
+                          ),
+                        ),
+                        subtitle: Text(
+                          l10n.driverRegHintSixSeats,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            height: 1.35,
+                            color: AppColors.textSecondary.withValues(alpha: 0.95),
                           ),
                         ),
                       ),
@@ -191,37 +246,75 @@ class RegistrationStepVehicle extends ConsumerWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: AppFoundation.spacingLg),
-                RegistrationSectionCard(
-                  title: l10n.driverRegSectionInsuranceOwnership,
-                  icon: Icons.description_outlined,
-                  subtitle: l10n.driverRegSubtitleInsuranceOwnership,
-                  children: [
-                    TextFormField(
-                      controller: bindings.vehicleInsuranceCtrl,
-                      decoration: InputDecoration(
-                        labelText: l10n.driverRegFieldInsurancePolicyNumber,
-                        hintText: l10n.driverRegHintAsPolicy,
-                      ),
-                      validator: (v) =>
-                          v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
-                    ),
-                    const SizedBox(height: 10),
-                    TextFormField(
-                      controller: bindings.vehicleTitleCtrl,
-                      decoration: InputDecoration(
-                        labelText: l10n.driverRegFieldTitleDocData,
-                        hintText: l10n.driverRegHintReferenceFromDocument,
-                      ),
-                      validator: (v) =>
-                          v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
-                    ),
-                  ],
-                ),
+                // Póliza y título: no se piden en app; submitVehicle envía '—'.
               ],
             ),
           ),
+        ),
         );
+  }
+
+  Widget _vehicleReadonlyDetails(BuildContext context, AppLocalizations l10n) {
+    final cat = flow.vehicleCatalog;
+    String dash(String? v) {
+      final t = (v ?? '').trim();
+      return t.isEmpty ? '—' : t;
+    }
+
+    String? typeLabel;
+    String? categoryLabel;
+    if (cat != null) {
+      for (final t in cat.vehicleTypes) {
+        if (t.id == flow.selectedVehicleTypeId) {
+          typeLabel = t.label;
+          break;
+        }
+      }
+      for (final c in cat.vehicleCategories) {
+        if (c.id == flow.selectedVehicleCategoryId) {
+          categoryLabel = c.label;
+          break;
+        }
+      }
+    }
+    final serviceBits = <String>[];
+    if (cat != null) {
+      for (final id in flow.selectedEnabledServiceTypeIds) {
+        serviceBits.add(vehicleCatalogServiceTypeLabel(cat, id, l10n));
+      }
+    }
+    final colorRaw = bindings.vehicleColorCtrl.text.trim();
+    final colorLabel = colorRaw.isEmpty
+        ? '—'
+        : localizedRegistrationColor(context, colorRaw);
+    final rows = <({String label, String value})>[
+      (label: l10n.driverRegFieldBrand, value: dash(bindings.vehicleBrandCtrl.text)),
+      (label: l10n.driverRegFieldModel, value: dash(bindings.vehicleModelCtrl.text)),
+      (label: l10n.driverRegFieldYear, value: dash(bindings.vehicleYearCtrl.text)),
+      (label: l10n.driverRegFieldColor, value: colorLabel),
+      (label: l10n.driverRegFieldPlate, value: dash(bindings.vehiclePlateCtrl.text)),
+      if (typeLabel != null && typeLabel.trim().isNotEmpty)
+        (label: l10n.driverRegFieldVehicleType, value: typeLabel.trim()),
+      if (categoryLabel != null && categoryLabel.trim().isNotEmpty)
+        (label: l10n.driverRegFieldVehicleCategory, value: categoryLabel.trim()),
+      if (serviceBits.isNotEmpty)
+        (label: l10n.driverRegFieldServiceTypes, value: serviceBits.join(' · ')),
+    ];
+
+    return RegistrationSectionCard(
+      title: l10n.driverRegSectionVehicleData,
+      icon: Icons.directions_car_filled_rounded,
+      children: [
+        for (var i = 0; i < rows.length; i++) ...[
+          if (i > 0)
+            Divider(
+              height: 18,
+              color: AppColors.border.withValues(alpha: 0.45),
+            ),
+          _VehicleReadonlyDetailRow(label: rows[i].label, value: rows[i].value),
+        ],
+      ],
+    );
   }
 
   List<Widget> _vehicleCatalogAfterBrandModelFields(
@@ -234,9 +327,8 @@ class RegistrationStepVehicle extends ConsumerWidget {
         controller: bindings.vehicleYearCtrl,
         decoration: InputDecoration(labelText: l10n.driverRegFieldYear),
         keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        validator: (v) =>
-            v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
+        inputFormatters: vehicleYearInputFormatters,
+        validator: (v) => validateVehicleModelYear(v, l10n),
       ),
       const SizedBox(height: 10),
       TextFormField(
@@ -284,4 +376,45 @@ class RegistrationStepVehicle extends ConsumerWidget {
     actions.onFormChanged();
   }
 
+}
+
+class _VehicleReadonlyDetailRow extends StatelessWidget {
+  const _VehicleReadonlyDetailRow({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 108,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w700,
+              height: 1.25,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

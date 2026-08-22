@@ -6,6 +6,66 @@ import '../../gen_l10n/app_localizations.dart';
 import 'driver_registration_controller.dart';
 import 'registration_flow_bindings.dart';
 
+/// Código de discado de Bolivia (sin `+`).
+const String kBoliviaDialDigits = '591';
+
+/// Largo del número local boliviano (sin código de país).
+const int kBoliviaLocalPhoneLength = 8;
+
+final _nonDigits = RegExp(r'\D');
+final _boliviaLocalMobile = RegExp(r'^[567]\d{7}$');
+
+bool registrationIsBoliviaDialCode(String? phoneCode) {
+  return (phoneCode ?? '').replaceAll(_nonDigits, '') == kBoliviaDialDigits;
+}
+
+/// `true` si el país de registro es Bolivia (código 591 o nombre).
+bool registrationPhoneCountryIsBolivia({
+  String? phoneCode,
+  String? countryName,
+}) {
+  if (registrationIsBoliviaDialCode(phoneCode)) return true;
+  return countryName?.toLowerCase().trim() == 'bolivia';
+}
+
+/// Número local BO: exactamente 8 dígitos e inicia en 5, 6 o 7 (ej. `7#######`).
+bool isValidBoliviaLocalMobile(String raw) {
+  final d = raw.replaceAll(_nonDigits, '');
+  return _boliviaLocalMobile.hasMatch(d);
+}
+
+final _registrationEmail = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]{2,}$');
+
+/// Validación visual de correo (el API sigue aceptando vacío).
+bool isValidRegistrationEmail(String raw) {
+  final v = raw.trim();
+  if (v.isEmpty || v.length > 254) return false;
+  return _registrationEmail.hasMatch(v);
+}
+
+/// Solo dígitos, máximo 8; si pegan `591` + local, deja el local.
+class BoliviaLocalPhoneInputFormatter extends TextInputFormatter {
+  const BoliviaLocalPhoneInputFormatter();
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var d = newValue.text.replaceAll(_nonDigits, '');
+    if (d.startsWith(kBoliviaDialDigits) && d.length > kBoliviaLocalPhoneLength) {
+      d = d.substring(kBoliviaDialDigits.length);
+    }
+    if (d.length > kBoliviaLocalPhoneLength) {
+      d = d.substring(0, kBoliviaLocalPhoneLength);
+    }
+    return TextEditingValue(
+      text: d,
+      selection: TextSelection.collapsed(offset: d.length),
+    );
+  }
+}
+
 /// Fuerza MAYÚSCULAS en el campo de placa.
 class RegistrationUpperCasePlateFormatter extends TextInputFormatter {
   const RegistrationUpperCasePlateFormatter();
@@ -21,6 +81,27 @@ class RegistrationUpperCasePlateFormatter extends TextInputFormatter {
     );
   }
 }
+
+final _vehicleModelYearDigits = RegExp(r'^\d{4}$');
+
+/// Año del vehículo: exactamente 4 dígitos (sin rango de catálogo).
+bool isValidVehicleModelYearText(String? raw) {
+  return _vehicleModelYearDigits.hasMatch((raw ?? '').trim());
+}
+
+/// Validación de campo año: requerido + 4 dígitos.
+String? validateVehicleModelYear(String? v, AppLocalizations l10n) {
+  if (v == null || v.trim().isEmpty) return l10n.driverRegValidationRequired;
+  if (!isValidVehicleModelYearText(v)) {
+    return l10n.driverRegSnackVehicleYearInvalid;
+  }
+  return null;
+}
+
+final vehicleYearInputFormatters = <TextInputFormatter>[
+  FilteringTextInputFormatter.digitsOnly,
+  LengthLimitingTextInputFormatter(4),
+];
 
 const registrationCarColorSuggestions = [
   'Negro',
@@ -112,7 +193,7 @@ String composeRegistrationFullPhone(
   DriverRegistrationFlowState flow,
 ) {
   final code = flow.selectedCountryPhoneCode?.trim() ?? '';
-  final digits = form.phoneLocalCtrl.text.replaceAll(RegExp(r'\D'), '');
+  final digits = form.phoneLocalCtrl.text.replaceAll(_nonDigits, '');
   if (code.isEmpty) return digits.isEmpty ? '' : '+$digits';
   return '+$code$digits';
 }
@@ -174,6 +255,27 @@ ThemeData registrationInputTheme(BuildContext context) {
 String localizedRegistrationFlowError(String raw, AppLocalizations l10n) {
   final msg = raw.trim();
   final low = msg.toLowerCase();
+  if (low.contains('reg_passenger_exists_upgrade_required')) {
+    return l10n.driverRegErrorPassengerUpgradeRequired;
+  }
+  if (low.contains('reg_duplicate_user')) {
+    return l10n.driverRegErrorDuplicatePhoneDriver;
+  }
+  if (low.contains('reg_passenger_upgrade_otp_invalid')) {
+    return l10n.driverRegErrorUpgradeOtpInvalid;
+  }
+  if (low.contains('reg_passenger_upgrade_not_found')) {
+    return l10n.driverRegErrorUpgradeOtpNotFound;
+  }
+  if (low.contains('pass_auth_wa_outbound_send_failed') ||
+      low.contains('pass_auth_wa_outbound_not_configured') ||
+      low.contains('pass_auth_wa_outbound_template_required') ||
+      low.contains('pass_auth_wa_not_configured')) {
+    return l10n.driverRegErrorUpgradeWhatsAppSend;
+  }
+  if (low.contains('account_deletion_pending')) {
+    return l10n.driverRegErrorAccountDeletionPending;
+  }
   if (low.contains('vehicle_limit_reached') ||
       low.contains('solo puedes tener un vehículo')) {
     return l10n.driverMyVehiclesAddLockedBody;
@@ -228,6 +330,18 @@ String localizedRegistrationFlowError(String raw, AppLocalizations l10n) {
   }
   if (low.contains('sesión no disponible')) {
     return l10n.driverRegErrorSessionUnavailable;
+  }
+  if (low.contains('catalog_custom_required') ||
+      low.contains('completa fabricante') ||
+      low.contains('completa marca, modelo y año')) {
+    return l10n.driverRegSnackCatalogCustomRequired;
+  }
+  if (low.contains('badpadding') ||
+      low.contains('bad_decrypt') ||
+      low.contains('bad decrypt') ||
+      low.contains('openssl_internal') ||
+      (low.contains('platformexception') && low.contains('cipher'))) {
+    return l10n.driverRegErrorSecureStorage;
   }
   return msg;
 }

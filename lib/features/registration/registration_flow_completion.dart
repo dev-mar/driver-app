@@ -43,7 +43,13 @@ Future<void> showRegistrationOnboardingActivationComplete({
       backgroundColor: AppColors.surfaceCard,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(l10n.driverRegOnboardingDoneTitle),
-      content: Text(l10n.driverRegOnboardingDoneBody),
+      content: Text(
+        l10n.driverRegOnboardingDoneBody,
+        style: const TextStyle(
+          color: AppColors.textSecondary,
+          height: 1.4,
+        ),
+      ),
       actions: [
         FilledButton(
           onPressed: () {

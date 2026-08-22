@@ -9,6 +9,7 @@ import '../../driver_registration_controller.dart';
 import '../../driver_registration_models.dart';
 import '../../registration_flow_bindings.dart';
 import '../../registration_flow_helpers.dart';
+import '../../registration_flow_server_rehydration.dart';
 import '../../registration_image_helper.dart';
 import '../../registration_step_actions.dart';
 import '../registration_flow_chrome.dart';
@@ -21,20 +22,40 @@ class RegistrationStepLicense extends ConsumerWidget {
     required this.actions,
     required this.showValidationErrors,
     required this.flow,
+    this.fieldsReadOnly = false,
+    this.photosLocked = false,
   });
 
   final RegistrationFlowBindings bindings;
   final RegistrationStepActions actions;
   final bool showValidationErrors;
   final DriverRegistrationFlowState flow;
+  final bool fieldsReadOnly;
+  final bool photosLocked;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
 
-        final licenseItems = flow.licenseCategories.isEmpty
+        if (bindings.licenseCategory == null &&
+            flow.registeredLicenseDocumentTypeId != null) {
+          applyLicenseCategoryFromProfile(
+            form: bindings,
+            categories: flow.licenseCategories,
+            documentTypeId: flow.registeredLicenseDocumentTypeId,
+          );
+        }
+        final rawLicenseItems = flow.licenseCategories.isEmpty
             ? DriverLicenseCategory.legacyBoliviaFallback
             : flow.licenseCategories;
+        final licenseItems = () {
+          final selected = bindings.licenseCategory;
+          if (selected == null) return rawLicenseItems;
+          if (rawLicenseItems.any((e) => e.id == selected.id)) {
+            return rawLicenseItems;
+          }
+          return <DriverLicenseCategory>[...rawLicenseItems, selected];
+        }();
         return Theme(
           data: registrationInputTheme(context),
           child: Form(
@@ -69,7 +90,9 @@ class RegistrationStepLicense extends ConsumerWidget {
                             ),
                           )
                           .toList(),
-                      onChanged: (v) {
+                      onChanged: fieldsReadOnly
+                          ? null
+                          : (v) {
                         bindings.licenseCategory = v;
                         actions.onFormChanged();
                         unawaited(actions.persistDraft());
@@ -80,16 +103,21 @@ class RegistrationStepLicense extends ConsumerWidget {
                     TextFormField(
                       controller: bindings.licenseExpireCtrl,
                       readOnly: true,
+                      enabled: !fieldsReadOnly,
                       decoration: InputDecoration(
                         labelText: l10n.driverRegFieldExpiry,
                         hintText: l10n.driverRegHintLicenseExpiryDate,
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.event_rounded),
-                          onPressed: () =>
+                          onPressed: fieldsReadOnly
+                              ? null
+                              : () =>
                               actions.pickDateToField(bindings.licenseExpireCtrl, future: true),
                         ),
                       ),
-                      onTap: () => actions.pickDateToField(bindings.licenseExpireCtrl, future: true),
+                      onTap: fieldsReadOnly
+                          ? null
+                          : () => actions.pickDateToField(bindings.licenseExpireCtrl, future: true),
                       validator: (v) =>
                           v == null || v.trim().isEmpty ? l10n.driverRegValidationIndicateExpiryDate : null,
                     ),
@@ -103,7 +131,13 @@ class RegistrationStepLicense extends ConsumerWidget {
                   children: [
                     RegistrationCarnetUploadTile(
                       kind: RegistrationCarnetSlotKind.licenseFront,
-                      isSet: bindings.licFrontB64 != null,
+                      isSet: bindings.licFrontB64 != null ||
+                          (bindings.licFrontPreviewUrl != null &&
+                              bindings.licFrontPreviewUrl!.isNotEmpty),
+                      previewUrl: bindings.licFrontB64 == null
+                          ? bindings.licFrontPreviewUrl
+                          : null,
+                      enabled: !photosLocked,
                       onTap: () async {
                         final b64 = await pickImageAsBase64(context);
                         actions.applyPickedImage(b64, (v) => bindings.licFrontB64 = v);
@@ -116,7 +150,13 @@ class RegistrationStepLicense extends ConsumerWidget {
                     const SizedBox(height: 12),
                     RegistrationCarnetUploadTile(
                       kind: RegistrationCarnetSlotKind.licenseBack,
-                      isSet: bindings.licBackB64 != null,
+                      isSet: bindings.licBackB64 != null ||
+                          (bindings.licBackPreviewUrl != null &&
+                              bindings.licBackPreviewUrl!.isNotEmpty),
+                      previewUrl: bindings.licBackB64 == null
+                          ? bindings.licBackPreviewUrl
+                          : null,
+                      enabled: !photosLocked,
                       onTap: () async {
                         final b64 = await pickImageAsBase64(context);
                         actions.applyPickedImage(b64, (v) => bindings.licBackB64 = v);

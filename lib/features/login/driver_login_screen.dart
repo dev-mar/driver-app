@@ -12,6 +12,8 @@ import '../../core/theme/app_foundation.dart';
 import '../../core/theme/app_motion.dart';
 import '../../core/router/app_router.dart';
 import '../../core/session/driver_internal_tools_gate.dart';
+import '../../core/session/driver_must_change_password_gate.dart';
+import '../../core/version/driver_app_version_gate.dart';
 import '../../core/ui/driver_ui_states.dart';
 import '../../gen_l10n/app_localizations.dart';
 import '../session/driver_operational_profile.dart';
@@ -62,7 +64,9 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _entrance, curve: AppMotion.standard));
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _entrance.forward();
+      if (!mounted) return;
+      _entrance.forward();
+      unawaited(DriverAppVersionGate.runStartupCheck(context));
     });
   }
 
@@ -116,6 +120,11 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
       ref.invalidate(driverOperationalProfileProvider);
       ref.invalidate(driverInternalToolsVisibleProvider);
       ref.invalidate(driverRealtimeProvider);
+      if (await DriverMustChangePasswordGate.needsChange()) {
+        if (!mounted) return;
+        context.goNamed(AppRouter.changePassword);
+        return;
+      }
       try {
         final profile = await ref.read(driverOperationalProfileProvider.future);
         if (profile.shouldForceRegistrationWizard) {
@@ -472,6 +481,41 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                                             return null;
                                           },
                                           onFieldSubmitted: (_) => _submit(),
+                                        ),
+                                        Align(
+                                          alignment: Alignment.centerRight,
+                                          child: TextButton(
+                                            onPressed: _isLoading
+                                                ? null
+                                                : () {
+                                                    context.pushNamed(
+                                                      AppRouter.forgotPassword,
+                                                      extra: <String, String>{
+                                                        'countryCode':
+                                                            _countryCodeController
+                                                                .text
+                                                                .trim(),
+                                                        'phoneLocal':
+                                                            _phoneController
+                                                                .text
+                                                                .trim(),
+                                                      },
+                                                    );
+                                                  },
+                                            style: TextButton.styleFrom(
+                                              foregroundColor: AppColors.primary,
+                                              minimumSize: const Size(48, 48),
+                                              tapTargetSize:
+                                                  MaterialTapTargetSize.shrinkWrap,
+                                            ),
+                                            child: Text(
+                                              l10n.driverPasswordResetForgotLink,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 13.5,
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                         if (_errorMessage != null) ...[
                                           const SizedBox(height: AppFoundation.spacingLg),

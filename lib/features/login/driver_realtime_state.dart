@@ -392,6 +392,15 @@ class DriverActiveTrip {
   /// Polyline codificada (misma referencia que el mapa del pasajero: pickup → destino).
   final String? routeOverviewEncoded;
 
+  /// `cash` | `qr`. Ausente = efectivo.
+  final String paymentMethod;
+
+  /// Códigos informativos. Ausente = ninguno.
+  final List<String> tripExtras;
+
+  /// Requerimientos especiales. Ausente = ninguno.
+  final List<String> tripSpecials;
+
   const DriverActiveTrip({
     required this.tripId,
     required this.status,
@@ -408,6 +417,9 @@ class DriverActiveTrip {
     this.tripDistanceKm,
     this.etaToDestinationMinutes,
     this.routeOverviewEncoded,
+    this.paymentMethod = 'cash',
+    this.tripExtras = const [],
+    this.tripSpecials = const [],
   });
 
   DriverActiveTrip copyWith({
@@ -426,6 +438,9 @@ class DriverActiveTrip {
     double? tripDistanceKm,
     double? etaToDestinationMinutes,
     String? routeOverviewEncoded,
+    String? paymentMethod,
+    List<String>? tripExtras,
+    List<String>? tripSpecials,
   }) {
     return DriverActiveTrip(
       tripId: tripId ?? this.tripId,
@@ -444,6 +459,9 @@ class DriverActiveTrip {
       etaToDestinationMinutes:
           etaToDestinationMinutes ?? this.etaToDestinationMinutes,
       routeOverviewEncoded: routeOverviewEncoded ?? this.routeOverviewEncoded,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      tripExtras: tripExtras ?? this.tripExtras,
+      tripSpecials: tripSpecials ?? this.tripSpecials,
     );
   }
 }

@@ -21,6 +21,9 @@ class RegistrationFlowStepRouter extends ConsumerWidget {
     required this.actions,
     required this.showValidationErrors,
     required this.showTechnicalCatalogs,
+    this.fieldsReadOnly = false,
+    this.photosLocked = false,
+    this.embedVehiclePhotos = false,
   });
 
   final DriverRegistrationFlowState flow;
@@ -29,6 +32,9 @@ class RegistrationFlowStepRouter extends ConsumerWidget {
   final RegistrationStepActions actions;
   final bool showValidationErrors;
   final bool showTechnicalCatalogs;
+  final bool fieldsReadOnly;
+  final bool photosLocked;
+  final bool embedVehiclePhotos;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,12 +46,15 @@ class RegistrationFlowStepRouter extends ConsumerWidget {
           showValidationErrors: showValidationErrors,
           flow: flow,
           notifier: notifier,
+          fieldsReadOnly: fieldsReadOnly,
         );
       case 1:
         return RegistrationStepIdentity(
           bindings: bindings,
           actions: actions,
           showValidationErrors: showValidationErrors,
+          fieldsReadOnly: fieldsReadOnly,
+          photosLocked: photosLocked,
         );
       case 2:
         return RegistrationStepLicense(
@@ -53,6 +62,8 @@ class RegistrationFlowStepRouter extends ConsumerWidget {
           actions: actions,
           showValidationErrors: showValidationErrors,
           flow: flow,
+          fieldsReadOnly: fieldsReadOnly,
+          photosLocked: photosLocked,
         );
       case 3:
         return RegistrationStepAccess(
@@ -62,19 +73,37 @@ class RegistrationFlowStepRouter extends ConsumerWidget {
           flow: flow,
         );
       case 4:
-        return RegistrationStepVehicle(
-          bindings: bindings,
-          actions: actions,
-          showValidationErrors: showValidationErrors,
-          flow: flow,
-          notifier: notifier,
-          showTechnicalCatalogs: showTechnicalCatalogs,
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            RegistrationStepVehicle(
+              bindings: bindings,
+              actions: actions,
+              showValidationErrors: showValidationErrors,
+              flow: flow,
+              notifier: notifier,
+              showTechnicalCatalogs: showTechnicalCatalogs,
+              fieldsReadOnly: fieldsReadOnly,
+            ),
+            if (embedVehiclePhotos) ...[
+              const SizedBox(height: 14),
+              RegistrationStepVehiclePhotos(
+                bindings: bindings,
+                actions: actions,
+                showValidationErrors: showValidationErrors,
+                photosLocked: photosLocked,
+                showIntro: false,
+              ),
+            ],
+          ],
         );
       case 5:
         return RegistrationStepVehiclePhotos(
           bindings: bindings,
           actions: actions,
           showValidationErrors: showValidationErrors,
+          photosLocked: photosLocked,
         );
       default:
         return const SizedBox.shrink();

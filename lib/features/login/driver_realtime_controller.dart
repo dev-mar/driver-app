@@ -5,7 +5,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
@@ -17,7 +16,9 @@ import '../../core/notifications/driver_trip_chat_visibility.dart';
 import '../../core/notifications/driver_notification_service.dart';
 import '../../core/foreground/driver_foreground_session.dart';
 import '../../core/session/driver_map_preferences_store.dart';
+import '../../core/session/driver_must_change_password_gate.dart';
 import '../../core/session/driver_session_expulsion.dart';
+import '../../core/storage/driver_secure_storage.dart';
 import 'driver_realtime_exception.dart';
 import 'driver_realtime_parsers.dart';
 import 'driver_realtime_socket_connector.dart';
@@ -51,7 +52,6 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState>
         super(DriverRealtimeState.initial);
   static const bool _verboseRealtimeLogs = false;
 
-  static const _storage = FlutterSecureStorage();
   final DriverTripRestService _tripRest;
 
   io.Socket? _socket;

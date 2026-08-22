@@ -15,6 +15,7 @@ class RegistrationBottomBar extends StatelessWidget {
     required this.lastStepIndex,
     this.profileCompletionMode = false,
     this.profileReadOnly = false,
+    this.profileSavePhotos = false,
     required this.onBack,
     required this.onContinue,
   });
@@ -24,8 +25,10 @@ class RegistrationBottomBar extends StatelessWidget {
   final int lastStepIndex;
   /// Desde perfil: guardar/cerrar sin navegar entre pasos del asistente.
   final bool profileCompletionMode;
-  /// Desde perfil: bloque en revisión o verificado — solo consulta.
+  /// Desde perfil: bloque verificado — solo consulta.
   final bool profileReadOnly;
+  /// Desde perfil: el bloque aún no está verificado y se pueden guardar fotos.
+  final bool profileSavePhotos;
   final VoidCallback onBack;
   final VoidCallback onContinue;
 
@@ -36,20 +39,24 @@ class RegistrationBottomBar extends StatelessWidget {
     final isActivateStep = step == 3;
     final primaryLabel = profileReadOnly
         ? l10n.commonClose
-        : (profileCompletionMode
+        : (profileSavePhotos
+            ? l10n.driverRegActionSavePhotos
+            : (profileCompletionMode
             ? (isActivateStep ? l10n.driverRegActionActivate : l10n.driverRegActionSave)
             : (isActivateStep
                 ? l10n.driverRegActionActivate
-                : (isLast ? l10n.driverRegActionFinish : l10n.driverRegActionContinue)));
+                : (isLast ? l10n.driverRegActionFinish : l10n.driverRegActionContinue))));
     final primaryIcon = profileReadOnly
         ? Icons.check_rounded
-        : (profileCompletionMode
+        : (profileSavePhotos
+            ? Icons.save_rounded
+            : (profileCompletionMode
             ? (isActivateStep
-                ? Icons.verified_rounded
+                ? Icons.send_rounded
                 : Icons.save_rounded)
             : (isActivateStep
-                ? Icons.verified_rounded
-                : (isLast ? Icons.check_rounded : Icons.arrow_forward_rounded)));
+                ? Icons.send_rounded
+                : (isLast ? Icons.check_rounded : Icons.arrow_forward_rounded))));
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -452,6 +459,8 @@ class RegistrationCarnetUploadTile extends StatefulWidget {
     required this.isSet,
     required this.onTap,
     this.onLongPress,
+    this.previewUrl,
+    this.enabled = true,
   });
 
   final RegistrationCarnetSlotKind kind;
@@ -459,6 +468,8 @@ class RegistrationCarnetUploadTile extends StatefulWidget {
   final VoidCallback onTap;
   /// Captura con `pickImageAsBase64PickerPrefiltered` (menos RAM / modo compatible).
   final VoidCallback? onLongPress;
+  final String? previewUrl;
+  final bool enabled;
 
   @override
   State<RegistrationCarnetUploadTile> createState() => RegistrationCarnetUploadTileState();
@@ -481,8 +492,8 @@ class RegistrationCarnetUploadTileState extends State<RegistrationCarnetUploadTi
         borderRadius: BorderRadius.circular(14),
         elevation: 0,
         child: InkWell(
-          onTap: widget.onTap,
-          onLongPress: widget.onLongPress,
+                  onTap: widget.enabled ? widget.onTap : null,
+                  onLongPress: widget.enabled ? widget.onLongPress : null,
           onHighlightChanged: (h) => setState(() => _pressed = h),
           borderRadius: BorderRadius.circular(14),
           splashColor: AppColors.primary.withValues(alpha: 0.12),
@@ -509,7 +520,20 @@ class RegistrationCarnetUploadTileState extends State<RegistrationCarnetUploadTi
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RegistrationMiniCarnetIllustration(icon: miniIcon, accent: miniAccent),
+                  if (widget.previewUrl != null && widget.previewUrl!.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        widget.previewUrl!,
+                        width: 52,
+                        height: 64,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            RegistrationMiniCarnetIllustration(icon: miniIcon, accent: miniAccent),
+                      ),
+                    )
+                  else
+                    RegistrationMiniCarnetIllustration(icon: miniIcon, accent: miniAccent),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -674,9 +698,13 @@ class RegistrationProfilePhotoCircleSlot extends StatefulWidget {
     required this.base64Image,
     required this.onTap,
     this.onLongPress,
+    this.previewUrl,
+    this.enabled = true,
   });
 
   final String? base64Image;
+  final String? previewUrl;
+  final bool enabled;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
 
@@ -690,7 +718,8 @@ class RegistrationProfilePhotoCircleSlotState extends State<RegistrationProfileP
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final hasImage = widget.base64Image != null && widget.base64Image!.isNotEmpty;
+    final hasImage = (widget.base64Image != null && widget.base64Image!.isNotEmpty) ||
+        (widget.previewUrl != null && widget.previewUrl!.isNotEmpty);
     Uint8List? bytes;
     if (hasImage) {
       try {
@@ -727,8 +756,8 @@ class RegistrationProfilePhotoCircleSlotState extends State<RegistrationProfileP
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   customBorder: const CircleBorder(),
-                  onTap: widget.onTap,
-                  onLongPress: widget.onLongPress,
+                  onTap: widget.enabled ? widget.onTap : null,
+                  onLongPress: widget.enabled ? widget.onLongPress : null,
                   onHighlightChanged: (h) => setState(() => _pressed = h),
                   splashColor: AppColors.primary.withValues(alpha: 0.15),
                   highlightColor: AppColors.primary.withValues(alpha: 0.06),
@@ -736,10 +765,10 @@ class RegistrationProfilePhotoCircleSlotState extends State<RegistrationProfileP
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: hasImage && bytes != null
+                        color: hasImage
                             ? AppColors.success
                             : AppColors.primary.withValues(alpha: 0.55),
-                        width: hasImage && bytes != null ? 3 : 2,
+                        width: hasImage ? 3 : 2,
                       ),
                     ),
                     child: ClipOval(
@@ -751,6 +780,21 @@ class RegistrationProfilePhotoCircleSlotState extends State<RegistrationProfileP
                               height: 140,
                               gaplessPlayback: true,
                             )
+                          : (widget.previewUrl != null && widget.previewUrl!.isNotEmpty)
+                              ? Image.network(
+                                  widget.previewUrl!,
+                                  fit: BoxFit.cover,
+                                  width: 140,
+                                  height: 140,
+                                  errorBuilder: (_, _, _) => Container(
+                                    color: AppColors.inputFill,
+                                    child: Icon(
+                                      Icons.face_retouching_natural,
+                                      size: 48,
+                                      color: AppColors.textSecondary.withValues(alpha: 0.9),
+                                    ),
+                                  ),
+                                )
                           : Container(
                               color: AppColors.inputFill,
                               child: Column(
@@ -786,17 +830,17 @@ class RegistrationProfilePhotoCircleSlotState extends State<RegistrationProfileP
         ),
         const SizedBox(height: 12),
         Text(
-          hasImage && bytes != null
+          hasImage
               ? l10n.driverRegProfilePhotoReadyHint
               : l10n.driverRegProfilePhotoGuideHint,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 12.5,
             height: 1.35,
-            color: hasImage && bytes != null
+            color: hasImage
                 ? AppColors.success.withValues(alpha: 0.95)
                 : AppColors.textSecondary,
-            fontWeight: hasImage && bytes != null ? FontWeight.w600 : FontWeight.w500,
+            fontWeight: hasImage ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
       ],
@@ -905,6 +949,8 @@ class RegistrationCarAngleCard extends StatefulWidget {
     required this.icon,
     required this.isDone,
     this.previewBase64,
+    this.previewUrl,
+    this.enabled = true,
     required this.onTap,
   });
 
@@ -914,6 +960,8 @@ class RegistrationCarAngleCard extends StatefulWidget {
   final bool isDone;
   /// Miniatura de la foto elegida (mismo base64 que se envía al servidor).
   final String? previewBase64;
+  final String? previewUrl;
+  final bool enabled;
   final VoidCallback onTap;
 
   @override
@@ -936,6 +984,8 @@ class RegistrationCarAngleCardState extends State<RegistrationCarAngleCard> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final preview = _decodePreview(widget.previewBase64);
+    final hasRemote = widget.previewUrl != null && widget.previewUrl!.isNotEmpty;
+    final hasPreview = preview != null || hasRemote;
     return AnimatedScale(
       scale: _pressed ? 0.98 : 1.0,
       duration: const Duration(milliseconds: 110),
@@ -945,7 +995,7 @@ class RegistrationCarAngleCardState extends State<RegistrationCarAngleCard> {
         borderRadius: BorderRadius.circular(14),
         elevation: 0,
         child: InkWell(
-          onTap: widget.onTap,
+          onTap: widget.enabled ? widget.onTap : null,
           onHighlightChanged: (h) => setState(() => _pressed = h),
           borderRadius: BorderRadius.circular(14),
           splashColor: AppColors.primary.withValues(alpha: 0.12),
@@ -980,18 +1030,24 @@ class RegistrationCarAngleCardState extends State<RegistrationCarAngleCard> {
                         const Icon(Icons.check_circle, color: AppColors.success, size: 20),
                     ],
                   ),
-                  if (preview != null) ...[
+                  if (hasPreview) ...[
                     const SizedBox(height: 8),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: SizedBox(
                         height: 72,
                         width: double.infinity,
-                        child: Image.memory(
-                          preview,
-                          fit: BoxFit.cover,
-                          gaplessPlayback: true,
-                        ),
+                        child: preview != null
+                            ? Image.memory(
+                                preview,
+                                fit: BoxFit.cover,
+                                gaplessPlayback: true,
+                              )
+                            : Image.network(
+                                widget.previewUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                              ),
                       ),
                     ),
                   ],
@@ -1000,7 +1056,7 @@ class RegistrationCarAngleCardState extends State<RegistrationCarAngleCard> {
                   const SizedBox(height: 4),
                   Expanded(
                     child: Text(
-                      preview != null
+                      hasPreview
                           ? l10n.driverRegTapCardToReplacePhoto
                           : widget.hint,
                       style: const TextStyle(
@@ -1013,7 +1069,7 @@ class RegistrationCarAngleCardState extends State<RegistrationCarAngleCard> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    preview != null
+                    hasPreview
                         ? l10n.driverRegChangePhoto
                         : l10n.driverRegTakeOrChoosePhoto,
                     style: TextStyle(
