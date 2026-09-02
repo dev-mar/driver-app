@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../gen_l10n/app_localizations.dart';
@@ -42,9 +41,11 @@ class _RegistrationEmailFieldState extends State<RegistrationEmailField> {
       final picked = await pickDeviceAccountEmail();
       if (!mounted) return;
       if (picked != null) {
-        widget.controller.text = picked;
-        widget.controller.selection =
-            TextSelection.collapsed(offset: picked.length);
+        widget.controller.text =
+            clampDriverText(picked, kDriverEmailMaxLength);
+        widget.controller.selection = TextSelection.collapsed(
+          offset: widget.controller.text.length,
+        );
         widget.onChanged();
         return;
       }
@@ -62,6 +63,7 @@ class _RegistrationEmailFieldState extends State<RegistrationEmailField> {
       focusNode: _focus,
       decoration: InputDecoration(
         labelText: l10n.driverRegFieldEmail,
+        counterText: '',
         suffixIconConstraints: const BoxConstraints(minWidth: 72, minHeight: 48),
         suffixIcon: Padding(
           padding: const EdgeInsets.only(right: 8),
@@ -96,9 +98,8 @@ class _RegistrationEmailFieldState extends State<RegistrationEmailField> {
       autocorrect: false,
       enableSuggestions: true,
       textCapitalization: TextCapitalization.none,
-      inputFormatters: [
-        FilteringTextInputFormatter.deny(RegExp(r'\s')),
-      ],
+      maxLength: kDriverEmailMaxLength,
+      inputFormatters: driverEmailInputFormatters(),
       validator: (v) {
         final raw = (v ?? '').trim();
         if (raw.isEmpty) return l10n.driverRegValidationRequired;

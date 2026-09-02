@@ -63,12 +63,6 @@ Future<void> showDriverHomeOverflowSheet({
                   _sectionLabel(l10n.driverHomeMenuSectionAccount),
                   _row(
                     ctx,
-                    icon: Icons.tune_rounded,
-                    label: l10n.driverSettingsTitle,
-                    onTap: () => context.pushNamed(AppRouter.settings),
-                  ),
-                  _row(
-                    ctx,
                     icon: Icons.person_outline_rounded,
                     label: l10n.driverProfileMenu,
                     onTap: () => context.goNamed(AppRouter.profile),
@@ -92,6 +86,12 @@ Future<void> showDriverHomeOverflowSheet({
                     icon: Icons.account_balance_wallet_outlined,
                     label: l10n.driverEarningsCreditsMenu,
                     onTap: () => context.pushNamed(AppRouter.earningsCredits),
+                  ),
+                  _row(
+                    ctx,
+                    icon: Icons.qr_code_2_rounded,
+                    label: l10n.driverTopupMenu,
+                    onTap: () => context.pushNamed(AppRouter.creditsTopup),
                   ),
                   if (canClub)
                     _row(

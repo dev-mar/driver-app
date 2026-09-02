@@ -127,6 +127,13 @@ class RegistrationFlowScaffold extends ConsumerWidget {
             Expanded(
               child: Column(
                 children: [
+                  if (mode.addVehicleOnly && flow.step < 4)
+                    const Expanded(
+                      child: Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else ...[
                   if (mode.profileFieldsReadOnly) ...[
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -174,6 +181,17 @@ class RegistrationFlowScaffold extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
+                                if (!mode.profileCompletionUx &&
+                                    !mode.addVehicleOnly &&
+                                    !mode.galleryCompletionOnly &&
+                                    flow.step == 3) ...[
+                                  RegistrationStepHeroCard(
+                                    icon: Icons.fact_check_outlined,
+                                    title: l10n.driverRegAccessHeroTitle,
+                                    subtitle: l10n.driverRegAccessHeroSubtitle,
+                                  ),
+                                  const SizedBox(height: 16),
+                                ],
                                 RegistrationFlowStepRouter(
                                   flow: flow,
                                   notifier: notifier,
@@ -202,11 +220,12 @@ class RegistrationFlowScaffold extends ConsumerWidget {
                       ),
                     ),
                   ),
+                  ],
                 ],
               ),
             ),
             RegistrationBottomBar(
-              loading: flow.loading,
+              loading: flow.loading || (mode.addVehicleOnly && flow.step < 4),
               step: flow.step,
               lastStepIndex: mode.addVehicleOnly || mode.galleryCompletionOnly
                   ? 5

@@ -71,8 +71,15 @@ class _VehicleCatalogCustomSheetBodyState
   @override
   void initState() {
     super.initState();
-    _mfr = TextEditingController(text: widget.manufacturerName ?? '');
-    _model = TextEditingController(text: widget.modelName ?? '');
+    _mfr = TextEditingController(
+      text: clampDriverText(
+        widget.manufacturerName ?? '',
+        kDriverVehicleBrandMaxLength,
+      ),
+    );
+    _model = TextEditingController(
+      text: clampDriverText(widget.modelName ?? '', kDriverVehicleModelMaxLength),
+    );
     _year = TextEditingController(text: widget.yearText ?? '');
   }
 
@@ -119,8 +126,11 @@ class _VehicleCatalogCustomSheetBodyState
               controller: _mfr,
               enabled: widget.manufacturerEditable,
               textCapitalization: TextCapitalization.words,
+              maxLength: kDriverVehicleBrandMaxLength,
+              inputFormatters: driverVehicleBrandInputFormatters(),
               decoration: InputDecoration(
                 labelText: l10n.driverRegCatalogCustomManufacturer,
+                counterText: '',
               ),
               validator: (v) =>
                   v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
@@ -129,8 +139,11 @@ class _VehicleCatalogCustomSheetBodyState
             TextFormField(
               controller: _model,
               textCapitalization: TextCapitalization.words,
+              maxLength: kDriverVehicleModelMaxLength,
+              inputFormatters: driverVehicleModelInputFormatters(),
               decoration: InputDecoration(
                 labelText: l10n.driverRegCatalogCustomModel,
+                counterText: '',
               ),
               validator: (v) =>
                   v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,

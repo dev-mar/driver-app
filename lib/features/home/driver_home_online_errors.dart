@@ -35,6 +35,12 @@ String? driverHomeOnlineErrorMessage({
     case 'DRIVER_ACCOUNT_BLOCKED':
       onAuthSessionExpired?.call();
       return l10n.driverOnlineErrorAccountBlocked;
+    case 'DRIVER_REGISTRATION_INCOMPLETE':
+      return l10n.driverOnlineErrorRegistrationIncomplete;
+    case 'DRIVER_REGISTRATION_NOT_VERIFIED':
+      return l10n.driverOnlineErrorRegistrationNotVerified;
+    case 'DRIVER_ACCOUNT_NOT_ACTIVE':
+      return l10n.driverOnlineErrorAccountNotActive;
     case 'UNKNOWN':
       return l10n.driverOnlineErrorUnknown;
     case 'ACTIVE_TRIP_CANT_GO_OFFLINE':
@@ -74,9 +80,11 @@ String? driverHomeOfferErrorMessage({
     'NO_CONNECTION' => l10n.driverOfferErrorNoConnection,
     'OFFER_EXPIRED' => l10n.driverOfferErrorExpired,
     'TRIP_ALREADY_PROCESSED' ||
+    'TRIP_ALREADY_ACCEPTED' ||
     'TRIP_NOT_AVAILABLE' ||
     'TRIP_TAKEN' ||
-    'OFFER_ALREADY_TAKEN' => l10n.driverOfferErrorTaken,
+    'OFFER_ALREADY_TAKEN' ||
+    'DRIVER_HAS_ACTIVE_TRIP' => l10n.driverOfferErrorTaken,
     'RBAC_FORBIDDEN' => l10n.driverOnlineErrorRbacForbidden,
     'RBAC_NO_IDENTITY' || 'RBAC_NO_AUTH' => l10n.driverOnlineErrorRbacSession,
     'RBAC_RESOLVE' || 'RBAC_ERROR' || 'RBAC_CONFIG' =>

@@ -97,18 +97,36 @@ class _DriverRegistrationFlowScreenState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(
-        bootstrapRegistrationFlow(
-          context: context,
-          ref: ref,
-          mode: _mode,
-          form: _form,
-          draftService: _draftService,
-          setState: setState,
-          isMounted: () => mounted,
-        ),
-      );
+      unawaited(_bootstrap());
     });
+  }
+
+  @override
+  void didUpdateWidget(DriverRegistrationFlowScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final modeChanged = oldWidget.addVehicleOnly != widget.addVehicleOnly ||
+        oldWidget.resumeAfterLogin != widget.resumeAfterLogin ||
+        oldWidget.completeVehicleGalleryForAssetId !=
+            widget.completeVehicleGalleryForAssetId ||
+        oldWidget.openFromProfileStep != widget.openFromProfileStep;
+    if (modeChanged) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_bootstrap());
+      });
+    }
+  }
+
+  Future<void> _bootstrap() async {
+    if (!mounted) return;
+    await bootstrapRegistrationFlow(
+      context: context,
+      ref: ref,
+      mode: _mode,
+      form: _form,
+      draftService: _draftService,
+      setState: setState,
+      isMounted: () => mounted,
+    );
   }
 
   @override

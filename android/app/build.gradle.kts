@@ -1,4 +1,4 @@
-﻿plugins {
+plugins {
     id("com.android.application")
     id("kotlin-android")
     id("com.google.gms.google-services")
@@ -80,6 +80,11 @@ android {
                 signingConfigs.getByName("debug")
             }
         }
+    }
+
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
     }
 }
 

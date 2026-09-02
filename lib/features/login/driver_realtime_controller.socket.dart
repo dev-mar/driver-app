@@ -30,9 +30,12 @@ void _bindDriverRealtimeSocketHandlers(
         socket.onConnect((_) {
           _rt._logVerbose('Socket conectado correctamente.');
           if (!completer.isCompleted) completer.complete();
-          // AlineaciÃ³n con el contrato: al estar online, el conductor debe
-          // estar en disponibilidad "available" para recibir ofertas.
-          _rt._setAvailability('available');
+          // Alineación con el contrato: al estar online y libre, available.
+          if (state.activeTrip != null) {
+            _rt._setAvailability('busy');
+          } else if (state.tripPendingRating == null) {
+            _rt._setAvailability('available');
+          }
           _rt._startPresenceHeartbeat();
           socket.emit('driver:heartbeat', {
             'clientTs': DateTime.now().toIso8601String(),
@@ -97,6 +100,7 @@ void _bindDriverRealtimeSocketHandlers(
                     : state.driverCreditsBalance,
                 errorCode: 'DRIVER_CREDITS_BELOW_MIN',
                 availabilityDesired: false,
+                pendingOffers: const [],
               );
               _rt._availabilitySessionDesired = false;
               return;
@@ -107,6 +111,18 @@ void _bindDriverRealtimeSocketHandlers(
                 accountBlocked: true,
                 accountBlockReason: (msg != null && msg.isNotEmpty) ? msg : null,
                 errorCode: 'DRIVER_ACCOUNT_BLOCKED',
+                availabilityDesired: false,
+              );
+              _rt._availabilitySessionDesired = false;
+              return;
+            }
+            if (code == 'DRIVER_VEHICLE_REQUIRED' ||
+                code == 'DRIVER_REGISTRATION_INCOMPLETE' ||
+                code == 'DRIVER_REGISTRATION_NOT_VERIFIED' ||
+                code == 'DRIVER_ACCOUNT_NOT_ACTIVE' ||
+                code == 'ACCOUNT_DELETION_PENDING') {
+              state = state.copyWith(
+                errorCode: code,
                 availabilityDesired: false,
               );
               _rt._availabilitySessionDesired = false;
@@ -145,6 +161,12 @@ void _bindDriverRealtimeSocketHandlers(
             final newOffer = driverTripOfferFromMap(data);
             final tripId = newOffer.tripId;
             if (tripId.isEmpty) return;
+            if (state.activeTrip != null) {
+              _rt._logVerbose(
+                'trip:offer ignorado tripId=$tripId: conductor con viaje activo',
+              );
+              return;
+            }
   
             _rt._logVerbose(
               'trip:offer recibido tripId=$tripId, source=${newOffer.requestSource}, '
@@ -271,12 +293,10 @@ void _bindDriverRealtimeSocketHandlers(
             );
   
             if (tripId != null) {
-              final updatedOffers = state.pendingOffers
-                  .where((offer) => offer.tripId != tripId)
-                  .toList();
               state = state.copyWith(
-                pendingOffers: updatedOffers,
+                pendingOffers: const [],
                 processingOfferTripId: null,
+                processingIsAccept: false,
                 activeTrip: DriverActiveTrip(
                   tripId: tripId,
                   status: status,
@@ -335,6 +355,28 @@ void _bindDriverRealtimeSocketHandlers(
           }
         });
   
+        socket.on('trip:offer_unavailable', (data) {
+          try {
+            if (data is! Map) return;
+            final tripId = data['tripId']?.toString();
+            if (tripId == null || tripId.isEmpty) return;
+            if (state.activeTrip?.tripId == tripId) return;
+            final updatedOffers = state.pendingOffers
+                .where((offer) => offer.tripId != tripId)
+                .toList();
+            state = state.copyWith(
+              pendingOffers: updatedOffers,
+              processingOfferTripId: state.processingOfferTripId == tripId
+                  ? null
+                  : state.processingOfferTripId,
+            );
+            _rt._clearOfferErrorForTrip(tripId);
+            unawaited(_rt._syncDriverForegroundSession());
+          } catch (e) {
+            debugPrint('[DRIVER_RT] Error manejando trip:offer_unavailable: $e');
+          }
+        });
+
         socket.on('trip:error', (data) {
           try {
             if (data is! Map) return;
@@ -347,9 +389,11 @@ void _bindDriverRealtimeSocketHandlers(
             final isOfferNoLongerAvailable =
                 normalized == 'OFFER_EXPIRED' ||
                 normalized == 'TRIP_ALREADY_PROCESSED' ||
+                normalized == 'TRIP_ALREADY_ACCEPTED' ||
                 normalized == 'TRIP_NOT_AVAILABLE' ||
                 normalized == 'TRIP_TAKEN' ||
-                normalized == 'OFFER_ALREADY_TAKEN';
+                normalized == 'OFFER_ALREADY_TAKEN' ||
+                normalized == 'DRIVER_HAS_ACTIVE_TRIP';
   
             final targetTripId = (tripId != null && tripId.isNotEmpty)
                 ? tripId
@@ -441,8 +485,7 @@ void _bindDriverRealtimeSocketHandlers(
                   ignoreActiveTripRestoreUntilMs: ignoreUntilMs,
                   chatMessages: const [],
                 );
-                _rt._setAvailability('available');
-                unawaited(_rt._refreshDriverAppCreditsBalance());
+                unawaited(_rt._requestAvailableAfterTripIfCreditsAllow());
               } else {
                 state = state.copyWith(
                   pendingOffers: cleanedPendingOffers,
@@ -534,12 +577,11 @@ void _bindDriverRealtimeSocketHandlers(
                 ignoreActiveTripRestoreUntilMs: ignoreUntilMs,
                 chatMessages: const [],
               );
-              _rt._setAvailability('available');
+              unawaited(_rt._requestAvailableAfterTripIfCreditsAllow());
             } else {
               state = state.copyWith(processingTripAction: null);
             }
             unawaited(_rt._syncDriverForegroundSession());
-            unawaited(_rt._refreshDriverAppCreditsBalance());
           } catch (e) {
             debugPrint('[DRIVER_RT] Error manejando trip:completed: $e');
           }

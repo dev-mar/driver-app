@@ -209,7 +209,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverLoginPhoneHint.
   ///
   /// In en, this message translates to:
-  /// **'7 123 4567'**
+  /// **'E.g.: 70000000'**
   String get driverLoginPhoneHint;
 
   /// No description provided for @driverLoginErrorGeneric.
@@ -239,13 +239,13 @@ abstract class AppLocalizations {
   /// No description provided for @driverLoginErrorInvalidResponse.
   ///
   /// In en, this message translates to:
-  /// **'Invalid server response. Please try again.'**
+  /// **'We could not sign in. Please try again.'**
   String get driverLoginErrorInvalidResponse;
 
   /// No description provided for @driverLoginErrorTokenMissing.
   ///
   /// In en, this message translates to:
-  /// **'Session token was not received. Please try again.'**
+  /// **'We could not sign in. Please try again.'**
   String get driverLoginErrorTokenMissing;
 
   /// No description provided for @driverLoginErrorUnexpected.
@@ -305,7 +305,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverHomeRequestsEmpty.
   ///
   /// In en, this message translates to:
-  /// **'You will see passenger requests here\nwhen you are online.'**
+  /// **'You will see passenger requests here.'**
   String get driverHomeRequestsEmpty;
 
   /// No description provided for @driverHomeMiniStatusOnline.
@@ -359,13 +359,67 @@ abstract class AppLocalizations {
   /// No description provided for @driverHomeCreditsLowWarning.
   ///
   /// In en, this message translates to:
-  /// **'Your balance ({balance}) is close to the minimum ({min}) to stay online. Top up soon so you are not taken offline automatically.'**
+  /// **'You have {balance} left. You\'re near the required credit minimum ({min}) to take trips.'**
   String driverHomeCreditsLowWarning(String balance, String min);
+
+  /// No description provided for @driverCreditsNoticeCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Top up'**
+  String get driverCreditsNoticeCta;
+
+  /// No description provided for @driverCreditsNoticeWarningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Low balance'**
+  String get driverCreditsNoticeWarningTitle;
+
+  /// No description provided for @driverCreditsNoticeWarningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re near the required credit minimum ({min}) to take trips.'**
+  String driverCreditsNoticeWarningBody(String min);
+
+  /// No description provided for @driverCreditsNoticeBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top up to receive trips'**
+  String get driverCreditsNoticeBlockedTitle;
+
+  /// No description provided for @driverCreditsNoticeBlockedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Top-ups to go back online.'**
+  String get driverCreditsNoticeBlockedBody;
+
+  /// No description provided for @driverCreditsNoticeAfterTripWarningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance near the minimum'**
+  String get driverCreditsNoticeAfterTripWarningTitle;
+
+  /// No description provided for @driverCreditsNoticeAfterTripWarningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Top-ups so you stay available.'**
+  String get driverCreditsNoticeAfterTripWarningBody;
+
+  /// No description provided for @driverCreditsNoticeAfterTripBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip done. Top up to continue'**
+  String get driverCreditsNoticeAfterTripBlockedTitle;
+
+  /// No description provided for @driverCreditsNoticeAfterTripBlockedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip saved. You reached the required credit minimum ({min}) to take trips.'**
+  String driverCreditsNoticeAfterTripBlockedBody(String min);
 
   /// No description provided for @driverFcmOpenedTripOfferHint.
   ///
   /// In en, this message translates to:
-  /// **'We try to load the request from the alert into the list below. If it\'s missing, it may have expired or the connection failed—toggle online again.'**
+  /// **'We just loaded the request from the alert; check the list below. If it\'s missing, it may have expired or the connection failed—toggle online again.'**
   String get driverFcmOpenedTripOfferHint;
 
   /// No description provided for @driverFcmOpenedTripOfferOfflineHint.
@@ -599,7 +653,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverClubLevelsHint.
   ///
   /// In en, this message translates to:
-  /// **'Your category is confirmed by the team. These numbers are this month\'s reference.'**
+  /// **'Your category is confirmed by our team. These numbers are this month\'s reference.'**
   String get driverClubLevelsHint;
 
   /// No description provided for @driverClubMonthTripsValue.
@@ -781,6 +835,294 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Trip'**
   String get driverEarningsCreditsTripIdShort;
+
+  /// No description provided for @driverTopupSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top up credits'**
+  String get driverTopupSectionTitle;
+
+  /// No description provided for @driverTopupScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top up credits'**
+  String get driverTopupScreenTitle;
+
+  /// No description provided for @driverTopupMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Top-ups'**
+  String get driverTopupMenu;
+
+  /// No description provided for @driverTopupOpenFromEarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Top up credits'**
+  String get driverTopupOpenFromEarnings;
+
+  /// No description provided for @driverTopupOpenFromEarningsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay a QR and send the receipt. Balance is credited when our team confirms it.'**
+  String get driverTopupOpenFromEarningsHint;
+
+  /// No description provided for @driverTopupStepAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the amount'**
+  String get driverTopupStepAmount;
+
+  /// No description provided for @driverTopupStepPay.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay this QR'**
+  String get driverTopupStepPay;
+
+  /// No description provided for @driverTopupStepProof.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the receipt'**
+  String get driverTopupStepProof;
+
+  /// No description provided for @driverTopupUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top-ups unavailable'**
+  String get driverTopupUnavailableTitle;
+
+  /// No description provided for @driverTopupUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no top-up packages in your country yet. Try again later.'**
+  String get driverTopupUnavailableBody;
+
+  /// No description provided for @driverTopupHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You have no top-ups yet.'**
+  String get driverTopupHistoryEmpty;
+
+  /// No description provided for @driverTopupHistoryRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get driverTopupHistoryRetry;
+
+  /// No description provided for @driverTopupSectionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay the QR and upload the receipt. Balance is credited when our team confirms it — not instantly.'**
+  String get driverTopupSectionHint;
+
+  /// No description provided for @driverTopupShareQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Share QR'**
+  String get driverTopupShareQr;
+
+  /// No description provided for @driverTopupSaveQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Save QR'**
+  String get driverTopupSaveQr;
+
+  /// No description provided for @driverTopupShareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not share the QR.'**
+  String get driverTopupShareFailed;
+
+  /// No description provided for @driverTopupSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the QR.'**
+  String get driverTopupSaveFailed;
+
+  /// No description provided for @driverTopupSaveOk.
+  ///
+  /// In en, this message translates to:
+  /// **'QR saved to your photos. You can open it from Gallery or Files.'**
+  String get driverTopupSaveOk;
+
+  /// No description provided for @driverTopupSavePermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow adding photos to save the QR.'**
+  String get driverTopupSavePermissionDenied;
+
+  /// No description provided for @driverTopupReceiptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'I already paid'**
+  String get driverTopupReceiptTitle;
+
+  /// No description provided for @driverTopupReceiptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the receipt from gallery or files to upload it.'**
+  String get driverTopupReceiptHint;
+
+  /// No description provided for @driverTopupPendingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top-up in review'**
+  String get driverTopupPendingTitle;
+
+  /// No description provided for @driverTopupPendingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You have a top-up in review. You cannot send another until it is credited or rejected.'**
+  String get driverTopupPendingHint;
+
+  /// No description provided for @driverTopupDailyLimitHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You reached today\'s limit of {max} top-ups.'**
+  String driverTopupDailyLimitHint(int max);
+
+  /// No description provided for @driverTopupPickReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from gallery or files'**
+  String get driverTopupPickReceipt;
+
+  /// No description provided for @driverTopupReceiptPicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Image ready · change'**
+  String get driverTopupReceiptPicked;
+
+  /// No description provided for @driverTopupSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Send top-up'**
+  String get driverTopupSubmit;
+
+  /// No description provided for @driverTopupSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent. We\'ll credit it after review.'**
+  String get driverTopupSubmitted;
+
+  /// No description provided for @driverTopupSubmitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send the top-up.'**
+  String get driverTopupSubmitFailed;
+
+  /// No description provided for @driverTopupUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not upload the image. Try again.'**
+  String get driverTopupUploadFailed;
+
+  /// No description provided for @driverTopupGalleryDisclosureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose receipt'**
+  String get driverTopupGalleryDisclosureTitle;
+
+  /// No description provided for @driverTopupGalleryDisclosureBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This device\'s photo or file picker will open for this top-up only. We do not keep that access.'**
+  String get driverTopupGalleryDisclosureBody;
+
+  /// No description provided for @driverTopupGalleryDisclosureContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get driverTopupGalleryDisclosureContinue;
+
+  /// No description provided for @driverTopupReceiptInvalidType.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a JPG or PNG of the receipt. If it won\'t load, send the transfer details instead.'**
+  String get driverTopupReceiptInvalidType;
+
+  /// No description provided for @driverTopupReceiptTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'That image is too large. Pick another or send the transfer details.'**
+  String get driverTopupReceiptTooLarge;
+
+  /// No description provided for @driverTopupReceiptCompressFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t read that image. Try another or send the transfer details.'**
+  String get driverTopupReceiptCompressFailed;
+
+  /// No description provided for @driverTopupTransferTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer details'**
+  String get driverTopupTransferTitle;
+
+  /// No description provided for @driverTopupTransferHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile number and a transaction note.'**
+  String get driverTopupTransferHint;
+
+  /// No description provided for @driverTopupOrDivider.
+  ///
+  /// In en, this message translates to:
+  /// **'OR'**
+  String get driverTopupOrDivider;
+
+  /// No description provided for @driverTopupOriginAccountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile number'**
+  String get driverTopupOriginAccountLabel;
+
+  /// No description provided for @driverTopupOriginAccountHint.
+  ///
+  /// In en, this message translates to:
+  /// **'E.g.: 70000000'**
+  String get driverTopupOriginAccountHint;
+
+  /// No description provided for @driverTopupTransactionRefLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction details'**
+  String get driverTopupTransactionRefLabel;
+
+  /// No description provided for @driverTopupTransactionRefHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank that credited, time, or amount'**
+  String get driverTopupTransactionRefHint;
+
+  /// No description provided for @driverTopupNeedEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the receipt image, or send the transaction details (mobile number and notes).'**
+  String get driverTopupNeedEvidence;
+
+  /// No description provided for @driverTopupHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your top-ups'**
+  String get driverTopupHistoryTitle;
+
+  /// No description provided for @driverTopupStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'In review'**
+  String get driverTopupStatusPending;
+
+  /// No description provided for @driverTopupStatusCredited.
+  ///
+  /// In en, this message translates to:
+  /// **'Credited'**
+  String get driverTopupStatusCredited;
+
+  /// No description provided for @driverTopupStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get driverTopupStatusRejected;
 
   /// No description provided for @driverTripHistoryMenu.
   ///
@@ -1025,7 +1367,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverOnlineAuthSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Next, you\'ll use your fingerprint, Face ID, or device PIN. This keeps your account safe when you go online.'**
+  /// **'We ask for fingerprint, face, or PIN so only you can go online. TexiApp doesn’t store or collect that data.'**
   String get driverOnlineAuthSubtitle;
 
   /// No description provided for @driverOnlineAuthContinue.
@@ -1097,7 +1439,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverProfileErrorEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Empty server response.'**
+  /// **'We could not load your profile. Try again.'**
   String get driverProfileErrorEmpty;
 
   /// No description provided for @driverProfileErrorBadFormat.
@@ -1139,7 +1481,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverProfileOnboardingTitle.
   ///
   /// In en, this message translates to:
-  /// **'Uploads and checks'**
+  /// **'Documents and validation'**
   String get driverProfileOnboardingTitle;
 
   /// No description provided for @driverProfileOnboardingBody.
@@ -1379,7 +1721,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverProfileReadOnlyFooter.
   ///
   /// In en, this message translates to:
-  /// **'These details are read-only for now. Editing from the app will be available soon.'**
+  /// **'These details are read-only.'**
   String get driverProfileReadOnlyFooter;
 
   /// No description provided for @driverAppCreditsTitle.
@@ -1571,7 +1913,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverOnlineErrorCreditsBelowMin.
   ///
   /// In en, this message translates to:
-  /// **'Insufficient credits to enable online mode. Minimum required: {minCredits}; current balance: {balance}.'**
+  /// **'You\'ve reached the required credit minimum ({minCredits}) to take trips. Balance: {balance}. Go to Top-ups to go online.'**
   String driverOnlineErrorCreditsBelowMin(Object minCredits, Object balance);
 
   /// No description provided for @driverOnlineErrorAccountBlocked.
@@ -1579,6 +1921,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your driver account is blocked. Your session was closed for safety.'**
   String get driverOnlineErrorAccountBlocked;
+
+  /// No description provided for @driverOnlineErrorRegistrationIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete your registration (identity, license and vehicle) to go online and receive trips.'**
+  String get driverOnlineErrorRegistrationIncomplete;
+
+  /// No description provided for @driverOnlineErrorRegistrationNotVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Our team has not verified your identity, license or vehicle yet. You will receive trip offers after each stage is approved.'**
+  String get driverOnlineErrorRegistrationNotVerified;
+
+  /// No description provided for @driverOnlineErrorAccountNotActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Your driver account is not active. Contact support.'**
+  String get driverOnlineErrorAccountNotActive;
 
   /// No description provided for @driverOnlineErrorUnknown.
   ///
@@ -2015,8 +2375,8 @@ abstract class AppLocalizations {
   /// No description provided for @driverTripChatErrorSendReceive.
   ///
   /// In en, this message translates to:
-  /// **'Could not send/receive chat ({code}). Check your connection.'**
-  String driverTripChatErrorSendReceive(String code);
+  /// **'Could not send or receive the message. Check your connection.'**
+  String get driverTripChatErrorSendReceive;
 
   /// No description provided for @driverTripChatEmptyState.
   ///
@@ -2267,7 +2627,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverRatingFallbackClearPickup.
   ///
   /// In en, this message translates to:
-  /// **'Clear and quick pickup'**
+  /// **'Clear and quick trip'**
   String get driverRatingFallbackClearPickup;
 
   /// No description provided for @driverRatingFallbackRecommended.
@@ -2543,13 +2903,13 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegOnboardingDoneTitle.
   ///
   /// In en, this message translates to:
-  /// **'Request sent successfully!'**
+  /// **'Details sent for review'**
   String get driverRegOnboardingDoneTitle;
 
   /// No description provided for @driverRegOnboardingDoneBody.
   ///
   /// In en, this message translates to:
-  /// **'We\'re already reviewing your details and will contact you very soon. Tap Enter the app to sign in, register your vehicle, or contact support if you need help. You\'re almost there!'**
+  /// **'Your details were sent for review. Now enter the app to register your vehicle.'**
   String get driverRegOnboardingDoneBody;
 
   /// No description provided for @driverRegOnboardingDoneCta.
@@ -2557,6 +2917,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter the app'**
   String get driverRegOnboardingDoneCta;
+
+  /// No description provided for @driverRegAccessHeroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your details'**
+  String get driverRegAccessHeroTitle;
+
+  /// No description provided for @driverRegAccessHeroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When you continue, your details go to review. After that you’ll register your vehicle.'**
+  String get driverRegAccessHeroSubtitle;
+
+  /// No description provided for @driverHomeOpeningVehicleForm.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the vehicle form…'**
+  String get driverHomeOpeningVehicleForm;
 
   /// No description provided for @driverRegRetryLoadCountries.
   ///
@@ -2735,7 +3113,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegHintBoliviaLocalPhone.
   ///
   /// In en, this message translates to:
-  /// **'E.g. 70000000'**
+  /// **'E.g.: 70000000'**
   String get driverRegHintBoliviaLocalPhone;
 
   /// No description provided for @driverRegChooseCountryFirst.
@@ -3032,6 +3410,12 @@ abstract class AppLocalizations {
   /// **'Standard'**
   String get serviceTypeNameStandard;
 
+  /// No description provided for @serviceTypeNameMoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Moto'**
+  String get serviceTypeNameMoto;
+
   /// No description provided for @driverRegCatalogTransportCar.
   ///
   /// In en, this message translates to:
@@ -3179,13 +3563,13 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegErrorVehicleServiceBridgeMissing.
   ///
   /// In en, this message translates to:
-  /// **'We could not sync driver services in this environment. Please try again in a few seconds.'**
+  /// **'We could not save the services. Please try again in a few seconds.'**
   String get driverRegErrorVehicleServiceBridgeMissing;
 
   /// No description provided for @driverRegErrorMissingUserId.
   ///
   /// In en, this message translates to:
-  /// **'Driver identifier is missing. Return to the beginning of registration.'**
+  /// **'We could not continue registration. Go back to the start and try again.'**
   String get driverRegErrorMissingUserId;
 
   /// No description provided for @driverRegErrorVehicleCatalogLoading.
@@ -3197,7 +3581,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegErrorVehicleCatalogIncomplete.
   ///
   /// In en, this message translates to:
-  /// **'The server catalog does not include vehicle type or category. Contact support.'**
+  /// **'We could not load the vehicle type or category. Contact support.'**
   String get driverRegErrorVehicleCatalogIncomplete;
 
   /// No description provided for @driverRegErrorVehicleTypeCategoryRequired.
@@ -3449,7 +3833,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegActionActivate.
   ///
   /// In en, this message translates to:
-  /// **'Submit'**
+  /// **'Continue'**
   String get driverRegActionActivate;
 
   /// No description provided for @driverRegActionFinish.
@@ -3884,7 +4268,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverLegalActivatePrefix.
   ///
   /// In en, this message translates to:
-  /// **'By submitting you accept our '**
+  /// **'By continuing you accept our '**
   String get driverLegalActivatePrefix;
 
   /// No description provided for @driverLegalUsagePolicies.
@@ -3896,7 +4280,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverLegalRegistrationHint.
   ///
   /// In en, this message translates to:
-  /// **'By activating you accept our usage policies.'**
+  /// **'By continuing you accept our usage policies.'**
   String get driverLegalRegistrationHint;
 
   /// No description provided for @driverPlayCameraDisclosureTitle.
@@ -3974,7 +4358,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverPasswordResetLead.
   ///
   /// In en, this message translates to:
-  /// **'Confirm your number. The fastest option is to send the TEXIAPP WhatsApp verification message. Or we can email you a code.'**
+  /// **'Confirm your number. The fastest option is to send a WhatsApp message. Or we can email you a code.'**
   String get driverPasswordResetLead;
 
   /// No description provided for @driverPasswordResetWhatsAppCta.
@@ -3998,7 +4382,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverPasswordResetWaBody.
   ///
   /// In en, this message translates to:
-  /// **'Open WhatsApp and send the prescribed message. When we receive it, return to TEXIAPP to create your new password.'**
+  /// **'Open WhatsApp and send the message. When we receive it, return to the app to create your new password.'**
   String get driverPasswordResetWaBody;
 
   /// No description provided for @driverPasswordResetWaWaiting.
@@ -4136,7 +4520,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverChangePasswordLead.
   ///
   /// In en, this message translates to:
-  /// **'Support gave you a temporary password to sign in. For security, create your own password now. This screen only appears after a support reset, not when you recover the password from the app.'**
+  /// **'Support gave you a temporary password to sign in. For security, create your own password now.'**
   String get driverChangePasswordLead;
 
   /// No description provided for @driverChangePasswordCurrent.

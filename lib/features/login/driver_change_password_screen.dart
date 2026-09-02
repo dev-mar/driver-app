@@ -10,6 +10,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_foundation.dart';
 import '../../core/ui/driver_ui_states.dart';
 import '../../gen_l10n/app_localizations.dart';
+import '../registration/registration_flow_helpers.dart';
 import '../session/driver_operational_profile.dart';
 import 'driver_change_password_repository.dart';
 import 'driver_login_controller.dart';
@@ -49,6 +50,7 @@ class _DriverChangePasswordScreenState
     return InputDecoration(
       labelText: label,
       suffixIcon: suffixIcon,
+      counterText: '',
       filled: true,
       fillColor: AppColors.surface,
       border: OutlineInputBorder(
@@ -109,15 +111,12 @@ class _DriverChangePasswordScreenState
       );
       ref.invalidate(driverOperationalProfileProvider);
       try {
-        final profile = await ref.read(driverOperationalProfileProvider.future);
-        if (profile.shouldForceRegistrationWizard) {
-          if (!mounted) return;
-          context.go('/register?resumeAfterLogin=1');
-          return;
-        }
-      } catch (_) {}
-      if (!mounted) return;
-      context.goNamed(AppRouter.home);
+        if (!mounted) return;
+        context.go(await DriverRegistrationResumeGate.nextPostAuthLocation());
+      } catch (_) {
+        if (!mounted) return;
+        context.goNamed(AppRouter.home);
+      }
     } on DriverChangePasswordException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -176,6 +175,8 @@ class _DriverChangePasswordScreenState
                   controller: _currentController,
                   obscureText: _obscure,
                   textInputAction: TextInputAction.next,
+                  maxLength: kDriverPasswordMaxLength,
+                  inputFormatters: driverPasswordInputFormatters(),
                   decoration: _decoration(
                     label: l10n.driverChangePasswordCurrent,
                     suffixIcon: IconButton(
@@ -194,6 +195,8 @@ class _DriverChangePasswordScreenState
                   controller: _newController,
                   obscureText: _obscure,
                   textInputAction: TextInputAction.next,
+                  maxLength: kDriverPasswordMaxLength,
+                  inputFormatters: driverPasswordInputFormatters(),
                   decoration: _decoration(
                     label: l10n.driverChangePasswordNew,
                   ),
@@ -203,6 +206,8 @@ class _DriverChangePasswordScreenState
                   controller: _confirmController,
                   obscureText: _obscure,
                   textInputAction: TextInputAction.done,
+                  maxLength: kDriverPasswordMaxLength,
+                  inputFormatters: driverPasswordInputFormatters(),
                   onSubmitted: (_) => _submit(l10n),
                   decoration: _decoration(
                     label: l10n.driverChangePasswordConfirm,

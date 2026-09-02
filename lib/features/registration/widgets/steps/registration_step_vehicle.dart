@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_foundation.dart';
 import '../../../../core/ui/horizontal_edge_fade.dart';
+import '../../../../core/utils/vehicle_type_display.dart';
 import '../../../../gen_l10n/app_localizations.dart';
 import '../../driver_registration_controller.dart';
 import '../../registration_flow_bindings.dart';
@@ -89,8 +90,10 @@ class RegistrationStepVehicle extends ConsumerWidget {
                     required String model,
                     required String year,
                   }) {
-                    bindings.vehicleBrandCtrl.text = brand;
-                    bindings.vehicleModelCtrl.text = model;
+                    bindings.vehicleBrandCtrl.text =
+                        clampDriverText(brand, kDriverVehicleBrandMaxLength);
+                    bindings.vehicleModelCtrl.text =
+                        clampDriverText(model, kDriverVehicleModelMaxLength);
                     bindings.vehicleYearCtrl.text = year;
                     actions.onFormChanged();
                     unawaited(actions.persistDraft());
@@ -114,7 +117,10 @@ class RegistrationStepVehicle extends ConsumerWidget {
                           decoration: InputDecoration(
                             labelText: l10n.driverRegFieldBrand,
                             hintText: l10n.driverRegHintBrandExample,
+                            counterText: '',
                           ),
+                          maxLength: kDriverVehicleBrandMaxLength,
+                          inputFormatters: driverVehicleBrandInputFormatters(),
                           validator: (v) =>
                               v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                         ),
@@ -125,7 +131,10 @@ class RegistrationStepVehicle extends ConsumerWidget {
                         decoration: InputDecoration(
                           labelText: l10n.driverRegFieldModel,
                           hintText: l10n.driverRegHintModelExample,
+                          counterText: '',
                         ),
+                        maxLength: kDriverVehicleModelMaxLength,
+                        inputFormatters: driverVehicleModelInputFormatters(),
                         validator: (v) =>
                             v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                       ),
@@ -143,7 +152,10 @@ class RegistrationStepVehicle extends ConsumerWidget {
                         decoration: InputDecoration(
                           labelText: l10n.driverRegFieldColor,
                           hintText: l10n.driverRegHintTypeOrPickColor,
+                          counterText: '',
                         ),
+                        maxLength: kDriverVehicleColorMaxLength,
+                        inputFormatters: driverVehicleColorInputFormatters(),
                         validator: (v) =>
                             v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                       ),
@@ -175,7 +187,8 @@ class RegistrationStepVehicle extends ConsumerWidget {
                     ],
                   ),
                 ],
-                if (flow.canDeclareSixPassengerSeats) ...[
+                if (kDriverRegShowSixSeatsToggle &&
+                    flow.canDeclareSixPassengerSeats) ...[
                   const SizedBox(height: AppFoundation.spacingLg),
                   RegistrationSectionCard(
                     title: l10n.driverRegFieldSixSeats,
@@ -222,11 +235,13 @@ class RegistrationStepVehicle extends ConsumerWidget {
                     TextFormField(
                       controller: bindings.vehiclePlateCtrl,
                       textCapitalization: TextCapitalization.characters,
-                      inputFormatters: [RegistrationUpperCasePlateFormatter()],
+                      maxLength: kDriverPlateMaxLength,
+                      inputFormatters: driverPlateInputFormatters(),
                       decoration: InputDecoration(
                         labelText: l10n.driverRegFieldPlate,
                         hintText: l10n.driverRegHintPlateExample,
                         helperText: l10n.driverRegHelperUppercaseSaved,
+                        counterText: '',
                       ),
                       validator: (v) =>
                           v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
@@ -235,11 +250,13 @@ class RegistrationStepVehicle extends ConsumerWidget {
                     TextFormField(
                       controller: bindings.vehicleVinCtrl,
                       textCapitalization: TextCapitalization.characters,
-                      inputFormatters: [RegistrationUpperCasePlateFormatter()],
+                      maxLength: kDriverVinMaxLength,
+                      inputFormatters: driverVinInputFormatters(),
                       decoration: InputDecoration(
                         labelText: l10n.driverRegFieldVinChassis,
                         hintText: l10n.driverRegHintVin17Chars,
                         helperText: l10n.driverRegHelperVehicleDocumentReference,
+                        counterText: '',
                       ),
                       validator: (v) =>
                           v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
@@ -266,7 +283,11 @@ class RegistrationStepVehicle extends ConsumerWidget {
     if (cat != null) {
       for (final t in cat.vehicleTypes) {
         if (t.id == flow.selectedVehicleTypeId) {
-          typeLabel = t.label;
+          typeLabel = displayVehicleTypeLabel(
+            code: t.code,
+            fallbackLabel: t.label,
+            l10n: l10n,
+          );
           break;
         }
       }
@@ -336,7 +357,10 @@ class RegistrationStepVehicle extends ConsumerWidget {
         decoration: InputDecoration(
           labelText: l10n.driverRegFieldColor,
           hintText: l10n.driverRegHintTypeOrPickColor,
+          counterText: '',
         ),
+        maxLength: kDriverVehicleColorMaxLength,
+        inputFormatters: driverVehicleColorInputFormatters(),
         validator: (v) =>
             v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
       ),

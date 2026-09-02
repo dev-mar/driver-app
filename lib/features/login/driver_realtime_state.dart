@@ -339,10 +339,17 @@ extension DriverRealtimeStateAvailabilityUi on DriverRealtimeState {
   /// Banda por encima del mínimo: avisar antes de que el saldo cruce el umbral y el servidor pase a offline.
   static const double creditsLowWarningRatio = 1.25;
 
+  bool get showDriverCreditsBlockedNotice {
+    if (hasVehicleRegistered == false) return false;
+    if (creditsOnlineGateEnabled != true) return false;
+    if (activeTrip != null) return false;
+    return insufficientCreditsToGoOnline || errorCode == 'DRIVER_CREDITS_BELOW_MIN';
+  }
+
   bool get showDriverCreditsLowWarning {
     if (hasVehicleRegistered == false) return false;
     if (creditsOnlineGateEnabled != true) return false;
-    if (insufficientCreditsToGoOnline) return false;
+    if (showDriverCreditsBlockedNotice) return false;
     final min = minCreditsToGoOnline;
     if (min <= 0) return false;
     final bal = driverCreditsBalance;
@@ -358,7 +365,10 @@ extension DriverRealtimeStateAvailabilityUi on DriverRealtimeState {
             accountBlocked ||
             errorCode == 'DRIVER_ACCOUNT_BLOCKED' ||
             insufficientCreditsToGoOnline ||
-            errorCode == 'DRIVER_CREDITS_BELOW_MIN') &&
+            errorCode == 'DRIVER_CREDITS_BELOW_MIN' ||
+            errorCode == 'DRIVER_REGISTRATION_INCOMPLETE' ||
+            errorCode == 'DRIVER_REGISTRATION_NOT_VERIFIED' ||
+            errorCode == 'DRIVER_ACCOUNT_NOT_ACTIVE') &&
         activeTrip == null &&
         tripPendingRating == null) {
       return false;

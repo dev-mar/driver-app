@@ -15,7 +15,7 @@ import '../../../gen_l10n/app_localizations.dart';
 import '../../login/driver_online_auth_sheet.dart';
 import '../../login/driver_realtime_controller.dart';
 import '../../session/driver_operational_profile.dart';
-import 'driver_connection_phase_chip.dart';
+import 'driver_credits_notice_card.dart';
 import 'driver_home_mini_profile_avatar.dart';
 import 'driver_home_overflow_sheet.dart';
 
@@ -30,7 +30,10 @@ bool driverIsProminentOnlineGateError(String? code) {
   return code == 'DRIVER_VEHICLE_REQUIRED' ||
       code == 'DRIVER_CREDITS_BELOW_MIN' ||
       code == 'DRIVER_GO_ONLINE_BLOCKED' ||
-      code == 'DRIVER_ACCOUNT_BLOCKED';
+      code == 'DRIVER_ACCOUNT_BLOCKED' ||
+      code == 'DRIVER_REGISTRATION_INCOMPLETE' ||
+      code == 'DRIVER_REGISTRATION_NOT_VERIFIED' ||
+      code == 'DRIVER_ACCOUNT_NOT_ACTIVE';
 }
 
 /// Acceso al menú del AppBar (perfil, historial, créditos, logout).
@@ -106,35 +109,37 @@ Future<void> showDriverCreditsRequiredForOnlineDialog(
   AppLocalizations l10n,
   DriverRealtimeState rt,
 ) async {
-  final minRequired = rt.minCreditsToGoOnline.toStringAsFixed(0);
-  final balance = rt.driverCreditsBalance.toStringAsFixed(2);
   await showDialog<void>(
     context: context,
+    barrierColor: Colors.black.withValues(alpha: 0.64),
     builder: (ctx) {
-      return AlertDialog(
-        icon: Icon(
-          Icons.account_balance_wallet_rounded,
-          color: AppColors.primary,
-          size: 28,
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DriverCreditsNoticeCard.fromRealtime(
+              rt,
+              onCta: () {
+                Navigator.of(ctx).pop();
+                context.pushNamed(AppRouter.creditsTopup);
+              },
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                l10n.commonClose,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ),
-        title: Text(l10n.driverAppCreditsTitle),
-        content: Text(
-          l10n.driverOnlineErrorCreditsBelowMin(minRequired, balance),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(l10n.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              if (!context.mounted) return;
-              context.pushNamed(AppRouter.earningsCredits);
-            },
-            child: Text(l10n.driverEarningsCreditsMenu),
-          ),
-        ],
       );
     },
   );
@@ -248,7 +253,8 @@ Future<bool> driverAuthenticateBeforeGoingOnline({
   }
 }
 
-/// Banner cuando el perfil operativo exige registro de vehículo.
+/// Banner si `needs_vehicle_registration` (mismo criterio que el auto-open del formulario).
+/// Tras cancelar el alta en esta sesión el formulario no se reabre; el banner sí.
 class DriverHomeVehicleRegistrationBanner extends ConsumerWidget {
   const DriverHomeVehicleRegistrationBanner({super.key});
 
@@ -330,26 +336,14 @@ class DriverHomeOnlineAvailabilityPanel extends ConsumerWidget {
     final switchVisualOn = realtime.availabilitySwitchVisualOn;
     final isRestoring = !online && switchVisualOn;
 
-    final connectionLabel = connecting
-        ? l10n.driverHomeMiniConnecting
-        : online
+    final connectionLabel = switchVisualOn
         ? l10n.driverHomeMiniStatusOnline
-        : isRestoring
-        ? l10n.driverHomeMiniStatusRestoringConnection
         : l10n.driverHomeMiniStatusOffline;
-    final connectionIcon = connecting
-        ? Icons.sync_rounded
-        : online
+    final connectionIcon = switchVisualOn
         ? Icons.verified_rounded
-        : isRestoring
-        ? Icons.autorenew_rounded
         : Icons.pause_circle_outline_rounded;
-    final connectionColor = connecting
-        ? AppColors.primary
-        : online
+    final connectionColor = switchVisualOn
         ? AppColors.success
-        : isRestoring
-        ? AppColors.primary
         : AppColors.textSecondary;
 
     return Container(
@@ -465,9 +459,7 @@ class DriverHomeOnlineAvailabilityPanel extends ConsumerWidget {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textSecondary.withValues(
-                              alpha: 0.97,
-                            ),
+                            color: connectionColor.withValues(alpha: 0.97),
                           ),
                         ),
                       ),
@@ -479,28 +471,6 @@ class DriverHomeOnlineAvailabilityPanel extends ConsumerWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(999),
                     child: const LinearProgressIndicator(minHeight: 3),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      driverConnectionPhaseChip(
-                        icon: Icons.sync_rounded,
-                        label: l10n.driverHomeMiniConnecting,
-                        active: connecting,
-                      ),
-                      driverConnectionPhaseChip(
-                        icon: Icons.autorenew_rounded,
-                        label: l10n.driverHomeMiniStatusRestoringConnection,
-                        active: isRestoring,
-                      ),
-                      driverConnectionPhaseChip(
-                        icon: Icons.verified_rounded,
-                        label: l10n.driverHomeMiniStatusOnline,
-                        active: online,
-                      ),
-                    ],
                   ),
                 ],
               ],

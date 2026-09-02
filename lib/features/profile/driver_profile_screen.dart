@@ -283,28 +283,9 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 const SizedBox(height: 12),
                 _StaggeredFadeSlide(
                   index: 6,
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 4),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface.withValues(alpha: 0.32),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: AppColors.border.withValues(alpha: 0.35),
-                      ),
-                    ),
-                    child: Text(
-                      l10n.driverProfileReadOnlyFooter,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.textSecondary.withValues(alpha: 0.9),
-                        fontSize: 12.5,
-                        height: 1.35,
-                      ),
-                    ),
+                  child: _ProfileSettingsTile(
+                    label: l10n.driverSettingsTitle,
+                    onTap: () => context.pushNamed(AppRouter.settings),
                   ),
                 ),
               ],
@@ -600,6 +581,62 @@ class _InitialsAvatar extends StatelessWidget {
           fontSize: size * 0.28,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileSettingsTile extends StatelessWidget {
+  const _ProfileSettingsTile({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surfaceCard.withValues(alpha: 0.92),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 56),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.tune_rounded,
+                color: AppColors.textPrimary.withValues(alpha: 0.9),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textSecondary.withValues(alpha: 0.7),
+              ),
+            ],
+          ),
         ),
       ),
     );

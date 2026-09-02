@@ -51,5 +51,11 @@ void main() {
     test('si pegan 591 + local, deja el número local', () {
       expect(apply('59171234567').text, '71234567');
     });
+
+    test('rechaza primer dígito distinto de 5, 6 o 7', () {
+      expect(apply('4').text, '');
+      expect(apply('81234567').text, '');
+      expect(apply('41234567').text, '');
+    });
   });
 }

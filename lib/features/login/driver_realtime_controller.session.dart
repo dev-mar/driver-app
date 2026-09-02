@@ -503,10 +503,29 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
         minCreditsToGoOnline: snapshot.minCreditsToGoOnline,
         creditsOnlineGateEnabled: snapshot.onlineGateEnabled,
         insufficientCreditsToGoOnline: snapshot.insufficientCreditsToGoOnline,
+        errorCode: snapshot.insufficientCreditsToGoOnline
+            ? 'DRIVER_CREDITS_BELOW_MIN'
+            : (state.errorCode == 'DRIVER_CREDITS_BELOW_MIN' ? null : state.errorCode),
       );
     } catch (_) {
       /* best-effort */
     }
+  }
+
+  /// Tras un viaje: no reabrir matching si el saldo quedó bajo el mínimo.
+  Future<void> _requestAvailableAfterTripIfCreditsAllow() async {
+    await _refreshDriverAppCreditsBalance();
+    if (_rt._disposed) return;
+    if (state.insufficientCreditsToGoOnline) {
+      _rt._availabilitySessionDesired = false;
+      state = state.copyWith(
+        availabilityDesired: false,
+        pendingOffers: const [],
+        errorCode: 'DRIVER_CREDITS_BELOW_MIN',
+      );
+      return;
+    }
+    _rt._setAvailability('available');
   }
 
   DriverTripOffer _tripOfferFromFcmPayload(Map<String, String> data) {

@@ -32,7 +32,7 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
   bool _loading = true;
   String? _error;
   String? _status;
-  String _dateRange = '7d';
+  String _dateRange = 'today';
   int _activeTimeIndex = 0;
   DateTimeRange? _customRange;
   int _offset = 0;
@@ -83,7 +83,7 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
           ? null
           : storedStatus;
       _dateRange = (storedDateRange == null || storedDateRange.isEmpty)
-          ? '7d'
+          ? 'today'
           : storedDateRange;
       _activeTimeIndex = _timeIndexForRange(_dateRange);
       _customRange = (parsedFrom != null && parsedTo != null)
@@ -466,18 +466,18 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
 
   int _timeIndexForRange(String range) {
     switch (range) {
-      case '30d':
-        return 1;
-      case 'today':
-        return 2;
       case '7d':
+        return 1;
+      case '30d':
+        return 2;
+      case 'today':
       default:
         return 0;
     }
   }
 
   String _rangeForTimeIndex(int index) {
-    const ranges = <String>['7d', '30d', 'today'];
+    const ranges = <String>['today', '7d', '30d'];
     return ranges[index.clamp(0, ranges.length - 1)];
   }
 

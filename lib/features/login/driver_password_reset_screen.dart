@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_foundation.dart';
 import '../../core/ui/driver_ui_states.dart';
 import '../../gen_l10n/app_localizations.dart';
+import '../registration/registration_flow_helpers.dart';
 import '../registration/registration_passenger_upgrade_otp_dialog.dart';
 import 'driver_password_reset_repository.dart';
 
@@ -78,6 +79,7 @@ class _DriverPasswordResetScreenState extends State<DriverPasswordResetScreen> {
       labelText: label,
       hintText: hint,
       suffixIcon: suffixIcon,
+      counterText: '',
       filled: true,
       fillColor: AppColors.inputFill.withValues(alpha: 0.92),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -119,8 +121,8 @@ class _DriverPasswordResetScreenState extends State<DriverPasswordResetScreen> {
   }
 
   Future<void> _startWhatsApp(AppLocalizations l10n) async {
-    if (_phoneController.text.replaceAll(RegExp(r'\D'), '').length < 6) {
-      setState(() => _error = l10n.driverRegValidationIncompleteNumber);
+    if (!isValidBoliviaLocalMobile(_phoneController.text)) {
+      setState(() => _error = l10n.driverRegValidationBoliviaPhoneInvalid);
       return;
     }
     setState(() {
@@ -180,8 +182,8 @@ class _DriverPasswordResetScreenState extends State<DriverPasswordResetScreen> {
   }
 
   Future<void> _startEmail(AppLocalizations l10n, {String? email}) async {
-    if (_phoneController.text.replaceAll(RegExp(r'\D'), '').length < 6) {
-      setState(() => _error = l10n.driverRegValidationIncompleteNumber);
+    if (!isValidBoliviaLocalMobile(_phoneController.text)) {
+      setState(() => _error = l10n.driverRegValidationBoliviaPhoneInvalid);
       return;
     }
     setState(() {
@@ -324,6 +326,7 @@ class _DriverPasswordResetScreenState extends State<DriverPasswordResetScreen> {
                           keyboardType: TextInputType.phone,
                           inputFormatters: [
                             FilteringTextInputFormatter.digitsOnly,
+                            const BoliviaLocalPhoneInputFormatter(),
                           ],
                         ),
                       ),
@@ -354,9 +357,11 @@ class _DriverPasswordResetScreenState extends State<DriverPasswordResetScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     autofillHints: const [AutofillHints.email],
+                    maxLength: kDriverEmailMaxLength,
+                    inputFormatters: driverEmailInputFormatters(),
                     decoration: _decoration(
                       label: l10n.driverPasswordResetEmailLabel,
-                    ),
+                    ).copyWith(counterText: ''),
                   ),
                   const SizedBox(height: 22),
                   FilledButton(
@@ -432,6 +437,8 @@ class _DriverPasswordResetScreenState extends State<DriverPasswordResetScreen> {
         TextField(
           controller: _passwordController,
           obscureText: _obscure,
+          maxLength: kDriverPasswordMaxLength,
+          inputFormatters: driverPasswordInputFormatters(),
           decoration: _decoration(
             label: l10n.driverPasswordResetNewPassword,
             suffixIcon: IconButton(
@@ -447,6 +454,8 @@ class _DriverPasswordResetScreenState extends State<DriverPasswordResetScreen> {
         TextField(
           controller: _password2Controller,
           obscureText: _obscure,
+          maxLength: kDriverPasswordMaxLength,
+          inputFormatters: driverPasswordInputFormatters(),
           decoration: _decoration(label: l10n.driverPasswordResetConfirmPassword),
         ),
       ],

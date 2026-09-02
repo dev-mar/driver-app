@@ -6,6 +6,7 @@ import '../../features/login/driver_change_password_screen.dart';
 import '../../features/login/driver_home_screen.dart';
 import '../../features/login/driver_trip_history_screen.dart';
 import '../../features/earnings/driver_earnings_credits_screen.dart';
+import '../../features/earnings/driver_credits_topup_screen.dart';
 import '../../features/club/driver_club_screen.dart';
 import '../session/driver_must_change_password_gate.dart';
 import '../session/driver_registration_resume_gate.dart';
@@ -35,6 +36,7 @@ class AppRouter {
   static const String registeredImages = 'driver_registered_images';
   static const String tripHistory = 'driver_trip_history';
   static const String earningsCredits = 'driver_earnings_credits';
+  static const String creditsTopup = 'driver_credits_topup';
   static const String club = 'driver_club';
   static const String myVehicles = 'driver_my_vehicles';
   static const String settings = 'driver_settings';
@@ -63,28 +65,24 @@ class AppRouter {
       }
       if (location == '/change-password') {
         if (!hasToken) return '/login';
-        if (await DriverRegistrationResumeGate.needsResume()) {
-          return '/register?resumeAfterLogin=1';
-        }
-        return '/home';
+        return DriverRegistrationResumeGate.nextPostAuthLocation();
       }
       if (location == '/login' && hasToken) {
-        if (await DriverRegistrationResumeGate.needsResume()) {
-          return '/register?resumeAfterLogin=1';
-        }
-        return '/home';
+        return DriverRegistrationResumeGate.nextPostAuthLocation();
       }
       // Con token se permite /register para reanudar (p. ej. solo vehículo) sin cerrar sesión.
       if (location == '/home' && hasToken) {
-        if (await DriverRegistrationResumeGate.needsResume()) {
-          return '/register?resumeAfterLogin=1';
-        }
+        final pending = await DriverRegistrationResumeGate.registerRedirectFrom(
+          location,
+        );
+        if (pending != null) return pending;
       }
       if (location == '/home' && !hasToken) return '/login';
       if (location == '/profile' && !hasToken) return '/login';
       if (location == '/my-vehicles' && !hasToken) return '/login';
       if (location == '/settings' && !hasToken) return '/login';
       if (location == '/earnings-credits' && !hasToken) return '/login';
+      if (location == '/credits-topup' && !hasToken) return '/login';
       if (location == '/club' && !hasToken) return '/login';
       if (location == '/trip-history' && !hasToken) return '/login';
       if (location == '/registered-images') {
@@ -138,8 +136,10 @@ class AppRouter {
         builder: (context, state) {
           final extra = state.extra;
           final qpResume = state.uri.queryParameters['resumeAfterLogin'] == '1';
+          final qpAddVehicle =
+              state.uri.queryParameters['addVehicleOnly'] == '1';
           var resumeAfterLogin = qpResume;
-          var addVehicleOnly = false;
+          var addVehicleOnly = qpAddVehicle;
           String? completeVehicleGalleryForAssetId;
           int? openFromProfileStep;
           int? profilePreselectedCountryId;
@@ -172,6 +172,13 @@ class AppRouter {
             }
           }
           return DriverRegistrationFlowScreen(
+            key: ValueKey(
+              'drv-reg|'
+              '${addVehicleOnly ? 'v' : 'f'}|'
+              '${resumeAfterLogin ? 'r' : 'n'}|'
+              '${completeVehicleGalleryForAssetId ?? ''}|'
+              '${openFromProfileStep ?? ''}',
+            ),
             resumeAfterLogin: resumeAfterLogin,
             addVehicleOnly: addVehicleOnly,
             completeVehicleGalleryForAssetId: completeVehicleGalleryForAssetId,
@@ -200,6 +207,11 @@ class AppRouter {
         path: '/earnings-credits',
         name: earningsCredits,
         builder: (context, state) => const DriverEarningsCreditsScreen(),
+      ),
+      GoRoute(
+        path: '/credits-topup',
+        name: creditsTopup,
+        builder: (context, state) => const DriverCreditsTopupScreen(),
       ),
       GoRoute(
         path: '/club',

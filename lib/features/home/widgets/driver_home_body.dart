@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:local_auth/local_auth.dart';
 
-import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_foundation.dart';
 import '../../../core/ui/driver_ui_states.dart';
@@ -12,6 +10,7 @@ import '../../login/driver_active_trip_map.dart';
 import '../../login/driver_realtime_controller.dart';
 import '../driver_home_online_errors.dart';
 import 'driver_active_trip_sheet.dart';
+import 'driver_credits_notice_card.dart';
 import 'driver_home_menu.dart';
 import 'driver_offer_card.dart';
 
@@ -126,7 +125,9 @@ class DriverHomeRequestsPanel extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           child: CustomScrollView(
             slivers: [
-              if (showProminentGateError && errorMessage != null)
+              if (showProminentGateError &&
+                  errorMessage != null &&
+                  !realtime.showDriverCreditsBlockedNotice)
                 SliverToBoxAdapter(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -136,28 +137,12 @@ class DriverHomeRequestsPanel extends ConsumerWidget {
                     ],
                   ),
                 ),
-              if (realtime.showDriverCreditsLowWarning)
+              if (realtime.showDriverCreditsBlockedNotice ||
+                  realtime.showDriverCreditsLowWarning)
                 SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      DriverInlineInfo(
-                        message: l10n.driverHomeCreditsLowWarning(
-                          realtime.driverCreditsBalance.toStringAsFixed(2),
-                          realtime.minCreditsToGoOnline.toStringAsFixed(2),
-                        ),
-                      ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {
-                            context.pushNamed(AppRouter.earningsCredits);
-                          },
-                          child: Text(l10n.driverEarningsCreditsMenu),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: DriverCreditsNoticeCard.fromRealtime(realtime),
                   ),
                 ),
               if (blockOnlineForTrips)

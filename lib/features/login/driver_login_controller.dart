@@ -99,7 +99,7 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
       await DriverMustChangePasswordGate.persistFromPayload(
         Map<String, dynamic>.from(payload),
       );
-      DriverRegistrationResumeGate.invalidate();
+      DriverRegistrationResumeGate.invalidate(resetVehicleFormSkip: true);
       resetDriverSessionExpulsionState();
       DriverPushTokenService.instance.syncTokenIfPossible();
       return true;
@@ -178,7 +178,7 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
             fullPhone,
           );
           await DriverMustChangePasswordGate.persistFromPayload(map);
-          DriverRegistrationResumeGate.invalidate();
+          DriverRegistrationResumeGate.invalidate(resetVehicleFormSkip: true);
           resetDriverSessionExpulsionState();
           DriverPushTokenService.instance.syncTokenIfPossible();
           return true;
@@ -190,7 +190,7 @@ class DriverLoginController extends StateNotifier<DriverLoginState> {
 
   /// Cierra sesión: borra el token. Navegar a /login después con GoRouter.
   Future<void> logout() async {
-    DriverRegistrationResumeGate.invalidate();
+    DriverRegistrationResumeGate.invalidate(resetVehicleFormSkip: true);
     await DriverPushTokenService.instance.revokeAllOnServerIfPossible();
     await DriverMapPreferencesStore.clearMapPreferencesForCurrentSession();
     await DriverSecureStorage.delete(DriverApiClient.tokenStorageKey);

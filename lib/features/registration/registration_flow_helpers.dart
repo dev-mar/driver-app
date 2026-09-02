@@ -36,10 +36,89 @@ bool isValidBoliviaLocalMobile(String raw) {
 
 final _registrationEmail = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]{2,}$');
 
+/// Máximo RFC 5321 para una dirección de correo.
+const int kDriverEmailMaxLength = 254;
+
+/// Nombre o apellido en campos separados del registro.
+const int kDriverGivenNameMaxLength = 50;
+
+String clampDriverText(String value, int maxLength) {
+  if (value.length <= maxLength) return value;
+  return value.substring(0, maxLength);
+}
+
+List<TextInputFormatter> driverEmailInputFormatters() => [
+      FilteringTextInputFormatter.deny(RegExp(r'\s')),
+      LengthLimitingTextInputFormatter(kDriverEmailMaxLength),
+    ];
+
+List<TextInputFormatter> driverGivenNameInputFormatters() => [
+      LengthLimitingTextInputFormatter(kDriverGivenNameMaxLength),
+    ];
+
+const int kDriverAddressMaxLength = 160;
+const int kDriverReferralCodeMaxLength = 24;
+const int kDriverPasswordMaxLength = 64;
+const int kDriverVehicleBrandMaxLength = 60;
+const int kDriverVehicleModelMaxLength = 60;
+const int kDriverVehicleColorMaxLength = 30;
+const int kDriverPlateMaxLength = 12;
+const int kDriverVinMaxLength = 17;
+const int kDriverDocumentNumberMaxLength = 15;
+const int kDriverIntlPhoneMaxLength = 15;
+
+/// Switch de 6 asientos: oculto en esta etapa. Estado y envío a API no se retiran.
+const bool kDriverRegShowSixSeatsToggle = false;
+
+List<TextInputFormatter> driverAddressInputFormatters() => [
+      LengthLimitingTextInputFormatter(kDriverAddressMaxLength),
+    ];
+
+List<TextInputFormatter> driverReferralCodeInputFormatters() => [
+      LengthLimitingTextInputFormatter(kDriverReferralCodeMaxLength),
+    ];
+
+List<TextInputFormatter> driverPasswordInputFormatters() => [
+      LengthLimitingTextInputFormatter(kDriverPasswordMaxLength),
+    ];
+
+List<TextInputFormatter> driverVehicleBrandInputFormatters() => [
+      LengthLimitingTextInputFormatter(kDriverVehicleBrandMaxLength),
+    ];
+
+List<TextInputFormatter> driverVehicleModelInputFormatters() => [
+      LengthLimitingTextInputFormatter(kDriverVehicleModelMaxLength),
+    ];
+
+List<TextInputFormatter> driverVehicleColorInputFormatters() => [
+      LengthLimitingTextInputFormatter(kDriverVehicleColorMaxLength),
+    ];
+
+List<TextInputFormatter> driverPlateInputFormatters() => [
+      FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+      const RegistrationUpperCasePlateFormatter(),
+      LengthLimitingTextInputFormatter(kDriverPlateMaxLength),
+    ];
+
+List<TextInputFormatter> driverVinInputFormatters() => [
+      FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+      const RegistrationUpperCasePlateFormatter(),
+      LengthLimitingTextInputFormatter(kDriverVinMaxLength),
+    ];
+
+List<TextInputFormatter> driverDocumentNumberInputFormatters() => [
+      LengthLimitingTextInputFormatter(kDriverDocumentNumberMaxLength),
+    ];
+
+List<TextInputFormatter> driverIntlPhoneInputFormatters() => [
+      FilteringTextInputFormatter.digitsOnly,
+      LengthLimitingTextInputFormatter(kDriverIntlPhoneMaxLength),
+    ];
+
 /// Validación visual de correo (el API sigue aceptando vacío).
 bool isValidRegistrationEmail(String raw) {
   final v = raw.trim();
-  if (v.isEmpty || v.length > 254) return false;
+  if (v.isEmpty || v.length > kDriverEmailMaxLength) return false;
   return _registrationEmail.hasMatch(v);
 }
 
@@ -55,6 +134,9 @@ class BoliviaLocalPhoneInputFormatter extends TextInputFormatter {
     var d = newValue.text.replaceAll(_nonDigits, '');
     if (d.startsWith(kBoliviaDialDigits) && d.length > kBoliviaLocalPhoneLength) {
       d = d.substring(kBoliviaDialDigits.length);
+    }
+    if (d.isNotEmpty && !RegExp(r'^[567]').hasMatch(d)) {
+      d = '';
     }
     if (d.length > kBoliviaLocalPhoneLength) {
       d = d.substring(0, kBoliviaLocalPhoneLength);

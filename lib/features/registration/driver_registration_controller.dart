@@ -880,7 +880,7 @@ class DriverRegistrationFlowController
         return true;
       }
       final step = st.suggestedClientStep;
-      // Solo falta vehículo/fotos: no reabrimos el asistente completo; el conductor usa menú → Registrar vehículo.
+      // Solo falta vehículo/fotos: el gate post-auth abre `addVehicleOnly` (no este wizard).
       if (step >= 4) {
         state = state.copyWith(loading: false, clearProfileRedirect: true);
         return true;
@@ -1642,7 +1642,8 @@ class DriverRegistrationFlowController
     }
   }
 
-  /// Tras licencia: `PUT /api/v2/driver/registration/activate` → login. El alta de vehículo sigue en menú → «Registrar vehículo de servicio».
+  /// Tras licencia: envía a revisión, hace login y entra al home.
+  /// El formulario de vehículo se abre desde el home si `needs_vehicle_registration`.
   Future<void> completeLoginAndContinue({
     required String fullPhone,
     required String password,
@@ -1696,7 +1697,7 @@ class DriverRegistrationFlowController
       }
     }
 
-    // Alta inicial: tras activar + login el vehículo se registra desde el menú de la app (no en este asistente).
+    // Login listo: el home valida me-profile y abre el formulario de vehículo si falta.
     state = state.copyWith(loading: false, clearGlobalError: true);
   }
 

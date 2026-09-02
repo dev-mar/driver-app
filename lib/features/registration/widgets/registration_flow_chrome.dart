@@ -36,14 +36,14 @@ class RegistrationBottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isLast = step == lastStepIndex;
-    final isActivateStep = step == 3;
+    final isReviewSubmitStep = step == 3 && lastStepIndex == 3;
     final primaryLabel = profileReadOnly
         ? l10n.commonClose
         : (profileSavePhotos
             ? l10n.driverRegActionSavePhotos
             : (profileCompletionMode
-            ? (isActivateStep ? l10n.driverRegActionActivate : l10n.driverRegActionSave)
-            : (isActivateStep
+            ? (isReviewSubmitStep ? l10n.driverRegActionActivate : l10n.driverRegActionSave)
+            : (isReviewSubmitStep
                 ? l10n.driverRegActionActivate
                 : (isLast ? l10n.driverRegActionFinish : l10n.driverRegActionContinue))));
     final primaryIcon = profileReadOnly
@@ -51,11 +51,11 @@ class RegistrationBottomBar extends StatelessWidget {
         : (profileSavePhotos
             ? Icons.save_rounded
             : (profileCompletionMode
-            ? (isActivateStep
-                ? Icons.send_rounded
+            ? (isReviewSubmitStep
+                ? Icons.arrow_forward_rounded
                 : Icons.save_rounded)
-            : (isActivateStep
-                ? Icons.send_rounded
+            : (isReviewSubmitStep
+                ? Icons.arrow_forward_rounded
                 : (isLast ? Icons.check_rounded : Icons.arrow_forward_rounded))));
 
     return DecoratedBox(

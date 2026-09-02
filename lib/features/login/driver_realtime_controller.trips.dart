@@ -230,7 +230,7 @@ mixin _DriverRealtimeTripsMixin on StateNotifier<DriverRealtimeState> {
     );
   }
 
-  void clearTripPendingRating() {
+  Future<void> clearTripPendingRating() async {
     final completedTripId =
         state.tripPendingRating?.tripId ?? state.lastCompletedTripId;
     state = state.copyWith(
@@ -245,8 +245,9 @@ mixin _DriverRealtimeTripsMixin on StateNotifier<DriverRealtimeState> {
                 .add(const Duration(seconds: 60))
                 .millisecondsSinceEpoch,
     );
-    _rt._setAvailability('available');
-
+    await _rt._requestAvailableAfterTripIfCreditsAllow();
+    if (_rt._disposed) return;
+    if (state.insufficientCreditsToGoOnline) return;
     if (_rt._availabilitySessionDesired &&
         !_rt._userRequestedOffline &&
         !state.online) {
@@ -255,6 +256,18 @@ mixin _DriverRealtimeTripsMixin on StateNotifier<DriverRealtimeState> {
   }
 
   Future<void> acceptOffer(String tripId) async {
+    if (state.activeTrip != null) {
+      debugPrint(
+        '[DRIVER_RT] acceptOffer bloqueado: ya hay viaje activo ${state.activeTrip?.tripId}.',
+      );
+      return;
+    }
+    if (state.processingOfferTripId != null) {
+      debugPrint(
+        '[DRIVER_RT] acceptOffer ignorado: ya se procesa ${state.processingOfferTripId}.',
+      );
+      return;
+    }
     final exists = state.pendingOffers.any((offer) => offer.tripId == tripId);
     if (!exists) {
       debugPrint(

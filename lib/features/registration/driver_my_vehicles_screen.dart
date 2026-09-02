@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_foundation.dart';
 import '../../core/ui/driver_secondary_scaffold.dart';
 import '../../core/utils/service_type_display.dart';
+import '../../core/utils/vehicle_type_display.dart';
 import '../../gen_l10n/app_localizations.dart';
 import 'driver_registration_controller.dart';
 import 'driver_registration_models.dart';
@@ -233,7 +234,10 @@ class _VehicleSummaryCard extends StatelessWidget {
         .join(' ');
     final yearBit = summary.year != null ? ' · ${summary.year}' : '';
     final typeBits = <String?>[
-      summary.vehicleTypeLabel,
+      displayVehicleTypeLabel(
+        fallbackLabel: summary.vehicleTypeLabel,
+        l10n: l10n,
+      ),
       summary.vehicleCategoryLabel,
     ].whereType<String>().where((s) => s.trim().isNotEmpty).join(' · ');
     final services = displayEnabledServiceLabels(

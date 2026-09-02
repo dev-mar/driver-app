@@ -71,6 +71,10 @@ final driverAppCreditsServiceProvider = Provider<DriverAppCreditsService>(
   (ref) => DriverAppCreditsService(ref.watch(driverApiClientProvider)),
 );
 
+void invalidateDriverMeProfileCache() {
+  _meProfileCache.invalidateKey(_meProfileCacheKey);
+}
+
 final driverMeProfileDataProvider =
     FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   return ref.watch(driverMeProfileServiceProvider).fetchData();

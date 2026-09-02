@@ -65,6 +65,32 @@ void main() {
       );
 
       expect(state.availabilitySwitchVisualOn, isFalse);
+      expect(state.showDriverCreditsBlockedNotice, isTrue);
+      expect(state.showDriverCreditsLowWarning, isFalse);
+    });
+
+    test('banda 1.25x muestra prealerta y no bloqueo', () {
+      final state = DriverRealtimeState.initial.copyWith(
+        creditsOnlineGateEnabled: true,
+        minCreditsToGoOnline: 10,
+        driverCreditsBalance: 12,
+      );
+
+      expect(state.showDriverCreditsLowWarning, isTrue);
+      expect(state.showDriverCreditsBlockedNotice, isFalse);
+    });
+
+    test('créditos bloqueados no avisan durante viaje activo', () {
+      final state = DriverRealtimeState.initial.copyWith(
+        insufficientCreditsToGoOnline: true,
+        creditsOnlineGateEnabled: true,
+        minCreditsToGoOnline: 10,
+        driverCreditsBalance: 2,
+        activeTrip: const DriverActiveTrip(tripId: 't1', status: 'started'),
+      );
+
+      expect(state.showDriverCreditsBlockedNotice, isFalse);
+      expect(state.availabilitySwitchVisualOn, isTrue);
     });
 
     test('reconexión mantiene switch visual ON con availabilityDesired', () {

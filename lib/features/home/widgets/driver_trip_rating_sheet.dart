@@ -13,6 +13,7 @@ class DriverTripRatingSheet extends StatefulWidget {
   final void Function(int stars, List<String> feedbackCodes) onSubmitted;
   final VoidCallback onSkipped;
   final DriverActiveTrip? trip;
+  final Widget? creditsNotice;
   final Future<List<DriverRatingFeedbackItem>> Function(int stars)
   loadFeedbackCatalog;
 
@@ -22,6 +23,7 @@ class DriverTripRatingSheet extends StatefulWidget {
     required this.onSkipped,
     required this.loadFeedbackCatalog,
     this.trip,
+    this.creditsNotice,
   });
 
   @override
@@ -302,6 +304,10 @@ class DriverTripRatingSheetState extends State<DriverTripRatingSheet>
                             ),
                           ),
                         ),
+                        if (widget.creditsNotice != null) ...[
+                          const SizedBox(height: 16),
+                          widget.creditsNotice!,
+                        ],
                         if (trip != null) ...[
                           const SizedBox(height: 20),
                           Wrap(

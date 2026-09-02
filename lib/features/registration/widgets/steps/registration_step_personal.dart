@@ -180,9 +180,14 @@ class RegistrationStepPersonal extends ConsumerWidget {
                         Expanded(
                           child: TextFormField(
                             controller: bindings.firstNameCtrl,
-                            decoration: InputDecoration(labelText: l10n.driverRegFieldFirstName),
+                            decoration: InputDecoration(
+                              labelText: l10n.driverRegFieldFirstName,
+                              counterText: '',
+                            ),
                             textCapitalization: TextCapitalization.words,
                             autofillHints: const [AutofillHints.givenName],
+                            maxLength: kDriverGivenNameMaxLength,
+                            inputFormatters: driverGivenNameInputFormatters(),
                             validator: (v) =>
                                 v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                           ),
@@ -191,9 +196,14 @@ class RegistrationStepPersonal extends ConsumerWidget {
                         Expanded(
                           child: TextFormField(
                             controller: bindings.lastNameCtrl,
-                            decoration: InputDecoration(labelText: l10n.driverRegFieldLastName),
+                            decoration: InputDecoration(
+                              labelText: l10n.driverRegFieldLastName,
+                              counterText: '',
+                            ),
                             textCapitalization: TextCapitalization.words,
                             autofillHints: const [AutofillHints.familyName],
+                            maxLength: kDriverGivenNameMaxLength,
+                            inputFormatters: driverGivenNameInputFormatters(),
                             validator: (v) =>
                                 v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                           ),
@@ -316,7 +326,7 @@ class RegistrationStepPersonal extends ConsumerWidget {
                                     FilteringTextInputFormatter.digitsOnly,
                                     const BoliviaLocalPhoneInputFormatter(),
                                   ]
-                                : [FilteringTextInputFormatter.digitsOnly],
+                                : driverIntlPhoneInputFormatters(),
                             validator: (v) {
                               if (flow.selectedCountryPhoneCode == null) {
                                 return l10n.driverRegValidationSelectCountry;
@@ -346,8 +356,11 @@ class RegistrationStepPersonal extends ConsumerWidget {
                       decoration: InputDecoration(
                         labelText: l10n.driverRegFieldAddress,
                         hintText: l10n.driverRegHintAddressReference,
+                        counterText: '',
                       ),
                       maxLines: 2,
+                      maxLength: kDriverAddressMaxLength,
+                      inputFormatters: driverAddressInputFormatters(),
                       textCapitalization: TextCapitalization.sentences,
                       validator: (v) =>
                           v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
@@ -363,9 +376,12 @@ class RegistrationStepPersonal extends ConsumerWidget {
                     TextFormField(
                       controller: bindings.referralCodeCtrl,
                       textCapitalization: TextCapitalization.characters,
+                      maxLength: kDriverReferralCodeMaxLength,
+                      inputFormatters: driverReferralCodeInputFormatters(),
                       decoration: InputDecoration(
                         labelText: l10n.driverRegFieldReferralCode,
                         hintText: l10n.driverRegFieldReferralCodeHint,
+                        counterText: '',
                       ),
                       onChanged: (_) {
                         actions.onFormChanged();
@@ -419,9 +435,12 @@ class _RegistrationAccessPasswordFieldsState
         TextFormField(
           controller: bindings.passwordCtrl,
           obscureText: _obscurePassword,
+          maxLength: kDriverPasswordMaxLength,
+          inputFormatters: driverPasswordInputFormatters(),
           decoration: InputDecoration(
             labelText: l10n.driverLoginPassword,
             hintText: l10n.driverRegHintMin8Chars,
+            counterText: '',
             suffixIcon: IconButton(
               tooltip: l10n.driverLoginPassword,
               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
@@ -440,8 +459,11 @@ class _RegistrationAccessPasswordFieldsState
         TextFormField(
           controller: bindings.passwordConfirmCtrl,
           obscureText: _obscureConfirm,
+          maxLength: kDriverPasswordMaxLength,
+          inputFormatters: driverPasswordInputFormatters(),
           decoration: InputDecoration(
             labelText: l10n.driverRegFieldConfirmPassword,
+            counterText: '',
             suffixIcon: IconButton(
               tooltip: l10n.driverRegFieldConfirmPassword,
               onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),

@@ -148,7 +148,8 @@ Future<void> handleRegistrationGoBack({
     await _clearLocalRegistrationDrafts();
     notifier.resetFlow();
     if (!context.mounted) return;
-    // Alta/cancel de vehículo siempre vuelve al dashboard (online), no al login.
+    // Alta/cancel de vehículo: home + banner. No reabrir el formulario en esta sesión.
+    DriverRegistrationResumeGate.skipVehicleFormThisSession();
     context.goNamed(AppRouter.home);
     return;
   }

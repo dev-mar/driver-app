@@ -27,7 +27,8 @@ class DriverOperationalProfile {
   /// `true` si falta al menos un paso del alta (KYC, activación o vehículo) según backend.
   final bool needsResumeRegistration;
 
-  /// Forzar asistente `/register?resumeAfterLogin=1` (documentos / activación). Si solo falta vehículo (`suggested_client_step` ≥ 4), el conductor completa desde el menú.
+  /// Forzar asistente `/register?resumeAfterLogin=1` (documentos / activación).
+  /// Si solo falta vehículo (`needs_vehicle_registration`), el router abre `addVehicleOnly`.
   bool get shouldForceRegistrationWizard =>
       needsResumeRegistration &&
       (suggestedClientStep == null || suggestedClientStep! < 4);
@@ -102,6 +103,11 @@ class DriverOperationalProfile {
       },
       ttl: const Duration(seconds: 15),
     );
+  }
+
+  static void invalidateCaches() {
+    _operationalProfileCache.invalidateKey(_operationalProfileCacheKey);
+    invalidateDriverMeProfileCache();
   }
 }
 

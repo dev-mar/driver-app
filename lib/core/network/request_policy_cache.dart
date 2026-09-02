@@ -43,6 +43,11 @@ class RequestPolicyCache<T> {
     return future;
   }
 
+  void invalidateKey(String key) {
+    _cache.remove(key);
+    _inFlight.remove(key);
+  }
+
   void _trimExpired(DateTime now) {
     if (_cache.length < 250) return;
     final expiredKeys = _cache.entries

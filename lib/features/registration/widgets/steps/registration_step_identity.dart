@@ -1,6 +1,5 @@
 // GENERATED — editar con cuidado; regenerar: node tool/extract_registration_steps.mjs
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -53,11 +52,13 @@ class RegistrationStepIdentity extends ConsumerWidget {
                     TextFormField(
                       controller: bindings.docNumberCtrl,
                       enabled: !fieldsReadOnly,
-                      decoration: InputDecoration(labelText: l10n.driverRegFieldDocumentNumber),
+                      decoration: InputDecoration(
+                        labelText: l10n.driverRegFieldDocumentNumber,
+                        counterText: '',
+                      ),
                       keyboardType: TextInputType.text,
-                      inputFormatters: [
-                        LengthLimitingTextInputFormatter(15),
-                      ],
+                      maxLength: kDriverDocumentNumberMaxLength,
+                      inputFormatters: driverDocumentNumberInputFormatters(),
                       validator: (v) =>
                           v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                     ),

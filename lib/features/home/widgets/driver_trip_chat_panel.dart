@@ -107,7 +107,7 @@ class DriverTripChatPanel extends ConsumerWidget {
     if (code == 'TRIP_CHAT_NOT_AVAILABLE') {
       return l10n.driverTripChatErrorPhase;
     }
-    return l10n.driverTripChatErrorSendReceive(code);
+    return l10n.driverTripChatErrorSendReceive;
   }
 
   @override

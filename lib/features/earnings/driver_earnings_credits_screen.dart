@@ -9,6 +9,7 @@ import '../../core/utils/money_formatter.dart';
 import '../../gen_l10n/app_localizations.dart';
 import '../login/driver_trip_history_screen.dart'
     show DriverTripHistoryItem, DriverTripHistoryResponse;
+import 'widgets/driver_credits_topup_section.dart';
 
 /// Ingresos por viajes completados, saldo de créditos y movimientos — con filtros por fecha.
 class DriverEarningsCreditsScreen extends StatefulWidget {
@@ -24,7 +25,7 @@ class _DriverEarningsCreditsScreenState extends State<DriverEarningsCreditsScree
   static const _kCustomFromKey = 'driver_earnings_custom_from';
   static const _kCustomToKey = 'driver_earnings_custom_to';
 
-  String _dateRange = '30d';
+  String _dateRange = 'today';
   DateTimeRange? _customRange;
   bool _loading = true;
   String? _error;
@@ -53,11 +54,11 @@ class _DriverEarningsCreditsScreenState extends State<DriverEarningsCreditsScree
     final to = toS != null ? DateTime.tryParse(toS) : null;
     if (!mounted) return;
     setState(() {
-      _dateRange = (stored == null || stored.isEmpty) ? '30d' : stored;
+      _dateRange = (stored == null || stored.isEmpty) ? 'today' : stored;
       _customRange =
           (from != null && to != null) ? DateTimeRange(start: from, end: to) : null;
       if (_dateRange == 'custom' && _customRange == null) {
-        _dateRange = '30d';
+        _dateRange = 'today';
       }
     });
   }
@@ -253,16 +254,6 @@ class _DriverEarningsCreditsScreenState extends State<DriverEarningsCreditsScree
                       child: Row(
                         children: [
                           _RangeChip(
-                            label: l10n.driverTripHistoryDateAll,
-                            selected: _dateRange == 'all',
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              setState(() => _dateRange = 'all');
-                              _persistFilters();
-                              _load();
-                            },
-                          ),
-                          _RangeChip(
                             label: l10n.driverTripHistoryDateToday,
                             selected: _dateRange == 'today',
                             onTap: () {
@@ -296,6 +287,16 @@ class _DriverEarningsCreditsScreenState extends State<DriverEarningsCreditsScree
                             label: l10n.driverTripHistoryDateCustom,
                             selected: _dateRange == 'custom',
                             onTap: _pickCustomRange,
+                          ),
+                          _RangeChip(
+                            label: l10n.driverTripHistoryDateAll,
+                            selected: _dateRange == 'all',
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              setState(() => _dateRange = 'all');
+                              _persistFilters();
+                              _load();
+                            },
                           ),
                         ],
                       ),
@@ -346,6 +347,7 @@ class _DriverEarningsCreditsScreenState extends State<DriverEarningsCreditsScree
                   ),
                 ),
               ),
+              const SliverToBoxAdapter(child: DriverCreditsTopupEntryCard()),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),

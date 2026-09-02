@@ -13,12 +13,14 @@ import '../../core/theme/app_motion.dart';
 import '../../core/router/app_router.dart';
 import '../../core/session/driver_internal_tools_gate.dart';
 import '../../core/session/driver_must_change_password_gate.dart';
+import '../../core/session/driver_registration_resume_gate.dart';
 import '../../core/version/driver_app_version_gate.dart';
 import '../../core/ui/driver_ui_states.dart';
 import '../../gen_l10n/app_localizations.dart';
 import '../session/driver_operational_profile.dart';
 import '../../core/compliance/driver_login_legal_footer.dart';
 import '../settings/widgets/driver_settings_legal_section.dart';
+import '../registration/registration_flow_helpers.dart';
 import 'driver_login_controller.dart';
 import 'driver_realtime_controller.dart';
 
@@ -126,17 +128,12 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
         return;
       }
       try {
-        final profile = await ref.read(driverOperationalProfileProvider.future);
-        if (profile.shouldForceRegistrationWizard) {
-          if (!mounted) return;
-          context.go('/register?resumeAfterLogin=1');
-          return;
-        }
+        if (!mounted) return;
+        context.go(await DriverRegistrationResumeGate.nextPostAuthLocation());
       } catch (_) {
-        // Sin perfil operativo: home y el usuario reintenta.
+        if (!mounted) return;
+        context.goNamed(AppRouter.home);
       }
-      if (!mounted) return;
-      context.goNamed(AppRouter.home);
     } else {
       setState(() {
         _isLoading = false;
@@ -249,6 +246,7 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
       labelText: label,
       hintText: hint,
       suffixIcon: suffixIcon,
+      counterText: '',
       filled: true,
       fillColor: AppColors.inputFill.withValues(alpha: 0.92),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -430,7 +428,8 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                                                   AutofillHints.telephoneNumber
                                                 ],
                                                 inputFormatters: [
-                                                  FilteringTextInputFormatter.digitsOnly
+                                                  FilteringTextInputFormatter.digitsOnly,
+                                                  const BoliviaLocalPhoneInputFormatter(),
                                                 ],
                                                 validator: (v) {
                                                   final d = (v ?? '')
@@ -439,9 +438,9 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                                                     return l10n
                                                         .driverLoginPhoneAndPasswordRequired;
                                                   }
-                                                  if (d.length < 6) {
+                                                  if (!isValidBoliviaLocalMobile(d)) {
                                                     return l10n
-                                                        .driverRegValidationIncompleteNumber;
+                                                        .driverRegValidationBoliviaPhoneInvalid;
                                                   }
                                                   return null;
                                                 },
@@ -470,6 +469,8 @@ class _DriverLoginScreenState extends ConsumerState<DriverLoginScreen>
                                             ),
                                           ),
                                           obscureText: _obscurePassword,
+                                          maxLength: kDriverPasswordMaxLength,
+                                          inputFormatters: driverPasswordInputFormatters(),
                                           validator: (v) {
                                             if (v == null || v.isEmpty) {
                                               return l10n

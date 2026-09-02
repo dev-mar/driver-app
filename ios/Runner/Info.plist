@@ -58,6 +58,8 @@
 		<string>TEXIAPP necesita acceso a la cámara para fotografiar documentos, licencia y tu vehículo durante el registro.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>TEXIAPP necesita acceso a tus fotos para adjuntar documentos e imágenes del vehículo en el registro.</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>TEXIAPP guarda el QR de recarga en tus fotos para que puedas pagarlo desde tu banco u otra app.</string>
 		<key>UIStatusBarHidden</key>
 		<false/>
 		<key>GOOGLE_MAPS_API_KEY</key>

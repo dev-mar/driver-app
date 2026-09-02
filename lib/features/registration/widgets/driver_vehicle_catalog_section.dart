@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/service_type_display.dart';
+import '../../../core/utils/vehicle_type_display.dart';
 import '../../../gen_l10n/app_localizations.dart';
 import '../driver_registration_models.dart';
 import '../../../core/ui/horizontal_edge_fade.dart';
@@ -19,7 +20,7 @@ String vehicleCatalogServiceTypeLabel(
 ) {
   for (final s in catalog.serviceTypes) {
     if (s.id == serviceTypeId) {
-      return displayServiceTypeName(s.name, l10n);
+      return displayServiceTypeName(s.name, l10n, code: s.code);
     }
   }
   return '${l10n.driverRegServiceTypeFallbackPrefix}$serviceTypeId';
@@ -294,7 +295,13 @@ class DriverVehicleCatalogSection extends StatelessWidget {
                   .map(
                     (t) => DropdownMenuItem(
                       value: t.id,
-                      child: Text(t.label),
+                      child: Text(
+                        displayVehicleTypeLabel(
+                          code: t.code,
+                          fallbackLabel: t.label,
+                          l10n: l10n,
+                        ),
+                      ),
                     ),
                   )
                   .toList(),

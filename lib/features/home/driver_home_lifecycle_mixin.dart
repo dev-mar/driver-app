@@ -17,7 +17,9 @@ import '../../core/notifications/driver_fcm_navigation.dart'
         takePendingTripOfferFromNotification,
         takePendingTripChatTripIdFromNotification;
 import '../../core/notifications/driver_trip_chat_visibility.dart';
+import '../../core/router/app_router.dart';
 import '../../core/session/driver_internal_tools_gate.dart';
+import '../../core/session/driver_registration_resume_gate.dart';
 import '../../core/session/driver_session_expulsion.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_motion.dart';
@@ -27,6 +29,7 @@ import '../login/driver_realtime_controller.dart';
 import '../login/driver_trip_offer.dart';
 import '../session/driver_operational_profile.dart';
 import 'widgets/driver_trip_chat_panel.dart';
+import 'widgets/driver_credits_notice_card.dart';
 import 'widgets/driver_trip_rating_sheet.dart';
 
 /// Lifecycle, FCM, wakelock, sheets y navegación externa del home conductor.
@@ -48,6 +51,8 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
   int lastHandledFcmTripOfferBump = 0;
   int lastHandledTripChatOpenBump = 0;
   bool handlingAuthSessionExpired = false;
+  bool openingVehicleRegistrationForm = false;
+  bool vehicleFormAutoOpenAttempted = false;
   String? activeTripCardExpansionTripId;
   bool activeTripCardExpanded = true;
 
@@ -63,6 +68,7 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       onFcmTripOfferOpenBump();
       onTripChatOpenBump();
+      unawaited(maybeOpenVehicleRegistrationForm());
     });
     homeListEntrance = AnimationController(
       vsync: this,
@@ -82,6 +88,66 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
       if (!mounted) return;
       handleAuthSessionExpired();
     };
+  }
+
+  /// Home primero (sesión + me-profile). Si no hay vehículo, abrir el formulario — no el resumen.
+  Future<void> maybeOpenVehicleRegistrationForm() async {
+    if (vehicleFormAutoOpenAttempted || !mounted) return;
+    vehicleFormAutoOpenAttempted = true;
+    final needed = await DriverRegistrationResumeGate.needsVehicleFormAutoOpen();
+    if (!needed || !mounted) return;
+    setState(() => openingVehicleRegistrationForm = true);
+    DriverRegistrationResumeGate.invalidate();
+    final confirmed =
+        await DriverRegistrationResumeGate.needsVehicleFormAutoOpen();
+    if (!mounted) return;
+    if (!confirmed) {
+      setState(() => openingVehicleRegistrationForm = false);
+      return;
+    }
+    context.goNamed(
+      AppRouter.register,
+      extra: <String, dynamic>{'addVehicleOnly': true},
+    );
+  }
+
+  Widget wrapWithVehicleFormOpeningOverlay(Widget child) {
+    if (!openingVehicleRegistrationForm) return child;
+    final l10n = AppLocalizations.of(context);
+    return Stack(
+      children: [
+        child,
+        const ModalBarrier(dismissible: false, color: Color(0xCC000000)),
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 280),
+            child: Material(
+              color: AppColors.surfaceCard,
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(color: AppColors.primary),
+                    const SizedBox(height: 18),
+                    Text(
+                      l10n.driverHomeOpeningVehicleForm,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   void disposeDriverHomeLifecycle() {
@@ -373,7 +439,19 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
   }
 
   void showRatingSheet(BuildContext context, DriverActiveTrip trip) {
-    showModalBottomSheet<void>(
+    unawaited(_presentRatingSheet(context, trip));
+  }
+
+  Future<void> _presentRatingSheet(
+    BuildContext context,
+    DriverActiveTrip trip,
+  ) async {
+    await ref.read(driverRealtimeProvider.notifier).refreshGoOnlineGuards();
+    if (!mounted || !context.mounted) return;
+    final rt = ref.read(driverRealtimeProvider);
+    final showCredits = rt.showDriverCreditsBlockedNotice ||
+        rt.showDriverCreditsLowWarning;
+    await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
@@ -382,6 +460,9 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
       ),
       builder: (ctx) => DriverTripRatingSheet(
         trip: trip,
+        creditsNotice: showCredits
+            ? DriverCreditsNoticeCard.fromRealtime(rt, afterTrip: true)
+            : null,
         loadFeedbackCatalog: (stars) => ref
             .read(driverRealtimeProvider.notifier)
             .fetchDriverRatingFeedbackCatalog(stars: stars),
@@ -397,19 +478,24 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
           );
           Navigator.of(ctx).pop();
           isRatingSheetOpen = false;
-          ref.read(driverRealtimeProvider.notifier).clearTripPendingRating();
+          unawaited(
+            ref.read(driverRealtimeProvider.notifier).clearTripPendingRating(),
+          );
         },
         onSkipped: () {
           Navigator.of(ctx).pop();
           isRatingSheetOpen = false;
-          ref.read(driverRealtimeProvider.notifier).clearTripPendingRating();
+          unawaited(
+            ref.read(driverRealtimeProvider.notifier).clearTripPendingRating(),
+          );
         },
       ),
-    ).then((_) {
-      if (!mounted) return;
-      isRatingSheetOpen = false;
-      ref.read(driverRealtimeProvider.notifier).clearTripPendingRating();
-    });
+    );
+    if (!mounted) return;
+    isRatingSheetOpen = false;
+    unawaited(
+      ref.read(driverRealtimeProvider.notifier).clearTripPendingRating(),
+    );
   }
 
   Future<void> openTripChatSheet({required String tripId}) async {

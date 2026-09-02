@@ -34,7 +34,7 @@ Future<void> showRegistrationOnboardingActivationComplete({
   required AppLocalizations l10n,
 }) async {
   ref.invalidate(driverOperationalProfileProvider);
-  DriverRegistrationResumeGate.invalidate();
+  DriverRegistrationResumeGate.invalidate(resetVehicleFormSkip: true);
   if (!context.mounted) return;
   await showDialog<void>(
     context: context,

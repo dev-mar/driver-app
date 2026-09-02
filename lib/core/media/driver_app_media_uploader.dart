@@ -70,6 +70,23 @@ final class DriverAppMediaUploader {
     );
   }
 
+  Future<String?> uploadTopupReceiptViaPresign({
+    required String bearerToken,
+    required String base64Raw,
+    String contentType = 'image/jpeg',
+  }) {
+    return _decodeAndPresignPut(
+      bearerToken: bearerToken,
+      presignPath: '/api/v2/driver/app-credits/topup/receipt/presign',
+      presignBody: <String, dynamic>{
+        'content_type': contentType,
+      },
+      base64Raw: base64Raw,
+      contentType: contentType,
+      debugPurpose: 'topup_receipt',
+    );
+  }
+
   Future<String?> _decodeAndPresignPut({
     required String bearerToken,
     required String presignPath,

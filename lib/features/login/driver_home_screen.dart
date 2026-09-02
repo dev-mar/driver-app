@@ -115,38 +115,42 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     final activeTrip = realtime.activeTrip;
 
     if (activeTrip == null || !view.shouldShowMap) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(l10n.driverHomeTitle),
-          actions: [
-            DriverHomeAppBarMenu(onLogout: () => logout(context)),
-          ],
-        ),
-        body: DriverHomeRequestsPanel(
-          localAuth: localAuth,
-          listFade: homeListFade,
-          listSlide: homeListSlide,
-          errorMessage: errorMessage,
-          showProminentGateError: showProminentGateError,
-          blockOnlineForTrips: blockOnlineForTrips,
-          onAfterOnlineEnabled: maybeSuggestBackgroundLocationAfterOnline,
+      return wrapWithVehicleFormOpeningOverlay(
+        Scaffold(
+          appBar: AppBar(
+            title: Text(l10n.driverHomeTitle),
+            actions: [
+              DriverHomeAppBarMenu(onLogout: () => logout(context)),
+            ],
+          ),
+          body: DriverHomeRequestsPanel(
+            localAuth: localAuth,
+            listFade: homeListFade,
+            listSlide: homeListSlide,
+            errorMessage: errorMessage,
+            showProminentGateError: showProminentGateError,
+            blockOnlineForTrips: blockOnlineForTrips,
+            onAfterOnlineEnabled: maybeSuggestBackgroundLocationAfterOnline,
+          ),
         ),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.driverTripInProgressTitle),
-        actions: [DriverHomeAppBarMenu(onLogout: () => logout(context))],
-      ),
-      body: DriverHomeActiveTripView(
-        trip: activeTrip,
-        expanded: activeTripCardExpanded,
-        onExpandedChanged: (v) => setState(() => activeTripCardExpanded = v),
-        tripErrorMessage: tripErrorMessage,
-        onOpenNavigation: openExternalNavigation,
-        onReactivate: () => unawaited(_reactivateAfterCompletedTrip()),
-        onOpenChat: () => openTripChatSheet(tripId: activeTrip.tripId),
+    return wrapWithVehicleFormOpeningOverlay(
+      Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.driverTripInProgressTitle),
+          actions: [DriverHomeAppBarMenu(onLogout: () => logout(context))],
+        ),
+        body: DriverHomeActiveTripView(
+          trip: activeTrip,
+          expanded: activeTripCardExpanded,
+          onExpandedChanged: (v) => setState(() => activeTripCardExpanded = v),
+          tripErrorMessage: tripErrorMessage,
+          onOpenNavigation: openExternalNavigation,
+          onReactivate: () => unawaited(_reactivateAfterCompletedTrip()),
+          onOpenChat: () => openTripChatSheet(tripId: activeTrip.tripId),
+        ),
       ),
     );
   }

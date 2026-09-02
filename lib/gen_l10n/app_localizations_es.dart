@@ -65,7 +65,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverLoginCountryCodeHint => '+591';
 
   @override
-  String get driverLoginPhoneHint => '7 123 4567';
+  String get driverLoginPhoneHint => 'Ej.: 70000000';
 
   @override
   String get driverLoginErrorGeneric => 'No se pudo iniciar sesión';
@@ -84,11 +84,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverLoginErrorInvalidResponse =>
-      'Respuesta inválida del servidor. Intenta nuevamente.';
+      'No pudimos iniciar sesión. Intenta de nuevo.';
 
   @override
   String get driverLoginErrorTokenMissing =>
-      'No se recibió token de sesión. Intenta nuevamente.';
+      'No pudimos iniciar sesión. Intenta de nuevo.';
 
   @override
   String get driverLoginErrorUnexpected =>
@@ -124,7 +124,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverHomeRequestsEmpty =>
-      'Aquí verás las solicitudes de los pasajeros\ncuando estés en línea.';
+      'Aquí verás las solicitudes de los pasajeros.';
 
   @override
   String get driverHomeMiniStatusOnline => 'En línea';
@@ -154,12 +154,47 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String driverHomeCreditsLowWarning(String balance, String min) {
-    return 'Tu saldo ($balance) está cerca del mínimo ($min) para permanecer en línea. Recargá créditos pronto para evitar que te desconectemos automáticamente.';
+    return 'Te quedan $balance. Estás cerca del saldo mínimo requerido ($min) para dar servicio.';
+  }
+
+  @override
+  String get driverCreditsNoticeCta => 'Recargar';
+
+  @override
+  String get driverCreditsNoticeWarningTitle => 'Saldo bajo';
+
+  @override
+  String driverCreditsNoticeWarningBody(String min) {
+    return 'Estás cerca del saldo mínimo requerido ($min) para dar servicio.';
+  }
+
+  @override
+  String get driverCreditsNoticeBlockedTitle => 'Recarga para recibir viajes';
+
+  @override
+  String get driverCreditsNoticeBlockedBody =>
+      'Ve a Recargas para volver a conectarte.';
+
+  @override
+  String get driverCreditsNoticeAfterTripWarningTitle =>
+      'Saldo cerca del mínimo';
+
+  @override
+  String get driverCreditsNoticeAfterTripWarningBody =>
+      'Ve a Recargas para no quedar fuera.';
+
+  @override
+  String get driverCreditsNoticeAfterTripBlockedTitle =>
+      'Viaje listo. Recarga para seguir';
+
+  @override
+  String driverCreditsNoticeAfterTripBlockedBody(String min) {
+    return 'Viaje guardado. Llegaste al saldo mínimo requerido ($min) para dar servicio.';
   }
 
   @override
   String get driverFcmOpenedTripOfferHint =>
-      'Si acabamos de cargar la solicitud desde la alerta, revisa la lista abajo. Si no aparece, puede haber expirado o falló la conexión: vuelve a ponerte en línea.';
+      'Acabamos de cargar la solicitud desde la alerta, revisa la lista abajo. Si no aparece, puede haber expirado o falló la conexión: vuelve a ponerte en línea.';
 
   @override
   String get driverFcmOpenedTripOfferOfflineHint =>
@@ -287,7 +322,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverClubLevelsHint =>
-      'Tu categoría la confirma el equipo. Estos números son la referencia del mes.';
+      'Tu categoría la confirma nuestro equipo. Estos números son la referencia del mes.';
 
   @override
   String driverClubMonthTripsValue(int count) {
@@ -343,11 +378,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverEarningsCreditsFilterHint =>
-      'Filtrá por período. Los totales y listas se actualizan según el rango.';
+      'Filtra por período. Los totales y listas se actualizan según el rango.';
 
   @override
   String get driverEarningsCreditsLoadError =>
-      'No se pudo cargar la información. Deslizá para reintentar.';
+      'No se pudo cargar la información. Desliza para reintentar.';
 
   @override
   String get driverEarningsCreditsStatTrips => 'Viajes completados';
@@ -394,6 +429,167 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverEarningsCreditsTripIdShort => 'Viaje';
+
+  @override
+  String get driverTopupSectionTitle => 'Recargar créditos';
+
+  @override
+  String get driverTopupScreenTitle => 'Recargar créditos';
+
+  @override
+  String get driverTopupMenu => 'Recargas';
+
+  @override
+  String get driverTopupOpenFromEarnings => 'Recargar créditos';
+
+  @override
+  String get driverTopupOpenFromEarningsHint =>
+      'Paga un QR y envía el comprobante. El saldo se acredita cuando nuestro equipo lo confirme.';
+
+  @override
+  String get driverTopupStepAmount => 'Elige el monto';
+
+  @override
+  String get driverTopupStepPay => 'Paga este QR';
+
+  @override
+  String get driverTopupStepProof => 'Envía el comprobante';
+
+  @override
+  String get driverTopupUnavailableTitle => 'Recargas no disponibles';
+
+  @override
+  String get driverTopupUnavailableBody =>
+      'Aún no hay paquetes de recarga en tu país. Inténtalo más tarde.';
+
+  @override
+  String get driverTopupHistoryEmpty => 'Aún no tienes recargas.';
+
+  @override
+  String get driverTopupHistoryRetry => 'Reintentar';
+
+  @override
+  String get driverTopupSectionHint =>
+      'Paga el QR y sube el comprobante. El saldo se acredita cuando nuestro equipo lo confirme. No es inmediato.';
+
+  @override
+  String get driverTopupShareQr => 'Compartir QR';
+
+  @override
+  String get driverTopupSaveQr => 'Guardar QR';
+
+  @override
+  String get driverTopupShareFailed => 'No se pudo compartir el QR.';
+
+  @override
+  String get driverTopupSaveFailed => 'No se pudo guardar el QR.';
+
+  @override
+  String get driverTopupSaveOk =>
+      'QR guardado en tus fotos. Ya puedes abrirlo desde Galería o Archivos.';
+
+  @override
+  String get driverTopupSavePermissionDenied =>
+      'Para guardar el QR, permite agregar fotos.';
+
+  @override
+  String get driverTopupReceiptTitle => 'Ya pagué';
+
+  @override
+  String get driverTopupReceiptHint =>
+      'Selecciona el comprobante de la galería o archivos para subirlo.';
+
+  @override
+  String get driverTopupPendingTitle => 'Recarga en revisión';
+
+  @override
+  String get driverTopupPendingHint =>
+      'Tienes una recarga en revisión. No puedes enviar otra hasta que se acredite o se rechace.';
+
+  @override
+  String driverTopupDailyLimitHint(int max) {
+    return 'Llegaste al máximo de $max recargas de hoy.';
+  }
+
+  @override
+  String get driverTopupPickReceipt => 'Elegir de galería o archivos';
+
+  @override
+  String get driverTopupReceiptPicked => 'Imagen lista · cambiar';
+
+  @override
+  String get driverTopupSubmit => 'Enviar recarga';
+
+  @override
+  String get driverTopupSubmitted => 'Enviado. Te avisamos al acreditar.';
+
+  @override
+  String get driverTopupSubmitFailed => 'No se pudo enviar la recarga.';
+
+  @override
+  String get driverTopupUploadFailed =>
+      'No se pudo subir la imagen. Inténtalo de nuevo.';
+
+  @override
+  String get driverTopupGalleryDisclosureTitle => 'Elegir comprobante';
+
+  @override
+  String get driverTopupGalleryDisclosureBody =>
+      'Se abrirá el selector de fotos o archivos de este dispositivo, solo para esta recarga. No guardamos el permiso.';
+
+  @override
+  String get driverTopupGalleryDisclosureContinue => 'Continuar';
+
+  @override
+  String get driverTopupReceiptInvalidType =>
+      'Usa una imagen JPG o PNG del comprobante. Si no carga, envía los datos de la transferencia.';
+
+  @override
+  String get driverTopupReceiptTooLarge =>
+      'La imagen es demasiado grande. Elige otra o envía los datos de la transferencia.';
+
+  @override
+  String get driverTopupReceiptCompressFailed =>
+      'No pudimos leer esa imagen. Prueba otra o envía los datos de la transferencia.';
+
+  @override
+  String get driverTopupTransferTitle => 'Datos de la transferencia';
+
+  @override
+  String get driverTopupTransferHint =>
+      'Número de celular y un detalle de la transacción.';
+
+  @override
+  String get driverTopupOrDivider => 'O';
+
+  @override
+  String get driverTopupOriginAccountLabel => 'Número de celular';
+
+  @override
+  String get driverTopupOriginAccountHint => 'Ej.: 70000000';
+
+  @override
+  String get driverTopupTransactionRefLabel => 'Detalle de transacción';
+
+  @override
+  String get driverTopupTransactionRefHint =>
+      'Banco que acreditó, hora o monto';
+
+  @override
+  String get driverTopupNeedEvidence =>
+      'Elige la imagen del comprobante o envía la información de la transacción (número de celular y detalle).';
+
+  @override
+  String get driverTopupHistoryTitle => 'Tus recargas';
+
+  @override
+  String get driverTopupStatusPending => 'En revisión';
+
+  @override
+  String get driverTopupStatusCredited => 'Acreditada';
+
+  @override
+  String get driverTopupStatusRejected => 'Rechazada';
 
   @override
   String get driverTripHistoryMenu => 'Historial de viajes';
@@ -524,7 +720,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverOnlineAuthSubtitle =>
-      'Después te pediremos huella, rostro o PIN del dispositivo. Así protegemos tu cuenta al activar el servicio.';
+      'Pedimos huella, rostro o PIN para que solo tú puedas conectarte. TexiApp no guarda ni recopila esos datos.';
 
   @override
   String get driverOnlineAuthContinue => 'Continuar';
@@ -564,7 +760,8 @@ class AppLocalizationsEs extends AppLocalizations {
       'Sesión no disponible. Vuelve a iniciar sesión.';
 
   @override
-  String get driverProfileErrorEmpty => 'Respuesta vacía del servidor.';
+  String get driverProfileErrorEmpty =>
+      'No pudimos cargar el perfil. Intenta de nuevo.';
 
   @override
   String get driverProfileErrorBadFormat => 'No se pudo leer el perfil.';
@@ -587,7 +784,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tu documentación fue recibida correctamente. Nuestro equipo la está validando para habilitar tu servicio lo antes posible.';
 
   @override
-  String get driverProfileOnboardingTitle => 'Carga y verificaciones';
+  String get driverProfileOnboardingTitle => 'Documentos y validación';
 
   @override
   String get driverProfileOnboardingBody =>
@@ -639,7 +836,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverRegProfileSectionReadOnlyBanner =>
-      'Este bloque está en revisión. Puedes consultar la información, pero no guardar cambios hasta que el equipo la procese.';
+      'Este bloque está en revisión. Puedes consultar la información, pero no guardar cambios hasta que nuestro equipo la procese.';
 
   @override
   String get driverRegProfileSectionPhotosEditableBanner =>
@@ -730,8 +927,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverProfileSectionLocation => 'Ubicación';
 
   @override
-  String get driverProfileReadOnlyFooter =>
-      'Por ahora estos datos son de solo lectura. Muy pronto habilitaremos la edición desde la app.';
+  String get driverProfileReadOnlyFooter => 'Estos datos son de solo lectura.';
 
   @override
   String get driverAppCreditsTitle => 'Créditos de uso';
@@ -844,12 +1040,24 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String driverOnlineErrorCreditsBelowMin(Object minCredits, Object balance) {
-    return 'Créditos insuficientes para habilitar online. Mínimo requerido: $minCredits; saldo actual: $balance.';
+    return 'Llegaste al saldo mínimo requerido ($minCredits) para dar servicio. Tu saldo: $balance. Ve a Recargas para conectarte.';
   }
 
   @override
   String get driverOnlineErrorAccountBlocked =>
       'Tu cuenta de conductor está bloqueada. Se cerró tu sesión por seguridad.';
+
+  @override
+  String get driverOnlineErrorRegistrationIncomplete =>
+      'Completa tu registro (identidad, licencia y vehículo) para conectarte y recibir viajes.';
+
+  @override
+  String get driverOnlineErrorRegistrationNotVerified =>
+      'Nuestro equipo aún no verificó tu identidad, licencia o vehículo. Cuando aprueben cada etapa, podrás recibir solicitudes.';
+
+  @override
+  String get driverOnlineErrorAccountNotActive =>
+      'Tu cuenta de conductor no está activa. Contacta a soporte.';
 
   @override
   String get driverOnlineErrorUnknown =>
@@ -893,7 +1101,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverTripStatusAccepted => 'Ir a recoger';
 
   @override
-  String get driverTripStatusArrived => 'En punto de recogida';
+  String get driverTripStatusArrived => 'En punto de recojo';
 
   @override
   String get driverTripStatusStarted => 'En trayecto';
@@ -913,7 +1121,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get driverTripArrivedButton => 'Llegué al punto de recogida';
+  String get driverTripArrivedButton => 'Llegué al punto de recojo';
 
   @override
   String get driverTripStartButton => 'Iniciar viaje';
@@ -953,7 +1161,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverTripAddonsHint =>
-      'Revisá preferencias y requerimientos. Cierra para volver a la lista.';
+      'Revisa preferencias y requerimientos. Cierra para volver a la lista.';
 
   @override
   String get driverTripExtrasClose => 'Cerrar';
@@ -1023,7 +1231,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverRegHintSixSeats =>
-      'Marcá si tu auto puede llevar hasta 6 pasajeros. Se usará para viajes de grupo grande.';
+      'Marca si tu auto puede llevar hasta 6 pasajeros. Se usará para viajes de grupo grande.';
 
   @override
   String get driverTripOfferBadgeOperations => 'Operaciones';
@@ -1096,9 +1304,8 @@ class AppLocalizationsEs extends AppLocalizations {
       'El chat solo está disponible antes de iniciar el viaje.';
 
   @override
-  String driverTripChatErrorSendReceive(String code) {
-    return 'No se pudo enviar/recibir chat ($code). Revisa la conexión.';
-  }
+  String get driverTripChatErrorSendReceive =>
+      'No se pudo enviar o recibir el mensaje. Revisa la conexión.';
 
   @override
   String get driverTripChatEmptyState =>
@@ -1179,7 +1386,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverNotifyChatSenderDriver => 'Conductor';
 
   @override
-  String get driverMapPickupPoint => 'Punto de recogida';
+  String get driverMapPickupPoint => 'Punto de recojo';
 
   @override
   String get driverMapDestinationPoint => 'Destino';
@@ -1246,7 +1453,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverRatingFallbackRespectful => 'Trato respetuoso';
 
   @override
-  String get driverRatingFallbackClearPickup => 'Recogida clara y rápida';
+  String get driverRatingFallbackClearPickup => 'Viaje claro y rápido';
 
   @override
   String get driverRatingFallbackRecommended => 'Pasajero recomendado';
@@ -1400,14 +1607,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverRegResumeDoneCta => 'Ir al inicio';
 
   @override
-  String get driverRegOnboardingDoneTitle => '¡Solicitud enviada con éxito!';
+  String get driverRegOnboardingDoneTitle => 'Datos enviados a revisión';
 
   @override
   String get driverRegOnboardingDoneBody =>
-      'Ya estamos revisando tus datos y te contactaremos muy pronto. Haz clic en Entrar a la app para iniciar sesión, registrar tu vehículo o contactar a soporte si necesitas ayuda. ¡Ya falta poco!';
+      'Tus datos ya fueron enviados a revisión. Ahora entra a la app para registrar tu vehículo.';
 
   @override
   String get driverRegOnboardingDoneCta => 'Entrar a la app';
+
+  @override
+  String get driverRegAccessHeroTitle => 'Revisa tus datos';
+
+  @override
+  String get driverRegAccessHeroSubtitle =>
+      'Al continuar, tus datos pasan a revisión. Después registrarás tu vehículo.';
+
+  @override
+  String get driverHomeOpeningVehicleForm =>
+      'Abriendo el formulario del vehículo…';
 
   @override
   String get driverRegRetryLoadCountries => 'Reintentar cargar países';
@@ -1502,7 +1720,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverRegHintLocalDigitsOnly => 'Ej. 12345678';
 
   @override
-  String get driverRegHintBoliviaLocalPhone => 'Ej. 70000000';
+  String get driverRegHintBoliviaLocalPhone => 'Ej.: 70000000';
 
   @override
   String get driverRegChooseCountryFirst => 'Selecciona país primero';
@@ -1665,6 +1883,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get serviceTypeNameStandard => 'Estándar';
 
   @override
+  String get serviceTypeNameMoto => 'Moto';
+
+  @override
   String get driverRegCatalogTransportCar => 'Automóvil';
 
   @override
@@ -1750,11 +1971,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverRegErrorVehicleServiceBridgeMissing =>
-      'No se pudieron sincronizar los servicios del conductor en este entorno. Intenta nuevamente en unos segundos.';
+      'No se pudieron guardar los servicios. Intenta de nuevo en unos segundos.';
 
   @override
   String get driverRegErrorMissingUserId =>
-      'No se encontró el identificador del conductor. Vuelve al inicio del registro.';
+      'No pudimos continuar el registro. Vuelve al inicio e inténtalo de nuevo.';
 
   @override
   String get driverRegErrorVehicleCatalogLoading =>
@@ -1762,7 +1983,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverRegErrorVehicleCatalogIncomplete =>
-      'El catálogo del servidor no incluye tipo o categoría de vehículo. Contacta soporte.';
+      'No pudimos cargar el tipo o la categoría del vehículo. Contacta soporte.';
 
   @override
   String get driverRegErrorVehicleTypeCategoryRequired =>
@@ -1885,7 +2106,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverRegPhotoFrontHint =>
-      'Encuadre el frente; que se vea la placa si corresponde.';
+      'Encuadra el frente; que se vea la placa si corresponde.';
 
   @override
   String get driverRegPhotoRearTitle => 'Parte trasera';
@@ -1907,7 +2128,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverRegPhotoRightHint => 'De costado, costado derecho completo.';
 
   @override
-  String get driverRegActionActivate => 'Enviar';
+  String get driverRegActionActivate => 'Continuar';
 
   @override
   String get driverRegActionFinish => 'Finalizar';
@@ -2149,14 +2370,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverLegalLoginConjunction => ' y ';
 
   @override
-  String get driverLegalActivatePrefix => 'Al enviar aceptas nuestras ';
+  String get driverLegalActivatePrefix => 'Al continuar aceptas nuestras ';
 
   @override
   String get driverLegalUsagePolicies => 'políticas de uso';
 
   @override
   String get driverLegalRegistrationHint =>
-      'Al activar aceptas nuestras políticas de uso.';
+      'Al continuar aceptas nuestras políticas de uso.';
 
   @override
   String get driverPlayCameraDisclosureTitle => 'Acceso a la cámara';
@@ -2200,7 +2421,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverPasswordResetLead =>
-      'Confirma tu número. Lo más rápido es enviar el mensaje de WhatsApp (el mismo de verificación TEXIAPP). Si prefieres, te enviamos un código al correo.';
+      'Confirma tu número. Lo más rápido es enviar el mensaje de WhatsApp. Si prefieres, te enviamos un código al correo.';
 
   @override
   String get driverPasswordResetWhatsAppCta => 'Verificar con WhatsApp';
@@ -2213,7 +2434,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverPasswordResetWaBody =>
-      'Abre WhatsApp y envía el mensaje prescrito. Cuando lo recibamos, vuelve a TEXIAPP para crear tu nueva contraseña.';
+      'Abre WhatsApp y envía el mensaje. Cuando lo recibamos, vuelve a la app para crear tu nueva contraseña.';
 
   @override
   String get driverPasswordResetWaWaiting =>
@@ -2255,7 +2476,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverPasswordResetSuccess =>
-      'Contraseña actualizada. Iniciá sesión con la nueva clave.';
+      'Contraseña actualizada. Inicia sesión con la nueva clave.';
 
   @override
   String get driverPasswordResetErrorNotFound =>
@@ -2279,7 +2500,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverPasswordResetErrorWaUnavailable =>
-      'WhatsApp no está disponible ahora. Probá con el correo.';
+      'WhatsApp no está disponible ahora. Prueba con el correo.';
 
   @override
   String get driverPasswordResetErrorEmailConflict =>
@@ -2291,14 +2512,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverPasswordResetErrorExpired =>
-      'El mensaje de WhatsApp expiró. Volvé a intentarlo.';
+      'El mensaje de WhatsApp expiró. Vuelve a intentarlo.';
 
   @override
   String get driverChangePasswordTitle => 'Crea tu contraseña';
 
   @override
   String get driverChangePasswordLead =>
-      'Soporte te dio una clave temporal para entrar. Por seguridad, crea ahora una contraseña propia. Esta pantalla solo aparece cuando el reset lo hizo soporte, no cuando recuperas la clave desde la app.';
+      'Soporte te dio una clave temporal para entrar. Por seguridad, crea ahora una contraseña propia.';
 
   @override
   String get driverChangePasswordCurrent => 'Contraseña temporal';
