@@ -26,6 +26,7 @@ import 'driver_realtime_state.dart';
 import 'driver_trip_offer.dart';
 import 'driver_vehicle_display.dart';
 import 'driver_trip_rest_service.dart';
+import '../home/widgets/driver_pickup_wait.dart';
 
 export 'driver_realtime_state.dart';
 

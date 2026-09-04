@@ -413,6 +413,14 @@ class DriverActiveTrip {
   /// Requerimientos especiales. Ausente = ninguno.
   final List<String> tripSpecials;
 
+  /// Servidor: instante de `arrived`. Ausente = no hay reloj de recojo.
+  final DateTime? arrivedAt;
+  final int? waitSec;
+  final int? waitGraceSec;
+
+  /// Último aviso "Ya salgo" del pasajero (WS). Solo se muestra en `arrived`.
+  final DateTime? passengerEnRouteAt;
+
   const DriverActiveTrip({
     required this.tripId,
     required this.status,
@@ -432,6 +440,10 @@ class DriverActiveTrip {
     this.paymentMethod = 'cash',
     this.tripExtras = const [],
     this.tripSpecials = const [],
+    this.arrivedAt,
+    this.waitSec,
+    this.waitGraceSec,
+    this.passengerEnRouteAt,
   });
 
   DriverActiveTrip copyWith({
@@ -453,6 +465,10 @@ class DriverActiveTrip {
     String? paymentMethod,
     List<String>? tripExtras,
     List<String>? tripSpecials,
+    DateTime? arrivedAt,
+    int? waitSec,
+    int? waitGraceSec,
+    DateTime? passengerEnRouteAt,
   }) {
     return DriverActiveTrip(
       tripId: tripId ?? this.tripId,
@@ -474,6 +490,10 @@ class DriverActiveTrip {
       paymentMethod: paymentMethod ?? this.paymentMethod,
       tripExtras: tripExtras ?? this.tripExtras,
       tripSpecials: tripSpecials ?? this.tripSpecials,
+      arrivedAt: arrivedAt ?? this.arrivedAt,
+      waitSec: waitSec ?? this.waitSec,
+      waitGraceSec: waitGraceSec ?? this.waitGraceSec,
+      passengerEnRouteAt: passengerEnRouteAt ?? this.passengerEnRouteAt,
     );
   }
 }

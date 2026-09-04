@@ -77,8 +77,17 @@ class DriverNotificationService {
   static Future<void> showFcmDataOnlyMessage(RemoteMessage message) async {
     final inst = DriverNotificationService.instance;
     await inst.initialize();
-    final title = message.data['title']?.toString().trim();
-    final body = message.data['body']?.toString().trim();
+    final event = message.data['event']?.toString();
+    String? title;
+    String? body;
+    if (event == 'passenger_en_route') {
+      final l10n = inst._l10nForCurrentLocale();
+      title = l10n.driverNotifyPassengerEnRouteTitle;
+      body = l10n.driverNotifyPassengerEnRouteBody;
+    } else {
+      title = message.data['title']?.toString().trim();
+      body = message.data['body']?.toString().trim();
+    }
     if ((title == null || title.isEmpty) && (body == null || body.isEmpty)) {
       return;
     }
@@ -92,8 +101,26 @@ class DriverNotificationService {
     );
   }
 
+  Future<void> showPassengerEnRouteIfBackground({
+    required bool isAppInForeground,
+    required String tripId,
+  }) async {
+    if (isAppInForeground) return;
+    await initialize();
+    final l10n = _l10nForCurrentLocale();
+    await _showFcmRaw(
+      title: l10n.driverNotifyPassengerEnRouteTitle,
+      body: l10n.driverNotifyPassengerEnRouteBody,
+      payload: tripId,
+    );
+  }
+
   Future<void> showFcmForegroundMessage(RemoteMessage message) async {
     if (!_initialized) await initialize();
+    final event = message.data['event']?.toString();
+    if (event == 'passenger_en_route') {
+      return;
+    }
     final n = message.notification;
     final title = n?.title?.trim().isNotEmpty == true
         ? n!.title!.trim()

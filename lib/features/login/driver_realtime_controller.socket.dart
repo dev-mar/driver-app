@@ -300,25 +300,28 @@ void _bindDriverRealtimeSocketHandlers(
                 pendingOffers: const [],
                 processingOfferTripId: null,
                 processingIsAccept: false,
-                activeTrip: DriverActiveTrip(
-                  tripId: tripId,
-                  status: status,
-                  estimatedPrice: estimatedPrice,
-                  pickupLat: pickupLat,
-                  pickupLng: pickupLng,
-                  destinationLat: destLat,
-                  destinationLng: destLng,
-                  passengerName: passengerName,
-                  passengerRating: passengerRating,
-                  currencyCode: currencyCode,
-                  originAddress: originAddress,
-                  destinationAddress: destinationAddress,
-                  tripDistanceKm: tripDistanceKm,
-                  etaToDestinationMinutes: etaToDestinationMinutes,
-                  routeOverviewEncoded: routeOverviewEncoded,
-                  paymentMethod: paymentMethod,
-                  tripExtras: tripExtras,
-                  tripSpecials: tripSpecials,
+                activeTrip: applyPickupWaitFromPayload(
+                  DriverActiveTrip(
+                    tripId: tripId,
+                    status: status,
+                    estimatedPrice: estimatedPrice,
+                    pickupLat: pickupLat,
+                    pickupLng: pickupLng,
+                    destinationLat: destLat,
+                    destinationLng: destLng,
+                    passengerName: passengerName,
+                    passengerRating: passengerRating,
+                    currencyCode: currencyCode,
+                    originAddress: originAddress,
+                    destinationAddress: destinationAddress,
+                    tripDistanceKm: tripDistanceKm,
+                    etaToDestinationMinutes: etaToDestinationMinutes,
+                    routeOverviewEncoded: routeOverviewEncoded,
+                    paymentMethod: paymentMethod,
+                    tripExtras: tripExtras,
+                    tripSpecials: tripSpecials,
+                  ),
+                  data,
                 ),
                 processingTripAction: null,
                 tripErrorMessage: null,
@@ -504,7 +507,10 @@ void _bindDriverRealtimeSocketHandlers(
             } else {
               final chatOk = driverTripChatPhaseActive(newStatus);
               state = state.copyWith(
-                activeTrip: state.activeTrip!.copyWith(status: newStatus),
+                activeTrip: applyPickupWaitFromPayload(
+                  state.activeTrip!.copyWith(status: newStatus),
+                  data,
+                ),
                 processingTripAction: null,
                 tripErrorMessage: null,
                 chatMessages: chatOk ? state.chatMessages : const [],
@@ -516,12 +522,16 @@ void _bindDriverRealtimeSocketHandlers(
           }
         });
   
-        void updateActiveTripStatus(String newStatus) {
+        void updateActiveTripStatus(String newStatus, [Map? payload]) {
           final current = state.activeTrip;
           if (current == null) return;
           final chatOk = driverTripChatPhaseActive(newStatus);
+          var next = current.copyWith(status: newStatus);
+          if (payload is Map) {
+            next = applyPickupWaitFromPayload(next, payload);
+          }
           state = state.copyWith(
-            activeTrip: current.copyWith(status: newStatus),
+            activeTrip: next,
             processingTripAction: null,
             tripErrorMessage: null,
             chatMessages: chatOk ? state.chatMessages : const [],
@@ -535,7 +545,7 @@ void _bindDriverRealtimeSocketHandlers(
             final tripId = data['tripId']?.toString();
             debugPrint('[DRIVER_RT] trip:arrived (eco) tripId=$tripId');
             if (tripId != null && state.activeTrip?.tripId == tripId) {
-              updateActiveTripStatus('arrived');
+              updateActiveTripStatus('arrived', data);
             } else {
               state = state.copyWith(processingTripAction: null);
             }
@@ -737,6 +747,31 @@ void _bindDriverRealtimeSocketHandlers(
             );
           } catch (_) {}
         });
+
+        socket.on('trip:passenger_en_route', (data) {
+          try {
+            if (data is! Map) return;
+            final tripId = data['tripId']?.toString();
+            final current = state.activeTrip;
+            if (tripId == null || current == null || current.tripId != tripId) {
+              return;
+            }
+            if (current.status != 'arrived') return;
+            final sentAt = DateTime.tryParse('${data['sentAt'] ?? ''}') ??
+                DateTime.now().toUtc();
+            state = state.copyWith(
+              activeTrip: current.copyWith(passengerEnRouteAt: sentAt),
+            );
+            unawaited(
+              DriverNotificationService.instance.showPassengerEnRouteIfBackground(
+                isAppInForeground: DriverAppVisibility.isInForeground.value,
+                tripId: tripId,
+              ),
+            );
+          } catch (e) {
+            debugPrint('[DRIVER_RT] Error manejando trip:passenger_en_route: $e');
+          }
+        });
   
         socket.on('connection:ack', (data) {
           try {
@@ -895,7 +930,8 @@ void _bindDriverRealtimeSocketHandlers(
                   );
                 } else {
                   final existingTrip = state.activeTrip;
-                  final parsedTrip = DriverActiveTrip(
+                  final parsedTrip = applyPickupWaitFromPayload(
+                    DriverActiveTrip(
                     tripId: tripId,
                     status: status,
                     estimatedPrice: estimatedPrice,
@@ -914,11 +950,14 @@ void _bindDriverRealtimeSocketHandlers(
                     paymentMethod: paymentMethod,
                     tripExtras: ackExtras,
                     tripSpecials: ackSpecials,
+                    ),
+                    activeTripData,
                   );
                   // El ack a veces trae solo status/coords; no pisar direcciÃ³n/pasajero ya mostrados.
                   final mergedTrip =
                       (existingTrip != null && existingTrip.tripId == tripId)
-                      ? existingTrip.copyWith(
+                      ? applyPickupWaitFromPayload(
+                          existingTrip.copyWith(
                           status: status,
                           estimatedPrice:
                               estimatedPrice ?? existingTrip.estimatedPrice,
@@ -951,6 +990,8 @@ void _bindDriverRealtimeSocketHandlers(
                           tripSpecials: ackSpecials.isNotEmpty
                               ? ackSpecials
                               : existingTrip.tripSpecials,
+                        ),
+                          activeTripData,
                         )
                       : parsedTrip;
   

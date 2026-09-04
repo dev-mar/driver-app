@@ -8,6 +8,7 @@ import '../../../gen_l10n/app_localizations.dart';
 import '../../login/driver_realtime_state.dart';
 import 'driver_active_trip_nav_buttons.dart';
 import 'driver_active_trip_status_helpers.dart';
+import 'driver_pickup_wait.dart';
 import 'driver_trip_payment_chip.dart';
 import 'driver_trip_extras_icons.dart';
 
@@ -75,6 +76,7 @@ class DriverActiveTripCard extends StatelessWidget {
         : 0;
     final canSendArrivalReminder =
         trip.status == 'arrived' && canAct && reminderCooldownLeftSec <= 0;
+    final pickupWait = pickupWaitSpecOf(trip);
 
     Widget section({
       required Widget child,
@@ -219,6 +221,42 @@ class DriverActiveTripCard extends StatelessWidget {
               ],
             ),
           ),
+          if (pickupWait != null) ...[
+            const SizedBox(height: 10),
+            DriverPickupWaitClock(spec: pickupWait),
+          ],
+          if (trip.status == 'arrived' && trip.passengerEnRouteAt != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppFoundation.radiusSm),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.28),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.directions_walk_rounded,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l10n.driverPassengerEnRouteBanner,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           if (hasRouteDetail) ...[
             const SizedBox(height: 10),
             section(
@@ -489,8 +527,12 @@ class DriverActiveTripCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Tooltip(
                   message: canSendArrivalReminder
-                      ? 'Notificar nuevamente al pasajero'
-                      : 'Disponible en ${reminderCooldownLeftSec > 0 ? reminderCooldownLeftSec : 0}s',
+                      ? l10n.driverArrivalReminderTooltip
+                      : l10n.driverArrivalReminderCooldown(
+                          reminderCooldownLeftSec > 0
+                              ? reminderCooldownLeftSec
+                              : 0,
+                        ),
                   child: OutlinedButton(
                     onPressed: canSendArrivalReminder
                         ? onArrivalReminder
@@ -507,7 +549,7 @@ class DriverActiveTripCard extends StatelessWidget {
             if (reminderCooldownLeftSec > 0) ...[
               const SizedBox(height: 6),
               Text(
-                'Podrás volver a notificar en ${reminderCooldownLeftSec}s',
+                l10n.driverArrivalReminderCooldown(reminderCooldownLeftSec),
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),

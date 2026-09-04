@@ -1155,6 +1155,38 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverTripArrivedButton => 'Llegué al punto de recojo';
 
   @override
+  String driverPickupWaitWaiting(String time) {
+    return 'Esperando al pasajero · $time';
+  }
+
+  @override
+  String driverPickupWaitGrace(String time) {
+    return 'Espera cumplida. Tiempo extra · $time';
+  }
+
+  @override
+  String get driverPickupWaitEnded => 'El tiempo de espera se cumplió.';
+
+  @override
+  String get driverPassengerEnRouteBanner =>
+      'El pasajero ya sale al punto de recojo.';
+
+  @override
+  String get driverNotifyPassengerEnRouteTitle => 'El pasajero ya sale';
+
+  @override
+  String get driverNotifyPassengerEnRouteBody =>
+      'El pasajero ya sale al punto de recojo.';
+
+  @override
+  String get driverArrivalReminderTooltip => 'Avisar otra vez al pasajero';
+
+  @override
+  String driverArrivalReminderCooldown(int seconds) {
+    return 'Podrás volver a avisar en $seconds s';
+  }
+
+  @override
   String get driverTripStartButton => 'Iniciar viaje';
 
   @override

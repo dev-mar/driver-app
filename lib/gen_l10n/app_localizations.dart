@@ -2102,6 +2102,54 @@ abstract class AppLocalizations {
   /// **'I arrived at pickup'**
   String get driverTripArrivedButton;
 
+  /// No description provided for @driverPickupWaitWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the rider · {time}'**
+  String driverPickupWaitWaiting(String time);
+
+  /// No description provided for @driverPickupWaitGrace.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait time is up. Extra time · {time}'**
+  String driverPickupWaitGrace(String time);
+
+  /// No description provided for @driverPickupWaitEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'The wait time has ended.'**
+  String get driverPickupWaitEnded;
+
+  /// No description provided for @driverPassengerEnRouteBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'The rider is heading to the pickup point.'**
+  String get driverPassengerEnRouteBanner;
+
+  /// No description provided for @driverNotifyPassengerEnRouteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The rider is on the way'**
+  String get driverNotifyPassengerEnRouteTitle;
+
+  /// No description provided for @driverNotifyPassengerEnRouteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The rider is heading to the pickup point.'**
+  String get driverNotifyPassengerEnRouteBody;
+
+  /// No description provided for @driverArrivalReminderTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Notify the rider again'**
+  String get driverArrivalReminderTooltip;
+
+  /// No description provided for @driverArrivalReminderCooldown.
+  ///
+  /// In en, this message translates to:
+  /// **'You can notify again in {seconds} s'**
+  String driverArrivalReminderCooldown(int seconds);
+
   /// No description provided for @driverTripStartButton.
   ///
   /// In en, this message translates to:

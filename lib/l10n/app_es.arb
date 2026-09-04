@@ -451,6 +451,29 @@
     }
   },
   "driverTripArrivedButton": "Llegué al punto de recojo",
+  "driverPickupWaitWaiting": "Esperando al pasajero · {time}",
+  "@driverPickupWaitWaiting": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "driverPickupWaitGrace": "Espera cumplida. Tiempo extra · {time}",
+  "@driverPickupWaitGrace": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "driverPickupWaitEnded": "El tiempo de espera se cumplió.",
+  "driverPassengerEnRouteBanner": "El pasajero ya sale al punto de recojo.",
+  "driverNotifyPassengerEnRouteTitle": "El pasajero ya sale",
+  "driverNotifyPassengerEnRouteBody": "El pasajero ya sale al punto de recojo.",
+  "driverArrivalReminderTooltip": "Avisar otra vez al pasajero",
+  "driverArrivalReminderCooldown": "Podrás volver a avisar en {seconds} s",
+  "@driverArrivalReminderCooldown": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
   "driverTripStartButton": "Iniciar viaje",
   "driverTripCompleteButton": "Finalizar viaje",
   "driverTripOfferPrice": "Precio estimado: {amount}",

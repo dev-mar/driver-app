@@ -451,6 +451,29 @@
     }
   },
   "driverTripArrivedButton": "I arrived at pickup",
+  "driverPickupWaitWaiting": "Waiting for the rider · {time}",
+  "@driverPickupWaitWaiting": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "driverPickupWaitGrace": "Wait time is up. Extra time · {time}",
+  "@driverPickupWaitGrace": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "driverPickupWaitEnded": "The wait time has ended.",
+  "driverPassengerEnRouteBanner": "The rider is heading to the pickup point.",
+  "driverNotifyPassengerEnRouteTitle": "The rider is on the way",
+  "driverNotifyPassengerEnRouteBody": "The rider is heading to the pickup point.",
+  "driverArrivalReminderTooltip": "Notify the rider again",
+  "driverArrivalReminderCooldown": "You can notify again in {seconds} s",
+  "@driverArrivalReminderCooldown": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
   "driverTripStartButton": "Start trip",
   "driverTripCompleteButton": "Finish trip",
   "driverTripOfferPrice": "Estimated price: {amount}",
