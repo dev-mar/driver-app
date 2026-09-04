@@ -6,7 +6,6 @@ import '../registration_flow_bindings.dart';
 import '../registration_step_actions.dart';
 import 'steps/registration_step_access.dart';
 import 'steps/registration_step_identity.dart';
-import 'steps/registration_step_license.dart';
 import 'steps/registration_step_personal.dart';
 import 'steps/registration_step_vehicle.dart';
 import 'steps/registration_step_vehicle_photos.dart';
@@ -49,15 +48,8 @@ class RegistrationFlowStepRouter extends ConsumerWidget {
           fieldsReadOnly: fieldsReadOnly,
         );
       case 1:
-        return RegistrationStepIdentity(
-          bindings: bindings,
-          actions: actions,
-          showValidationErrors: showValidationErrors,
-          fieldsReadOnly: fieldsReadOnly,
-          photosLocked: photosLocked,
-        );
       case 2:
-        return RegistrationStepLicense(
+        return RegistrationStepIdentity(
           bindings: bindings,
           actions: actions,
           showValidationErrors: showValidationErrors,

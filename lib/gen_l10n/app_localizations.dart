@@ -1358,6 +1358,60 @@ abstract class AppLocalizations {
   /// **'Photos saved successfully'**
   String get driverMyVehiclesPhotosSavedSnackbar;
 
+  /// No description provided for @driverMyVehiclesSelectCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this vehicle'**
+  String get driverMyVehiclesSelectCta;
+
+  /// No description provided for @driverMyVehiclesReleaseCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Release vehicle'**
+  String get driverMyVehiclesReleaseCta;
+
+  /// No description provided for @driverMyVehiclesSelectOk.
+  ///
+  /// In en, this message translates to:
+  /// **'This vehicle is now selected for your work.'**
+  String get driverMyVehiclesSelectOk;
+
+  /// No description provided for @driverMyVehiclesReleaseOk.
+  ///
+  /// In en, this message translates to:
+  /// **'You released the vehicle. Another authorized driver can use it.'**
+  String get driverMyVehiclesReleaseOk;
+
+  /// No description provided for @driverMyVehiclesSelectedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected for work'**
+  String get driverMyVehiclesSelectedBadge;
+
+  /// No description provided for @driverMyVehiclesInUseBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'In use by another driver'**
+  String get driverMyVehiclesInUseBadge;
+
+  /// No description provided for @driverMyVehiclesOperatorBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorized vehicle'**
+  String get driverMyVehiclesOperatorBadge;
+
+  /// No description provided for @driverOnlineErrorVehicleSelectionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose in My vehicles the unit you will use to work.'**
+  String get driverOnlineErrorVehicleSelectionRequired;
+
+  /// No description provided for @driverOnlineErrorVehicleInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'That unit is in use. Wait until it is released or pick another from your list.'**
+  String get driverOnlineErrorVehicleInUse;
+
   /// No description provided for @driverOnlineAuthTitle.
   ///
   /// In en, this message translates to:
@@ -2807,7 +2861,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegSnackIdentityIncomplete.
   ///
   /// In en, this message translates to:
-  /// **'Complete number, expiry date, and the three images.'**
+  /// **'Complete the number, category, expiration date, both sides of the license, and your profile photo.'**
   String get driverRegSnackIdentityIncomplete;
 
   /// No description provided for @driverRegSnackLicenseIncomplete.
@@ -3191,37 +3245,37 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegIntroIdentity.
   ///
   /// In en, this message translates to:
-  /// **'Readable document and profile photo where you can be clearly identified: full face, no cap or dark glasses, no mask, no heavy shadows.'**
+  /// **'Readable driver\'s license (both sides) and a profile photo where you can be clearly identified: full face, no cap or dark glasses, no mask, no heavy shadows.'**
   String get driverRegIntroIdentity;
 
   /// No description provided for @driverRegSectionIdentityDocument.
   ///
   /// In en, this message translates to:
-  /// **'Identity document'**
+  /// **'Driver\'s license'**
   String get driverRegSectionIdentityDocument;
 
   /// No description provided for @driverRegSubtitleIdentityDocument.
   ///
   /// In en, this message translates to:
-  /// **'Number and expiration according to the document.'**
+  /// **'Number, category, and expiration of your license.'**
   String get driverRegSubtitleIdentityDocument;
 
   /// No description provided for @driverRegFieldDocumentNumber.
   ///
   /// In en, this message translates to:
-  /// **'Document number'**
+  /// **'License number'**
   String get driverRegFieldDocumentNumber;
 
   /// No description provided for @driverRegFieldDocumentExpiry.
   ///
   /// In en, this message translates to:
-  /// **'Document expiration'**
+  /// **'License expiration'**
   String get driverRegFieldDocumentExpiry;
 
   /// No description provided for @driverRegSectionFrontBack.
   ///
   /// In en, this message translates to:
-  /// **'Front and back'**
+  /// **'Front and back of the license'**
   String get driverRegSectionFrontBack;
 
   /// No description provided for @driverRegSubtitleOneImagePerSide.
@@ -3679,6 +3733,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Type or pick below'**
   String get driverRegHintTypeOrPickColor;
+
+  /// No description provided for @driverRegSectionPlateOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'License plate'**
+  String get driverRegSectionPlateOnly;
 
   /// No description provided for @driverRegSectionPlateVin.
   ///

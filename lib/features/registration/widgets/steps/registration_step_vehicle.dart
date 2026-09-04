@@ -224,7 +224,7 @@ class RegistrationStepVehicle extends ConsumerWidget {
                 ],
                 const SizedBox(height: AppFoundation.spacingLg),
                 RegistrationSectionCard(
-                  title: l10n.driverRegSectionPlateVin,
+                  title: l10n.driverRegSectionPlateOnly,
                   icon: Icons.pin_outlined,
                   subtitle: l10n.driverRegSubtitlePlateUppercase,
                   children: [
@@ -241,21 +241,6 @@ class RegistrationStepVehicle extends ConsumerWidget {
                         labelText: l10n.driverRegFieldPlate,
                         hintText: l10n.driverRegHintPlateExample,
                         helperText: l10n.driverRegHelperUppercaseSaved,
-                        counterText: '',
-                      ),
-                      validator: (v) =>
-                          v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
-                    ),
-                    const SizedBox(height: AppFoundation.spacingMd),
-                    TextFormField(
-                      controller: bindings.vehicleVinCtrl,
-                      textCapitalization: TextCapitalization.characters,
-                      maxLength: kDriverVinMaxLength,
-                      inputFormatters: driverVinInputFormatters(),
-                      decoration: InputDecoration(
-                        labelText: l10n.driverRegFieldVinChassis,
-                        hintText: l10n.driverRegHintVin17Chars,
-                        helperText: l10n.driverRegHelperVehicleDocumentReference,
                         counterText: '',
                       ),
                       validator: (v) =>

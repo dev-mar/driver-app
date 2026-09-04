@@ -360,6 +360,8 @@ extension DriverRealtimeStateAvailabilityUi on DriverRealtimeState {
   bool get availabilitySwitchVisualOn {
     if ((hasVehicleRegistered == false ||
             errorCode == 'DRIVER_VEHICLE_REQUIRED' ||
+            errorCode == 'DRIVER_VEHICLE_SELECTION_REQUIRED' ||
+            errorCode == 'DRIVER_VEHICLE_IN_USE' ||
             goOnlineBlocked ||
             errorCode == 'DRIVER_GO_ONLINE_BLOCKED' ||
             accountBlocked ||

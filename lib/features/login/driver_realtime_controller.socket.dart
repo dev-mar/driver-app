@@ -117,6 +117,9 @@ void _bindDriverRealtimeSocketHandlers(
               return;
             }
             if (code == 'DRIVER_VEHICLE_REQUIRED' ||
+                code == 'DRIVER_VEHICLE_SELECTION_REQUIRED' ||
+                code == 'DRIVER_VEHICLE_IN_USE' ||
+                code == 'VEHICLE_IN_USE' ||
                 code == 'DRIVER_REGISTRATION_INCOMPLETE' ||
                 code == 'DRIVER_REGISTRATION_NOT_VERIFIED' ||
                 code == 'DRIVER_ACCOUNT_NOT_ACTIVE' ||

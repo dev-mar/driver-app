@@ -716,6 +716,37 @@ class AppLocalizationsEs extends AppLocalizations {
       'Fotos guardadas correctamente';
 
   @override
+  String get driverMyVehiclesSelectCta => 'Usar esta unidad';
+
+  @override
+  String get driverMyVehiclesReleaseCta => 'Liberar unidad';
+
+  @override
+  String get driverMyVehiclesSelectOk =>
+      'Esta unidad quedó seleccionada para tu trabajo.';
+
+  @override
+  String get driverMyVehiclesReleaseOk =>
+      'Liberaste la unidad. Otro conductor autorizado ya puede usarla.';
+
+  @override
+  String get driverMyVehiclesSelectedBadge => 'Seleccionada para trabajar';
+
+  @override
+  String get driverMyVehiclesInUseBadge => 'En uso por otro conductor';
+
+  @override
+  String get driverMyVehiclesOperatorBadge => 'Unidad autorizada';
+
+  @override
+  String get driverOnlineErrorVehicleSelectionRequired =>
+      'Elige en Mis vehículos la unidad que usarás para dar servicio.';
+
+  @override
+  String get driverOnlineErrorVehicleInUse =>
+      'Esa unidad está en uso. Espera a que se libere o elige otra de tu lista.';
+
+  @override
   String get driverOnlineAuthTitle => 'Confirma tu identidad';
 
   @override
@@ -1553,7 +1584,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverRegSnackIdentityIncomplete =>
-      'Completa número, vencimiento y las tres imágenes.';
+      'Completa número, categoría, vencimiento, ambos lados de la licencia y tu foto de perfil.';
 
   @override
   String get driverRegSnackLicenseIncomplete =>
@@ -1762,23 +1793,23 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverRegIntroIdentity =>
-      'Documento legible y foto de perfil donde se te identifique bien: rostro completo, sin gorra ni lentes oscuros, sin tapabocas ni sombra en la cara.';
+      'Licencia de conducir legible (ambos lados) y foto de perfil donde se te identifique bien: rostro completo, sin gorra ni lentes oscuros, sin tapabocas ni sombra en la cara.';
 
   @override
-  String get driverRegSectionIdentityDocument => 'Documento de identidad';
+  String get driverRegSectionIdentityDocument => 'Licencia de conducir';
 
   @override
   String get driverRegSubtitleIdentityDocument =>
-      'Número y vigencia según el documento.';
+      'Número, categoría y vigencia de tu licencia.';
 
   @override
-  String get driverRegFieldDocumentNumber => 'Número de documento';
+  String get driverRegFieldDocumentNumber => 'Número de licencia';
 
   @override
-  String get driverRegFieldDocumentExpiry => 'Vencimiento del documento';
+  String get driverRegFieldDocumentExpiry => 'Vencimiento de la licencia';
 
   @override
-  String get driverRegSectionFrontBack => 'Anverso y reverso';
+  String get driverRegSectionFrontBack => 'Anverso y reverso de la licencia';
 
   @override
   String get driverRegSubtitleOneImagePerSide => 'Una imagen por cada lado.';
@@ -2041,6 +2072,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverRegHintTypeOrPickColor => 'Escribe o elige abajo';
+
+  @override
+  String get driverRegSectionPlateOnly => 'Placa';
 
   @override
   String get driverRegSectionPlateVin => 'Placa y número de chasis (VIN)';

@@ -1,12 +1,17 @@
 // GENERATED — editar con cuidado; regenerar: node tool/extract_registration_steps.mjs
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_foundation.dart';
 import '../../../../gen_l10n/app_localizations.dart';
+import '../../driver_registration_controller.dart';
+import '../../driver_registration_models.dart';
 import '../../registration_flow_bindings.dart';
 import '../../registration_flow_helpers.dart';
+import '../../registration_flow_server_rehydration.dart';
 import '../../registration_image_helper.dart';
 import '../../registration_step_actions.dart';
 import '../registration_flow_chrome.dart';
@@ -18,6 +23,7 @@ class RegistrationStepIdentity extends ConsumerWidget {
     required this.bindings,
     required this.actions,
     required this.showValidationErrors,
+    required this.flow,
     this.fieldsReadOnly = false,
     this.photosLocked = false,
   });
@@ -25,12 +31,34 @@ class RegistrationStepIdentity extends ConsumerWidget {
   final RegistrationFlowBindings bindings;
   final RegistrationStepActions actions;
   final bool showValidationErrors;
+  final DriverRegistrationFlowState flow;
   final bool fieldsReadOnly;
   final bool photosLocked;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final notifier = ref.read(driverRegistrationFlowControllerProvider.notifier);
+    unawaited(notifier.ensureLicenseCategoriesLoaded());
+    if (bindings.licenseCategory == null &&
+        flow.registeredLicenseDocumentTypeId != null) {
+      applyLicenseCategoryFromProfile(
+        form: bindings,
+        categories: flow.licenseCategories,
+        documentTypeId: flow.registeredLicenseDocumentTypeId,
+      );
+    }
+    final rawLicenseItems = flow.licenseCategories.isEmpty
+        ? DriverLicenseCategory.legacyBoliviaFallback
+        : flow.licenseCategories;
+    final licenseItems = () {
+      final selected = bindings.licenseCategory;
+      if (selected == null) return rawLicenseItems;
+      if (rawLicenseItems.any((e) => e.id == selected.id)) {
+        return rawLicenseItems;
+      }
+      return <DriverLicenseCategory>[...rawLicenseItems, selected];
+    }();
 
         return Theme(
           data: registrationInputTheme(context),
@@ -46,7 +74,7 @@ class RegistrationStepIdentity extends ConsumerWidget {
                 const SizedBox(height: 14),
                 RegistrationSectionCard(
                   title: l10n.driverRegSectionIdentityDocument,
-                  icon: Icons.perm_identity_rounded,
+                  icon: Icons.badge_outlined,
                   subtitle: l10n.driverRegSubtitleIdentityDocument,
                   children: [
                     TextFormField(
@@ -82,6 +110,34 @@ class RegistrationStepIdentity extends ConsumerWidget {
                       validator: (v) =>
                           v == null || v.trim().isEmpty ? l10n.driverRegValidationRequired : null,
                     ),
+                    const SizedBox(height: AppFoundation.spacingMd),
+                    DropdownButtonFormField<DriverLicenseCategory>(
+                      key: ValueKey<String>(
+                        'id-lic-cat-${licenseItems.map((e) => e.id).join('-')}-${bindings.licenseCategory?.id ?? 0}',
+                      ),
+                      initialValue: bindings.licenseCategory,
+                      decoration: InputDecoration(
+                        labelText: l10n.driverRegFieldCategory,
+                        hintText: l10n.driverRegHintCategoryExample,
+                      ),
+                      items: licenseItems
+                          .map(
+                            (c) => DropdownMenuItem(
+                              value: c,
+                              child: Text(c.label),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: fieldsReadOnly
+                          ? null
+                          : (v) {
+                              bindings.licenseCategory = v;
+                              actions.onFormChanged();
+                              unawaited(actions.persistDraft());
+                            },
+                      validator: (v) =>
+                          v == null ? l10n.driverRegValidationChooseCategory : null,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 14),
@@ -91,7 +147,7 @@ class RegistrationStepIdentity extends ConsumerWidget {
                   subtitle: l10n.driverRegSubtitleOneImagePerSide,
                   children: [
                     RegistrationCarnetUploadTile(
-                      kind: RegistrationCarnetSlotKind.idFront,
+                      kind: RegistrationCarnetSlotKind.licenseFront,
                       isSet: bindings.idFrontB64 != null ||
                           (bindings.idFrontPreviewUrl != null &&
                               bindings.idFrontPreviewUrl!.isNotEmpty),
@@ -110,7 +166,7 @@ class RegistrationStepIdentity extends ConsumerWidget {
                     ),
                     const SizedBox(height: 12),
                     RegistrationCarnetUploadTile(
-                      kind: RegistrationCarnetSlotKind.idBack,
+                      kind: RegistrationCarnetSlotKind.licenseBack,
                       isSet: bindings.idBackB64 != null ||
                           (bindings.idBackPreviewUrl != null &&
                               bindings.idBackPreviewUrl!.isNotEmpty),

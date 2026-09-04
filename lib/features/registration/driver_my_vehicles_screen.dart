@@ -27,7 +27,9 @@ class _DriverMyVehiclesScreenState extends ConsumerState<DriverMyVehiclesScreen>
   String? _error;
   bool _loading = true;
 
-  bool get _hasRegisteredVehicle => (_items?.isNotEmpty ?? false);
+  /// Solo unidades propias bloquean el alta (tope 1). Autorizadas no cuentan.
+  bool get _hasOwnedVehicle =>
+      (_items ?? const []).any((v) => !v.isOperatorAssignment);
 
   @override
   void initState() {
@@ -89,9 +91,39 @@ class _DriverMyVehiclesScreenState extends ConsumerState<DriverMyVehiclesScreen>
     );
   }
 
+  Future<void> _selectVehicle(DriverVehicleSummary v) async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      await ref.read(driverRegistrationRepositoryProvider).selectVehicle(v.vehicleAssetId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.driverMyVehiclesSelectOk)),
+      );
+      await _load();
+    } on DriverRegistrationException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
+  Future<void> _releaseVehicle(DriverVehicleSummary v) async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      await ref.read(driverRegistrationRepositoryProvider).releaseVehicle(v.vehicleAssetId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.driverMyVehiclesReleaseOk)),
+      );
+      await _load();
+    } on DriverRegistrationException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
   Future<void> _onAddVehiclePressed() async {
     final l10n = AppLocalizations.of(context);
-    if (_hasRegisteredVehicle) {
+    if (_hasOwnedVehicle) {
       await _showAddVehicleLockedDialog(l10n);
       return;
     }
@@ -105,7 +137,7 @@ class _DriverMyVehiclesScreenState extends ConsumerState<DriverMyVehiclesScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final addLocked = _hasRegisteredVehicle;
+    final addLocked = _hasOwnedVehicle;
     return DriverSecondaryScaffold(
       title: l10n.driverMyVehiclesTitle,
       actions: [
@@ -207,6 +239,8 @@ class _DriverMyVehiclesScreenState extends ConsumerState<DriverMyVehiclesScreen>
         return _VehicleSummaryCard(
           summary: v,
           onFlowClosed: _load,
+          onSelect: () => _selectVehicle(v),
+          onRelease: () => _releaseVehicle(v),
         );
       },
     );
@@ -217,10 +251,14 @@ class _VehicleSummaryCard extends StatelessWidget {
   const _VehicleSummaryCard({
     required this.summary,
     required this.onFlowClosed,
+    required this.onSelect,
+    required this.onRelease,
   });
 
   final DriverVehicleSummary summary;
   final Future<void> Function() onFlowClosed;
+  final VoidCallback onSelect;
+  final VoidCallback onRelease;
 
   @override
   Widget build(BuildContext context) {
@@ -302,6 +340,50 @@ class _VehicleSummaryCard extends StatelessWidget {
                 child: Text(
                   services,
                   style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                ),
+              ),
+            if (summary.possessionState != null &&
+                (summary.isSelected ||
+                    summary.possessionState == 'in_use' ||
+                    summary.assignmentRole == 'operator'))
+              Padding(
+                padding: EdgeInsets.only(top: AppFoundation.spacingXs),
+                child: Text(
+                  summary.isSelected
+                      ? l10n.driverMyVehiclesSelectedBadge
+                      : summary.possessionState == 'in_use'
+                          ? l10n.driverMyVehiclesInUseBadge
+                          : l10n.driverMyVehiclesOperatorBadge,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: summary.isSelected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            if (summary.possessionState != null &&
+                summary.canSelect &&
+                !summary.isSelected)
+              Padding(
+                padding: EdgeInsets.only(top: AppFoundation.spacingSm),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: summary.possessionState == 'in_use' ? null : onSelect,
+                    child: Text(l10n.driverMyVehiclesSelectCta),
+                  ),
+                ),
+              ),
+            if (summary.possessionState != null && summary.canRelease)
+              Padding(
+                padding: EdgeInsets.only(top: AppFoundation.spacingSm),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: onRelease,
+                    child: Text(l10n.driverMyVehiclesReleaseCta),
+                  ),
                 ),
               ),
             if (summary.needsGalleryCompletion) ...[

@@ -26,7 +26,6 @@ List<String> registrationFlowVisibleStepLabels(
   }
   return [
     l10n.driverRegStepData,
-    l10n.driverRegStepIdentity,
     l10n.driverRegStepLicense,
     l10n.driverRegStepAccess,
   ];
@@ -39,7 +38,9 @@ int registrationFlowVisibleStepIndex(
   if (mode.galleryCompletionOnly) return 0;
   if (mode.addVehicleOnly) return (flow.step - 4).clamp(0, 1);
   if (mode.profileCompletionUx) return flow.step.clamp(0, 5);
-  return flow.step.clamp(0, 3);
+  if (flow.step <= 0) return 0;
+  if (flow.step <= 2) return 1;
+  return 2;
 }
 
 String registrationFlowScaffoldTitle(

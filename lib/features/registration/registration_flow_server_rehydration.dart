@@ -100,6 +100,14 @@ void mergeMeProfileIntoRegistrationForm({
     read: () => form.licenseExpireCtrl.text,
     assign: (v) => form.licenseExpireCtrl.text = v,
   );
+  if (registrationFieldIsBlank(form.licenseExpireCtrl.text) &&
+      !registrationFieldIsBlank(form.docExpireCtrl.text)) {
+    form.licenseExpireCtrl.text = form.docExpireCtrl.text.trim();
+  }
+  if (registrationFieldIsBlank(form.docExpireCtrl.text) &&
+      !registrationFieldIsBlank(form.licenseExpireCtrl.text)) {
+    form.docExpireCtrl.text = form.licenseExpireCtrl.text.trim();
+  }
 
   final gender = profile['gender']?.toString().trim();
   if (form.genderValue == null && gender != null && gender.isNotEmpty) {
@@ -176,9 +184,15 @@ bool registrationFormStepNeedsServerRehydrate({
           registrationFieldIsBlank(form.docExpireCtrl.text) ||
           (form.idFrontB64 == null && form.idBackB64 == null && form.faceB64 == null);
     case 2:
-      return registrationFieldIsBlank(form.licenseExpireCtrl.text) ||
+      return registrationFieldIsBlank(form.docNumberCtrl.text) ||
+          registrationFieldIsBlank(form.docExpireCtrl.text) ||
+          registrationFieldIsBlank(form.licenseExpireCtrl.text) ||
           form.licenseCategory == null ||
-          (form.licFrontB64 == null && form.licBackB64 == null);
+          (form.idFrontB64 == null &&
+              form.idBackB64 == null &&
+              form.faceB64 == null &&
+              form.licFrontB64 == null &&
+              form.licBackB64 == null);
     case 3:
       return registrationFieldIsBlank(form.passwordCtrl.text);
     case 4:

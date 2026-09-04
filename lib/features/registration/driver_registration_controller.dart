@@ -13,6 +13,7 @@ import 'registration_flow_server_rehydration.dart';
 /// Placeholder de póliza y título cuando la app no los pide (web/portal sí).
 /// Alineado al default del backend para `tittle_deed`.
 const String kDriverVehicleInsuranceOwnershipPlaceholder = '—';
+const String kDriverVehicleVinAppPlaceholder = '—';
 
 final driverRegistrationRepositoryProvider =
     Provider<DriverRegistrationRepository>((ref) {
@@ -1642,6 +1643,92 @@ class DriverRegistrationFlowController
     }
   }
 
+  /// Misma pantalla visual: identidad (`document_type` 1) y luego licencia (categoría).
+  /// El orden interno no cambia; si identidad ya existe, se avanza a licencia.
+  /// Las fotos se reenvían a licencia con purpose `license_*` (el backend no acepta
+  /// keys de `identity_*` en el bloque licencia).
+  Future<void> submitCombinedIdentityAndLicenseDocuments({
+    required String uuid,
+    required String documentNumber,
+    required int licenseCategoryTypeId,
+    String? frontB64,
+    String? backB64,
+    String? faceB64,
+    String? frontStorageKey,
+    String? backStorageKey,
+    String? faceStorageKey,
+    String? licenseFrontStorageKey,
+    String? licenseBackStorageKey,
+    required String expireDateIso,
+  }) async {
+    await submitIdentityDocuments(
+      uuid: uuid,
+      documentNumber: documentNumber,
+      frontB64: frontB64,
+      backB64: backB64,
+      faceB64: faceB64,
+      frontStorageKey: frontStorageKey,
+      backStorageKey: backStorageKey,
+      faceStorageKey: faceStorageKey,
+      expireDateIso: expireDateIso,
+    );
+    if (state.globalError != null) return;
+    final hasNewFront = frontB64 != null && frontB64.trim().isNotEmpty;
+    final hasNewBack = backB64 != null && backB64.trim().isNotEmpty;
+    final licenseFrontOk = hasNewFront ||
+        (licenseFrontStorageKey != null &&
+            licenseFrontStorageKey.trim().isNotEmpty);
+    final licenseBackOk = hasNewBack ||
+        (licenseBackStorageKey != null &&
+            licenseBackStorageKey.trim().isNotEmpty);
+    if (!licenseFrontOk || !licenseBackOk) {
+      state = state.copyWith(
+        loading: false,
+        globalError:
+            'Vuelve a tomar el frente y el dorso de la licencia para completar este paso.',
+      );
+      return;
+    }
+    await submitLicenseDocuments(
+      uuid: uuid,
+      documentNumber: documentNumber,
+      licenseCategoryTypeId: licenseCategoryTypeId,
+      frontB64: frontB64,
+      backB64: backB64,
+      frontStorageKey: hasNewFront ? null : licenseFrontStorageKey,
+      backStorageKey: hasNewBack ? null : licenseBackStorageKey,
+      expireDateIso: expireDateIso,
+    );
+  }
+
+  Future<void> ensureLicenseCategoriesLoaded() async {
+    if (state.licenseCategories.isNotEmpty) return;
+    final countryId = state.selectedCountryId;
+    if (countryId == null) {
+      state = state.copyWith(
+        licenseCategories: List<DriverLicenseCategory>.from(
+          DriverLicenseCategory.legacyBoliviaFallback,
+        ),
+      );
+      return;
+    }
+    try {
+      var cats = await _repo.fetchLicenseCategories(countryId: countryId);
+      if (cats.isEmpty) {
+        cats = List<DriverLicenseCategory>.from(
+          DriverLicenseCategory.legacyBoliviaFallback,
+        );
+      }
+      state = state.copyWith(licenseCategories: cats);
+    } catch (_) {
+      state = state.copyWith(
+        licenseCategories: List<DriverLicenseCategory>.from(
+          DriverLicenseCategory.legacyBoliviaFallback,
+        ),
+      );
+    }
+  }
+
   /// Tras licencia: envía a revisión, hace login y entra al home.
   /// El formulario de vehículo se abre desde el home si `needs_vehicle_registration`.
   Future<void> completeLoginAndContinue({
@@ -1896,9 +1983,8 @@ class DriverRegistrationFlowController
           'tittle_deed': kDriverVehicleInsuranceOwnershipPlaceholder,
         },
       };
-      if (vin.trim().isNotEmpty) {
-        body['vin'] = vin.trim();
-      }
+      final vinValue = vin.trim().isNotEmpty ? vin.trim() : kDriverVehicleVinAppPlaceholder;
+      body['vin'] = vinValue;
       final mfr = state.catalogManufacturerId;
       final mdl = state.catalogVehicleModelId;
       if (mfr != null) body['manufacturer_id'] = mfr;

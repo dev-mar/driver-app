@@ -132,7 +132,10 @@ class DriverHomeRequestsPanel extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      DriverInlineError(message: errorMessage!),
+                      DriverAnimatedGateNotice(
+                        message: errorMessage!,
+                        errorCode: realtime.errorCode,
+                      ),
                       const SizedBox(height: 12),
                     ],
                   ),
@@ -161,6 +164,7 @@ class DriverHomeRequestsPanel extends ConsumerWidget {
                     errorMessage: errorMessage!,
                     errorCode: realtime.errorCode,
                     l10n: l10n,
+                    animated: true,
                   ),
                 ),
               SliverToBoxAdapter(

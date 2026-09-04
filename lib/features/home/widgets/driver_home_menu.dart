@@ -28,6 +28,8 @@ const kDriverOnlinePermissionHintCodes = <String>{
 
 bool driverIsProminentOnlineGateError(String? code) {
   return code == 'DRIVER_VEHICLE_REQUIRED' ||
+      code == 'DRIVER_VEHICLE_SELECTION_REQUIRED' ||
+      code == 'DRIVER_VEHICLE_IN_USE' ||
       code == 'DRIVER_CREDITS_BELOW_MIN' ||
       code == 'DRIVER_GO_ONLINE_BLOCKED' ||
       code == 'DRIVER_ACCOUNT_BLOCKED' ||
@@ -539,18 +541,23 @@ class DriverHomeOnlineAvailabilityPanel extends ConsumerWidget {
   }
 }
 
-/// Errores inline de permisos/GPS bajo el panel de disponibilidad.
+/// Alertas de permisos/GPS bajo el panel de disponibilidad.
+///
+/// [animated] — cuando es `true` usa [DriverAnimatedGateNotice] con fade+slide
+/// y tono adaptativo. Valor por defecto `false` para no romper usos existentes.
 class DriverHomeOnlinePermissionErrorSection extends StatelessWidget {
   const DriverHomeOnlinePermissionErrorSection({
     super.key,
     required this.errorMessage,
     required this.errorCode,
     required this.l10n,
+    this.animated = false,
   });
 
   final String errorMessage;
   final String? errorCode;
   final AppLocalizations l10n;
+  final bool animated;
 
   @override
   Widget build(BuildContext context) {
@@ -559,7 +566,12 @@ class DriverHomeOnlinePermissionErrorSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 12),
-        DriverInlineError(message: errorMessage),
+        animated
+            ? DriverAnimatedGateNotice(
+                message: errorMessage,
+                errorCode: errorCode,
+              )
+            : DriverInlineError(message: errorMessage),
         if (errorCode != null &&
             kDriverOnlinePermissionHintCodes.contains(errorCode)) ...[
           const SizedBox(height: 8),

@@ -200,6 +200,7 @@ Future<void> handleRegistrationPrimaryAction({
       }
       return;
     case 1:
+    case 2:
       if (mode.profileCompletionUx && mode.profileFieldsReadOnly) {
         final hasNew = form.idFrontB64 != null ||
             form.idBackB64 != null ||
@@ -217,13 +218,16 @@ Future<void> handleRegistrationPrimaryAction({
         onInvalidStepValidation();
         return;
       }
+      final licenseTypeId = form.licenseCategory?.id ??
+          flow.registeredLicenseDocumentTypeId;
       if ((form.idFrontB64 == null &&
               (form.idFrontStorageKey == null || form.idFrontStorageKey!.isEmpty)) ||
           (form.idBackB64 == null &&
               (form.idBackStorageKey == null || form.idBackStorageKey!.isEmpty)) ||
           (form.faceB64 == null &&
               (form.faceStorageKey == null || form.faceStorageKey!.isEmpty)) ||
-          form.docExpireCtrl.text.isEmpty) {
+          form.docExpireCtrl.text.isEmpty ||
+          licenseTypeId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.driverRegSnackIdentityIncomplete),
@@ -232,74 +236,27 @@ Future<void> handleRegistrationPrimaryAction({
         );
         return;
       }
-      final uuid1 = flow.userUuid;
-      if (uuid1 == null) return;
-      await notifier.submitIdentityDocuments(
-        uuid: uuid1,
+      final uuidDocs = flow.userUuid;
+      if (uuidDocs == null) return;
+      form.licenseExpireCtrl.text = form.docExpireCtrl.text.trim();
+      await notifier.submitCombinedIdentityAndLicenseDocuments(
+        uuid: uuidDocs,
         documentNumber: form.docNumberCtrl.text.trim(),
+        licenseCategoryTypeId: licenseTypeId,
         frontB64: form.idFrontB64,
         backB64: form.idBackB64,
         faceB64: form.faceB64,
         frontStorageKey: form.idFrontStorageKey,
         backStorageKey: form.idBackStorageKey,
         faceStorageKey: form.faceStorageKey,
+        licenseFrontStorageKey: form.licFrontStorageKey,
+        licenseBackStorageKey: form.licBackStorageKey,
         expireDateIso: form.docExpireCtrl.text.trim(),
       );
       unawaited(persistDraft());
       if (!context.mounted) return;
-      final st1 = ref.read(driverRegistrationFlowControllerProvider);
-      if (st1.globalError == null && mode.profileCompletionUx) {
-        dismissRegistrationToProfile(context: context, ref: ref, l10n: l10n);
-      }
-      return;
-    case 2:
-      if (mode.profileCompletionUx && mode.profileFieldsReadOnly) {
-        final hasNew = form.licFrontB64 != null || form.licBackB64 != null;
-        if (!hasNew) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.driverRegSnackChangeAtLeastOnePhoto),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          return;
-        }
-      } else if (!form.formLicense.currentState!.validate()) {
-        onInvalidStepValidation();
-        return;
-      }
-      final licenseTypeId = form.licenseCategory?.id ??
-          flow.registeredLicenseDocumentTypeId;
-      if (licenseTypeId == null ||
-          (form.licFrontB64 == null &&
-              (form.licFrontStorageKey == null || form.licFrontStorageKey!.isEmpty)) ||
-          (form.licBackB64 == null &&
-              (form.licBackStorageKey == null || form.licBackStorageKey!.isEmpty)) ||
-          form.licenseExpireCtrl.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.driverRegSnackLicenseIncomplete),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        return;
-      }
-      final uuid2 = flow.userUuid;
-      if (uuid2 == null) return;
-      await notifier.submitLicenseDocuments(
-        uuid: uuid2,
-        documentNumber: form.docNumberCtrl.text.trim(),
-        licenseCategoryTypeId: licenseTypeId,
-        frontB64: form.licFrontB64,
-        backB64: form.licBackB64,
-        frontStorageKey: form.licFrontStorageKey,
-        backStorageKey: form.licBackStorageKey,
-        expireDateIso: form.licenseExpireCtrl.text.trim(),
-      );
-      unawaited(persistDraft());
-      if (!context.mounted) return;
-      final st2 = ref.read(driverRegistrationFlowControllerProvider);
-      if (st2.globalError == null && mode.profileCompletionUx) {
+      final stDocs = ref.read(driverRegistrationFlowControllerProvider);
+      if (stDocs.globalError == null && mode.profileCompletionUx) {
         dismissRegistrationToProfile(context: context, ref: ref, l10n: l10n);
       }
       return;

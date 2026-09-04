@@ -713,6 +713,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverMyVehiclesPhotosSavedSnackbar => 'Photos saved successfully';
 
   @override
+  String get driverMyVehiclesSelectCta => 'Use this vehicle';
+
+  @override
+  String get driverMyVehiclesReleaseCta => 'Release vehicle';
+
+  @override
+  String get driverMyVehiclesSelectOk =>
+      'This vehicle is now selected for your work.';
+
+  @override
+  String get driverMyVehiclesReleaseOk =>
+      'You released the vehicle. Another authorized driver can use it.';
+
+  @override
+  String get driverMyVehiclesSelectedBadge => 'Selected for work';
+
+  @override
+  String get driverMyVehiclesInUseBadge => 'In use by another driver';
+
+  @override
+  String get driverMyVehiclesOperatorBadge => 'Authorized vehicle';
+
+  @override
+  String get driverOnlineErrorVehicleSelectionRequired =>
+      'Choose in My vehicles the unit you will use to work.';
+
+  @override
+  String get driverOnlineErrorVehicleInUse =>
+      'That unit is in use. Wait until it is released or pick another from your list.';
+
+  @override
   String get driverOnlineAuthTitle => 'Confirm your identity';
 
   @override
@@ -1545,7 +1576,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverRegSnackIdentityIncomplete =>
-      'Complete number, expiry date, and the three images.';
+      'Complete the number, category, expiration date, both sides of the license, and your profile photo.';
 
   @override
   String get driverRegSnackLicenseIncomplete =>
@@ -1753,23 +1784,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverRegIntroIdentity =>
-      'Readable document and profile photo where you can be clearly identified: full face, no cap or dark glasses, no mask, no heavy shadows.';
+      'Readable driver\'s license (both sides) and a profile photo where you can be clearly identified: full face, no cap or dark glasses, no mask, no heavy shadows.';
 
   @override
-  String get driverRegSectionIdentityDocument => 'Identity document';
+  String get driverRegSectionIdentityDocument => 'Driver\'s license';
 
   @override
   String get driverRegSubtitleIdentityDocument =>
-      'Number and expiration according to the document.';
+      'Number, category, and expiration of your license.';
 
   @override
-  String get driverRegFieldDocumentNumber => 'Document number';
+  String get driverRegFieldDocumentNumber => 'License number';
 
   @override
-  String get driverRegFieldDocumentExpiry => 'Document expiration';
+  String get driverRegFieldDocumentExpiry => 'License expiration';
 
   @override
-  String get driverRegSectionFrontBack => 'Front and back';
+  String get driverRegSectionFrontBack => 'Front and back of the license';
 
   @override
   String get driverRegSubtitleOneImagePerSide => 'One image for each side.';
@@ -2028,6 +2059,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverRegHintTypeOrPickColor => 'Type or pick below';
+
+  @override
+  String get driverRegSectionPlateOnly => 'License plate';
 
   @override
   String get driverRegSectionPlateVin => 'Plate and chassis number (VIN)';

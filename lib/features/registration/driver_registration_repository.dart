@@ -682,6 +682,38 @@ class DriverRegistrationRepository {
     }
   }
 
+  Future<void> selectVehicle(String vehicleAssetId) async {
+    await _postVehicleShareAction(vehicleAssetId, 'select');
+  }
+
+  Future<void> releaseVehicle(String vehicleAssetId) async {
+    await _postVehicleShareAction(vehicleAssetId, 'release');
+  }
+
+  Future<void> _postVehicleShareAction(String vehicleAssetId, String action) async {
+    final token = await DriverSecureStorage.read(_tokenKey);
+    if (token == null || token.isEmpty) {
+      throw DriverRegistrationException('Sesión no disponible. Inicia sesión de nuevo.');
+    }
+    final id = vehicleAssetId.trim();
+    if (id.isEmpty) {
+      throw DriverRegistrationException('Vehículo inválido.');
+    }
+    try {
+      final response = await _usersDio.post<Map<String, dynamic>>(
+        '/api/v2/vehicles/$id/$action',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      final data = response.data;
+      if (data == null || data['success'] != true) {
+        throw DriverRegistrationException(_extractErrorMessage(data ?? <String, dynamic>{}));
+      }
+    } on DioException catch (e) {
+      _logDioIfDebug('_postVehicleShareAction', e);
+      throw DriverRegistrationException(_messageFromDioException(e));
+    }
+  }
+
   /// Catálogo canónico (`vehicle_type` / `category` / servicios / marca-modelo). Requiere Bearer.
   /// Origen: `GET /api/v2/vehicles/catalog` en dos partes (`scope=registration` + `scope=extensions`)
   /// para evitar un JSON único demasiado grande (proxies que cortan el cuerpo).

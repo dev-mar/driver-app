@@ -1099,6 +1099,11 @@ class DriverVehicleSummary {
     this.galleryUploadedCount = 0,
     this.galleryRequiredCount = 4,
     this.galleryComplete = false,
+    this.assignmentRole,
+    this.isSelected = false,
+    this.possessionState,
+    this.canSelect = true,
+    this.canRelease = false,
   });
 
   final String vehicleAssetId;
@@ -1119,10 +1124,21 @@ class DriverVehicleSummary {
   final int galleryUploadedCount;
   final int galleryRequiredCount;
   final bool galleryComplete;
+  final String? assignmentRole;
+  final bool isSelected;
+  final String? possessionState;
+  final bool canSelect;
+  final bool canRelease;
 
-  /// Hay fila de vehículo pero aún faltan las cuatro vistas obligatorias en `fleet.vehicle_images`.
+  bool get isOperatorAssignment => assignmentRole == 'operator';
+
+  /// Hay fila de vehículo propia pero aún faltan las cuatro vistas obligatorias.
+  /// El operador no completa galería de una unidad ajena (el backend exige owner).
   bool get needsGalleryCompletion =>
-      !galleryComplete && galleryRequiredCount > 0 && galleryUploadedCount < galleryRequiredCount;
+      !isOperatorAssignment &&
+      !galleryComplete &&
+      galleryRequiredCount > 0 &&
+      galleryUploadedCount < galleryRequiredCount;
 
   static DriverVehicleSummary? fromApiJson(Map<String, dynamic> json) {
     final id = json['vehicle_asset_id']?.toString() ?? json['vehicleAssetId']?.toString();
@@ -1166,6 +1182,12 @@ class DriverVehicleSummary {
       galleryUploadedCount: effUploaded,
       galleryRequiredCount: effRequired,
       galleryComplete: complete,
+      assignmentRole: json['assignment_role']?.toString() ?? json['assignmentRole']?.toString(),
+      isSelected: json['is_selected'] == true || json['isSelected'] == true,
+      possessionState:
+          json['possession_state']?.toString() ?? json['possessionState']?.toString(),
+      canSelect: json['can_select'] != false && json['canSelect'] != false,
+      canRelease: json['can_release'] == true || json['canRelease'] == true,
     );
   }
 }

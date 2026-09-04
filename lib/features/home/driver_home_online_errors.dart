@@ -25,6 +25,11 @@ String? driverHomeOnlineErrorMessage({
       return l10n.driverOnlineErrorSocket;
     case 'DRIVER_VEHICLE_REQUIRED':
       return l10n.driverOnlineErrorVehicleRequired;
+    case 'DRIVER_VEHICLE_SELECTION_REQUIRED':
+      return l10n.driverOnlineErrorVehicleSelectionRequired;
+    case 'DRIVER_VEHICLE_IN_USE':
+    case 'VEHICLE_IN_USE':
+      return l10n.driverOnlineErrorVehicleInUse;
     case 'DRIVER_GO_ONLINE_BLOCKED':
       return l10n.driverOnlineErrorGoOnlineBlocked;
     case 'DRIVER_CREDITS_BELOW_MIN':
@@ -85,6 +90,10 @@ String? driverHomeOfferErrorMessage({
     'TRIP_TAKEN' ||
     'OFFER_ALREADY_TAKEN' ||
     'DRIVER_HAS_ACTIVE_TRIP' => l10n.driverOfferErrorTaken,
+    'DRIVER_VEHICLE_SELECTION_REQUIRED' =>
+      l10n.driverOnlineErrorVehicleSelectionRequired,
+    'DRIVER_VEHICLE_IN_USE' || 'VEHICLE_IN_USE' =>
+      l10n.driverOnlineErrorVehicleInUse,
     'RBAC_FORBIDDEN' => l10n.driverOnlineErrorRbacForbidden,
     'RBAC_NO_IDENTITY' || 'RBAC_NO_AUTH' => l10n.driverOnlineErrorRbacSession,
     'RBAC_RESOLVE' || 'RBAC_ERROR' || 'RBAC_CONFIG' =>
