@@ -9,6 +9,7 @@ import '../../login/driver_realtime_state.dart';
 import 'driver_active_trip_nav_buttons.dart';
 import 'driver_active_trip_status_helpers.dart';
 import 'driver_pickup_wait.dart';
+import 'driver_trip_cancel_reason.dart';
 import 'driver_trip_payment_chip.dart';
 import 'driver_trip_extras_icons.dart';
 
@@ -25,6 +26,7 @@ class DriverActiveTripCard extends StatelessWidget {
   final VoidCallback onNavigateToDestination;
   final VoidCallback onReactivate;
   final VoidCallback onOpenChat;
+  final VoidCallback? onCancelTrip;
 
   const DriverActiveTripCard({
     super.key,
@@ -40,6 +42,7 @@ class DriverActiveTripCard extends StatelessWidget {
     required this.onNavigateToDestination,
     required this.onReactivate,
     required this.onOpenChat,
+    this.onCancelTrip,
   });
 
   @override
@@ -555,6 +558,31 @@ class DriverActiveTripCard extends StatelessWidget {
                 ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
               ),
             ],
+          ],
+          if (onCancelTrip != null &&
+              driverTripCanCancelAssigned(trip.status) &&
+              canAct) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: processingAction == 'cancel' ? null : onCancelTrip,
+                icon: processingAction == 'cancel'
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.close_rounded, size: 20),
+                label: Text(l10n.driverTripCancelCta),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: BorderSide(
+                    color: AppColors.error.withValues(alpha: 0.55),
+                  ),
+                ),
+              ),
+            ),
           ],
           if ((trip.status == 'started' || trip.status == 'in_trip') &&
               canAct) ...[

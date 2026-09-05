@@ -2138,6 +2138,18 @@ abstract class AppLocalizations {
   /// **'The rider is heading to the pickup point.'**
   String get driverNotifyPassengerEnRouteBody;
 
+  /// No description provided for @driverNotifyPickupGraceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait time is over'**
+  String get driverNotifyPickupGraceTitle;
+
+  /// No description provided for @driverNotifyPickupGraceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You have {minutes} min of grace at the pickup point.'**
+  String driverNotifyPickupGraceBody(int minutes);
+
   /// No description provided for @driverArrivalReminderTooltip.
   ///
   /// In en, this message translates to:
@@ -2149,6 +2161,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You can notify again in {seconds} s'**
   String driverArrivalReminderCooldown(int seconds);
+
+  /// Secondary button on accepted/arrived card
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel trip'**
+  String get driverTripCancelCta;
+
+  /// No description provided for @driverTripCancelChooseReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Why are you cancelling?'**
+  String get driverTripCancelChooseReason;
+
+  /// No description provided for @driverTripCancelNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the reason'**
+  String get driverTripCancelNoteHint;
+
+  /// No description provided for @driverTripCancelContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get driverTripCancelContinue;
+
+  /// No description provided for @driverTripCancelConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm cancellation'**
+  String get driverTripCancelConfirmTitle;
+
+  /// No description provided for @driverTripCancelConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get driverTripCancelConfirm;
+
+  /// No description provided for @driverTripCancelBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get driverTripCancelBack;
+
+  /// No description provided for @driverTripCancelNeedConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'We can\'t cancel without a connection. Try again when you\'re back online.'**
+  String get driverTripCancelNeedConnection;
+
+  /// No description provided for @driverTripCancelReasonsLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load the reasons. Check your connection and try again.'**
+  String get driverTripCancelReasonsLoadError;
+
+  /// No description provided for @driverTripCancelReasonsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no cancel reasons available right now.'**
+  String get driverTripCancelReasonsEmpty;
+
+  /// No description provided for @driverTripCancelConfirmFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'If you confirm, the trip is cancelled. The rider will look for another driver.'**
+  String get driverTripCancelConfirmFallback;
+
+  /// No description provided for @driverTripCancelRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get driverTripCancelRetry;
+
+  /// No description provided for @driverTripCancelError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t cancel the trip. Check your connection and try again.'**
+  String get driverTripCancelError;
+
+  /// No description provided for @driverTripCancelCapExceeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait a moment before going online again.'**
+  String get driverTripCancelCapExceeded;
+
+  /// No description provided for @driverTripClaimAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you want to send a claim to our team?'**
+  String get driverTripClaimAsk;
+
+  /// No description provided for @driverTripClaimHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us what happened. Our team can review the trip.'**
+  String get driverTripClaimHint;
+
+  /// No description provided for @driverTripClaimSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send claim'**
+  String get driverTripClaimSend;
+
+  /// No description provided for @driverTripClaimSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get driverTripClaimSkip;
+
+  /// No description provided for @driverTripClaimError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t send the claim. Try again later.'**
+  String get driverTripClaimError;
+
+  /// No description provided for @driverTripClaimAlreadySent.
+  ///
+  /// In en, this message translates to:
+  /// **'You already sent a claim for this trip.'**
+  String get driverTripClaimAlreadySent;
+
+  /// No description provided for @driverTripAlreadyFinalized.
+  ///
+  /// In en, this message translates to:
+  /// **'This trip already ended. Refresh to continue.'**
+  String get driverTripAlreadyFinalized;
+
+  /// No description provided for @driverTripCannotCancelRace.
+  ///
+  /// In en, this message translates to:
+  /// **'The trip changed stage. Refresh and try again.'**
+  String get driverTripCannotCancelRace;
+
+  /// No description provided for @driverTripClaimSent.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent your claim to our team.'**
+  String get driverTripClaimSent;
+
+  /// No description provided for @driverTripCancelWaitStillWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re still in the waiting time.'**
+  String get driverTripCancelWaitStillWaiting;
+
+  /// No description provided for @driverTripCancelWaitStillGrace.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re still in the grace period.'**
+  String get driverTripCancelWaitStillGrace;
+
+  /// No description provided for @driverTripCancelWaitNotAtPickup.
+  ///
+  /// In en, this message translates to:
+  /// **'It looks like you\'re not at the pickup point.'**
+  String get driverTripCancelWaitNotAtPickup;
+
+  /// No description provided for @driverTripCancelWaitNoLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t confirm you\'re at the pickup point.'**
+  String get driverTripCancelWaitNoLocation;
+
+  /// No description provided for @driverTripCancelWaitNotEligible.
+  ///
+  /// In en, this message translates to:
+  /// **'The wait-time reason doesn\'t apply at this stage.'**
+  String get driverTripCancelWaitNotEligible;
 
   /// No description provided for @driverTripStartButton.
   ///

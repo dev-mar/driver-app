@@ -23,6 +23,7 @@ class DriverRetractableTripCard extends StatelessWidget {
   final VoidCallback onNavigateToDestination;
   final VoidCallback onReactivate;
   final VoidCallback onOpenChat;
+  final VoidCallback? onCancelTrip;
 
   const DriverRetractableTripCard({
     super.key,
@@ -40,6 +41,7 @@ class DriverRetractableTripCard extends StatelessWidget {
     required this.onNavigateToDestination,
     required this.onReactivate,
     required this.onOpenChat,
+    this.onCancelTrip,
   });
 
   @override
@@ -105,6 +107,7 @@ class DriverRetractableTripCard extends StatelessWidget {
               onNavigateToDestination: onNavigateToDestination,
               onReactivate: onReactivate,
               onOpenChat: onOpenChat,
+              onCancelTrip: onCancelTrip,
             ),
           ] else
             Material(

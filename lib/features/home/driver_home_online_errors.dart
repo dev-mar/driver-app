@@ -32,6 +32,8 @@ String? driverHomeOnlineErrorMessage({
       return l10n.driverOnlineErrorVehicleInUse;
     case 'DRIVER_GO_ONLINE_BLOCKED':
       return l10n.driverOnlineErrorGoOnlineBlocked;
+    case 'TRIP_CANCEL_CAP_EXCEEDED':
+      return l10n.driverTripCancelCapExceeded;
     case 'DRIVER_CREDITS_BELOW_MIN':
       return l10n.driverOnlineErrorCreditsBelowMin(
         realtime.minCreditsToGoOnline.toStringAsFixed(0),

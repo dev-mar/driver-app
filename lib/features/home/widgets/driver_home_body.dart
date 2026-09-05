@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
@@ -13,6 +15,8 @@ import 'driver_active_trip_sheet.dart';
 import 'driver_credits_notice_card.dart';
 import 'driver_home_menu.dart';
 import 'driver_offer_card.dart';
+import 'driver_trip_cancel_reason.dart';
+import 'driver_trip_cancel_reason_sheet.dart';
 
 /// Vista mapa + tarjeta retraíble del viaje activo.
 class DriverHomeActiveTripView extends ConsumerWidget {
@@ -85,6 +89,9 @@ class DriverHomeActiveTripView extends ConsumerWidget {
         },
         onReactivate: onReactivate,
         onOpenChat: onOpenChat,
+        onCancelTrip: driverTripCanCancelAssigned(trip.status)
+            ? () => unawaited(_openDriverAssignedTripCancel(context, ref, trip))
+            : null,
       ),
     );
   }
@@ -316,5 +323,52 @@ class _DriverHomeOffersHeader extends StatelessWidget {
         const SizedBox(height: AppFoundation.spacingMd),
       ],
     );
+  }
+}
+
+Future<void> _openDriverAssignedTripCancel(
+  BuildContext context,
+  WidgetRef ref,
+  DriverActiveTrip trip,
+) async {
+  if (!driverTripCanCancelAssigned(trip.status)) return;
+  final l10n = AppLocalizations.of(context);
+  final ctrl = ref.read(driverRealtimeProvider.notifier);
+  final localeCode = Localizations.localeOf(context).languageCode;
+  final choice = await showDriverTripCancelReasonSheet(
+    context: context,
+    connected: ctrl.isSocketConnected,
+    loadReasons: () => ctrl.fetchTripCancelReasons(
+      tripId: trip.tripId,
+      locale: localeCode,
+    ),
+  );
+  if (choice == null || !context.mounted) return;
+  final ok = await ctrl.cancelAssignedTrip(
+    reasonCode: choice.code,
+    reasonNote: choice.note,
+  );
+  if (!ok && context.mounted) {
+    final block = ref.read(driverRealtimeProvider).tripErrorMessage;
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(content: Text(_driverCancelWaitErrorText(l10n, block))),
+    );
+  }
+}
+
+String _driverCancelWaitErrorText(AppLocalizations l10n, String? block) {
+  switch (block) {
+    case 'waiting':
+      return l10n.driverTripCancelWaitStillWaiting;
+    case 'grace':
+      return l10n.driverTripCancelWaitStillGrace;
+    case 'geofence':
+      return l10n.driverTripCancelWaitNotAtPickup;
+    case 'no_location':
+      return l10n.driverTripCancelWaitNoLocation;
+    case 'not_arrived':
+      return l10n.driverTripCancelWaitNotEligible;
+    default:
+      return l10n.driverTripCancelError;
   }
 }

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../core/network/driver_api_client.dart';
 import 'driver_realtime_state.dart';
+import '../home/widgets/driver_trip_cancel_reason.dart';
 
 /// REST auxiliar del flujo realtime (foto perfil, gates online, rating, créditos).
 class DriverTripRestService {
@@ -66,17 +67,41 @@ class DriverTripRestService {
     }
   }
 
-  Future<void> submitTripRating({
+  Future<DriverTripRatingResult> submitTripRating({
     required String tripId,
     required int stars,
     List<String> feedbackCodes = const [],
   }) async {
-    await _client.postWithRetry<Map<String, dynamic>>(
+    final res = await _client.postWithRetry<Map<String, dynamic>>(
       path: '/drivers/me/trips/$tripId/rating',
       flow: 'driver_trip_rating',
       maxAttempts: 2,
       data: <String, dynamic>{
         'stars': stars,
+        if (feedbackCodes.isNotEmpty) 'feedbackCodes': feedbackCodes,
+      },
+      connectTimeout: _realtimeConnectTimeout,
+      receiveTimeout: _realtimeReceiveTimeout,
+    );
+    final data = DriverApiClient.parseSuccessData(res.data);
+    return DriverTripRatingResult(
+      claimEligible: data['claimEligible'] == true || data['claim_eligible'] == true,
+    );
+  }
+
+  Future<void> submitTripClaim({
+    required String tripId,
+    required String message,
+    int? stars,
+    List<String> feedbackCodes = const [],
+  }) async {
+    await _client.postWithRetry<Map<String, dynamic>>(
+      path: '/drivers/me/trips/$tripId/claim',
+      flow: 'driver_trip_claim',
+      maxAttempts: 1,
+      data: <String, dynamic>{
+        'message': message,
+        'stars': ?stars,
         if (feedbackCodes.isNotEmpty) 'feedbackCodes': feedbackCodes,
       },
       connectTimeout: _realtimeConnectTimeout,
@@ -116,6 +141,70 @@ class DriverTripRestService {
     }
   }
 
+  Future<List<DriverTripCancelReasonItem>> fetchTripCancelReasons({
+    required String tripId,
+    String? locale,
+  }) async {
+    final res = await _client.getWithRetry<Map<String, dynamic>>(
+      path: '/drivers/me/trips/$tripId/cancel-reasons',
+      flow: 'driver_trip_cancel',
+      maxAttempts: 2,
+      queryParameters: <String, dynamic>{
+        if (locale != null && locale.trim().isNotEmpty) 'locale': locale.trim(),
+      },
+      connectTimeout: _realtimeConnectTimeout,
+      receiveTimeout: _realtimeReceiveTimeout,
+    );
+    final body = res.data ?? const <String, dynamic>{};
+    final data = body['data'];
+    if (data is! Map) return const [];
+    final items = data['items'];
+    if (items is! List) return const [];
+    return items
+        .whereType<Map>()
+        .map(
+          (m) => DriverTripCancelReasonItem.fromJson(
+            Map<String, dynamic>.from(m),
+          ),
+        )
+        .where((e) => e.code.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  static String? waitBlockReasonOf(Object e) {
+    if (e is! DioException) return null;
+    final data = e.response?.data;
+    if (data is Map) {
+      final err = data['error'];
+      if (err is Map) {
+        final w = err['waitBlockReason']?.toString().trim();
+        if (w != null && w.isNotEmpty) return w;
+      }
+      final direct = data['waitBlockReason']?.toString().trim();
+      if (direct != null && direct.isNotEmpty) return direct;
+    }
+    return null;
+  }
+
+  Future<void> cancelAssignedTrip({
+    required String tripId,
+    required String reasonCode,
+    String? reasonNote,
+  }) async {
+    final note = reasonNote?.trim();
+    await _client.postWithRetry<Map<String, dynamic>>(
+      path: '/drivers/me/trips/$tripId/cancel',
+      flow: 'driver_trip_cancel',
+      maxAttempts: 1,
+      data: <String, dynamic>{
+        'reasonCode': reasonCode,
+        if (note != null && note.isNotEmpty) 'reasonNote': note,
+      },
+      connectTimeout: _realtimeConnectTimeout,
+      receiveTimeout: _realtimeReceiveTimeout,
+    );
+  }
+
   Future<DriverAppCreditsSnapshot?> fetchAppCreditsSnapshot() async {
     try {
       final res = await _client.getWithRetry<Map<String, dynamic>>(
@@ -147,6 +236,12 @@ class DriverTripRestService {
       return null;
     }
   }
+}
+
+class DriverTripRatingResult {
+  const DriverTripRatingResult({required this.claimEligible});
+
+  final bool claimEligible;
 }
 
 class DriverProfilePictureSnapshot {

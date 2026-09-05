@@ -84,6 +84,10 @@ class DriverNotificationService {
       final l10n = inst._l10nForCurrentLocale();
       title = l10n.driverNotifyPassengerEnRouteTitle;
       body = l10n.driverNotifyPassengerEnRouteBody;
+    } else if (event == 'pickup_grace') {
+      final copy = inst._pickupGraceCopy(message);
+      title = copy.title;
+      body = copy.body;
     } else {
       title = message.data['title']?.toString().trim();
       body = message.data['body']?.toString().trim();
@@ -101,6 +105,21 @@ class DriverNotificationService {
     );
   }
 
+  ({String title, String body}) _pickupGraceCopy(RemoteMessage message) {
+    final raw = message.data['remainingSec'] ?? message.data['remaining_sec'];
+    final remaining = raw is num ? raw.toInt() : int.tryParse('$raw') ?? 0;
+    return _pickupGraceCopyFromRemaining(remaining);
+  }
+
+  ({String title, String body}) _pickupGraceCopyFromRemaining(int remainingSec) {
+    final minutes = remainingSec <= 0 ? 1 : ((remainingSec + 59) ~/ 60);
+    final l10n = _l10nForCurrentLocale();
+    return (
+      title: l10n.driverNotifyPickupGraceTitle,
+      body: l10n.driverNotifyPickupGraceBody(minutes),
+    );
+  }
+
   Future<void> showPassengerEnRouteIfBackground({
     required bool isAppInForeground,
     required String tripId,
@@ -115,10 +134,25 @@ class DriverNotificationService {
     );
   }
 
+  Future<void> showPickupGraceIfBackground({
+    required bool isAppInForeground,
+    required String tripId,
+    int remainingSec = 0,
+  }) async {
+    if (isAppInForeground) return;
+    await initialize();
+    final copy = _pickupGraceCopyFromRemaining(remainingSec);
+    await _showFcmRaw(
+      title: copy.title,
+      body: copy.body,
+      payload: tripId,
+    );
+  }
+
   Future<void> showFcmForegroundMessage(RemoteMessage message) async {
     if (!_initialized) await initialize();
     final event = message.data['event']?.toString();
-    if (event == 'passenger_en_route') {
+    if (event == 'passenger_en_route' || event == 'pickup_grace') {
       return;
     }
     final n = message.notification;

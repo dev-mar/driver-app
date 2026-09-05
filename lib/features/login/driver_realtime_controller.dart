@@ -27,6 +27,7 @@ import 'driver_trip_offer.dart';
 import 'driver_vehicle_display.dart';
 import 'driver_trip_rest_service.dart';
 import '../home/widgets/driver_pickup_wait.dart';
+import '../home/widgets/driver_trip_cancel_reason.dart';
 
 export 'driver_realtime_state.dart';
 
@@ -99,6 +100,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState>
     if (!_verboseRealtimeLogs) return;
     debugPrint('[DRIVER_RT] $message');
   }
+
+  bool get isSocketConnected => _socket?.connected == true;
 
   @override
   void dispose() {

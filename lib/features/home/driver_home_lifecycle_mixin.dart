@@ -467,20 +467,26 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
             .read(driverRealtimeProvider.notifier)
             .fetchDriverRatingFeedbackCatalog(stars: stars),
         onSubmitted: (stars, feedbackCodes) {
-          unawaited(
-            ref
+          Navigator.of(ctx).pop();
+          isRatingSheetOpen = false;
+          unawaited(() async {
+            final claim = await ref
                 .read(driverRealtimeProvider.notifier)
                 .submitTripRating(
                   tripId: trip.tripId,
                   stars: stars,
                   feedbackCodes: feedbackCodes,
-                ),
-          );
-          Navigator.of(ctx).pop();
-          isRatingSheetOpen = false;
-          unawaited(
-            ref.read(driverRealtimeProvider.notifier).clearTripPendingRating(),
-          );
+                );
+            if (claim && mounted && context.mounted) {
+              await _offerDriverTripClaim(
+                context,
+                tripId: trip.tripId,
+                stars: stars,
+                feedbackCodes: feedbackCodes,
+              );
+            }
+            await ref.read(driverRealtimeProvider.notifier).clearTripPendingRating();
+          }());
         },
         onSkipped: () {
           Navigator.of(ctx).pop();
@@ -496,6 +502,60 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
     unawaited(
       ref.read(driverRealtimeProvider.notifier).clearTripPendingRating(),
     );
+  }
+
+  Future<void> _offerDriverTripClaim(
+    BuildContext context, {
+    required String tripId,
+    required int stars,
+    List<String> feedbackCodes = const [],
+  }) async {
+    final l10n = AppLocalizations.of(context);
+    final controller = TextEditingController();
+    final send = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.driverTripClaimAsk),
+        content: TextField(
+          controller: controller,
+          minLines: 3,
+          maxLines: 6,
+          decoration: InputDecoration(hintText: l10n.driverTripClaimHint),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.driverTripClaimSkip),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.driverTripClaimSend),
+          ),
+        ],
+      ),
+    );
+    final text = controller.text.trim();
+    controller.dispose();
+    if (send != true || text.length < 10 || !context.mounted) return;
+    try {
+      await ref.read(driverRealtimeProvider.notifier).submitTripClaim(
+            tripId: tripId,
+            message: text,
+            stars: stars,
+            feedbackCodes: feedbackCodes,
+          );
+      if (context.mounted) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(content: Text(l10n.driverTripClaimSent)),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(content: Text(l10n.driverTripClaimError)),
+        );
+      }
+    }
   }
 
   Future<void> openTripChatSheet({required String tripId}) async {

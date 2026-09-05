@@ -43,6 +43,16 @@ void _markPendingDriverTripChatOpen(String tripId) {
 /// Llamar desde [FirebaseMessaging.onMessageOpenedApp] y [getInitialMessage].
 void handleDriverFcmNotificationOpen(RemoteMessage message) {
   final event = message.data['event']?.toString();
+  if (event == 'pickup_grace') {
+    try {
+      AppRouter.router.go('/home');
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[DriverFCM] router.go(/home) pickup_grace: $e $st');
+      }
+    }
+    return;
+  }
   if (event == 'trip_chat') {
     final tripId = message.data['tripId']?.toString().trim();
     if (tripId != null && tripId.isNotEmpty) {

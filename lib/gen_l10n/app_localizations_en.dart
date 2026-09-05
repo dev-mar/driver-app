@@ -1172,12 +1172,120 @@ class AppLocalizationsEn extends AppLocalizations {
       'The rider is heading to the pickup point.';
 
   @override
+  String get driverNotifyPickupGraceTitle => 'Wait time is over';
+
+  @override
+  String driverNotifyPickupGraceBody(int minutes) {
+    return 'You have $minutes min of grace at the pickup point.';
+  }
+
+  @override
   String get driverArrivalReminderTooltip => 'Notify the rider again';
 
   @override
   String driverArrivalReminderCooldown(int seconds) {
     return 'You can notify again in $seconds s';
   }
+
+  @override
+  String get driverTripCancelCta => 'Cancel trip';
+
+  @override
+  String get driverTripCancelChooseReason => 'Why are you cancelling?';
+
+  @override
+  String get driverTripCancelNoteHint => 'Write the reason';
+
+  @override
+  String get driverTripCancelContinue => 'Continue';
+
+  @override
+  String get driverTripCancelConfirmTitle => 'Confirm cancellation';
+
+  @override
+  String get driverTripCancelConfirm => 'Confirm';
+
+  @override
+  String get driverTripCancelBack => 'Back';
+
+  @override
+  String get driverTripCancelNeedConnection =>
+      'We can\'t cancel without a connection. Try again when you\'re back online.';
+
+  @override
+  String get driverTripCancelReasonsLoadError =>
+      'We couldn\'t load the reasons. Check your connection and try again.';
+
+  @override
+  String get driverTripCancelReasonsEmpty =>
+      'There are no cancel reasons available right now.';
+
+  @override
+  String get driverTripCancelConfirmFallback =>
+      'If you confirm, the trip is cancelled. The rider will look for another driver.';
+
+  @override
+  String get driverTripCancelRetry => 'Try again';
+
+  @override
+  String get driverTripCancelError =>
+      'We couldn\'t cancel the trip. Check your connection and try again.';
+
+  @override
+  String get driverTripCancelCapExceeded =>
+      'Wait a moment before going online again.';
+
+  @override
+  String get driverTripClaimAsk => 'Do you want to send a claim to our team?';
+
+  @override
+  String get driverTripClaimHint =>
+      'Tell us what happened. Our team can review the trip.';
+
+  @override
+  String get driverTripClaimSend => 'Send claim';
+
+  @override
+  String get driverTripClaimSkip => 'Not now';
+
+  @override
+  String get driverTripClaimError =>
+      'We couldn\'t send the claim. Try again later.';
+
+  @override
+  String get driverTripClaimAlreadySent =>
+      'You already sent a claim for this trip.';
+
+  @override
+  String get driverTripAlreadyFinalized =>
+      'This trip already ended. Refresh to continue.';
+
+  @override
+  String get driverTripCannotCancelRace =>
+      'The trip changed stage. Refresh and try again.';
+
+  @override
+  String get driverTripClaimSent => 'We sent your claim to our team.';
+
+  @override
+  String get driverTripCancelWaitStillWaiting =>
+      'You\'re still in the waiting time.';
+
+  @override
+  String get driverTripCancelWaitStillGrace =>
+      'You\'re still in the grace period.';
+
+  @override
+  String get driverTripCancelWaitNotAtPickup =>
+      'It looks like you\'re not at the pickup point.';
+
+  @override
+  String get driverTripCancelWaitNoLocation =>
+      'We couldn\'t confirm you\'re at the pickup point.';
+
+  @override
+  String get driverTripCancelWaitNotEligible =>
+      'The wait-time reason doesn\'t apply at this stage.';
 
   @override
   String get driverTripStartButton => 'Start trip';

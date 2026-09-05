@@ -104,25 +104,42 @@ mixin _DriverRealtimeTripsMixin on StateNotifier<DriverRealtimeState> {
     socket.emit('trip:arrival_reminder', {'tripId': tripId});
   }
 
-  Future<void> submitTripRating({
+  Future<bool> submitTripRating({
     required String tripId,
     required int stars,
     List<String> feedbackCodes = const [],
   }) async {
     final normalizedTripId = tripId.trim();
-    if (normalizedTripId.isEmpty) return;
-    if (stars < 1 || stars > 5) return;
-    if (_rt._tripRatingInFlight.contains(normalizedTripId)) return;
+    if (normalizedTripId.isEmpty) return false;
+    if (stars < 1 || stars > 5) return false;
+    if (_rt._tripRatingInFlight.contains(normalizedTripId)) return false;
     _rt._tripRatingInFlight.add(normalizedTripId);
     try {
-      await _rt._tripRest.submitTripRating(
+      final result = await _rt._tripRest.submitTripRating(
         tripId: normalizedTripId,
         stars: stars,
         feedbackCodes: feedbackCodes,
       );
+      return result.claimEligible;
+    } catch (_) {
+      return false;
     } finally {
       _rt._tripRatingInFlight.remove(normalizedTripId);
     }
+  }
+
+  Future<void> submitTripClaim({
+    required String tripId,
+    required String message,
+    int? stars,
+    List<String> feedbackCodes = const [],
+  }) async {
+    await _rt._tripRest.submitTripClaim(
+      tripId: tripId,
+      message: message,
+      stars: stars,
+      feedbackCodes: feedbackCodes,
+    );
   }
 
   Future<List<DriverRatingFeedbackItem>> fetchDriverRatingFeedbackCatalog({
@@ -143,6 +160,13 @@ mixin _DriverRealtimeTripsMixin on StateNotifier<DriverRealtimeState> {
   Future<List<DriverRatingFeedbackItem>>
   _fetchDriverRatingFeedbackCatalogInternal({required int stars}) async {
     return _rt._tripRest.fetchRatingFeedbackCatalog(stars: stars);
+  }
+
+  Future<List<DriverTripCancelReasonItem>> fetchTripCancelReasons({
+    required String tripId,
+    String? locale,
+  }) {
+    return _rt._tripRest.fetchTripCancelReasons(tripId: tripId, locale: locale);
   }
 
   void markArrived() {
@@ -325,5 +349,61 @@ mixin _DriverRealtimeTripsMixin on StateNotifier<DriverRealtimeState> {
     );
     _clearOfferErrorForTrip(tripId);
     _rt._socket!.emit('trip:reject', {'tripId': tripId});
+  }
+
+  Future<bool> cancelAssignedTrip({
+    required String reasonCode,
+    String? reasonNote,
+  }) async {
+    final trip = state.activeTrip;
+    if (trip == null) return false;
+    if (!driverTripCanCancelAssigned(trip.status)) {
+      debugPrint(
+        '[DRIVER_RT] cancelAssignedTrip ignorado: status=${trip.status}',
+      );
+      return false;
+    }
+    if (state.processingTripAction != null) return false;
+    final tripId = trip.tripId;
+    state = state.copyWith(
+      processingTripAction: 'cancel',
+      tripErrorMessage: null,
+    );
+    try {
+      await _rt._tripRest.cancelAssignedTrip(
+        tripId: tripId,
+        reasonCode: reasonCode,
+        reasonNote: reasonNote,
+      );
+    } catch (e) {
+      debugPrint('[DRIVER_RT] cancelAssignedTrip error: $e');
+      if (state.activeTrip?.tripId == tripId) {
+        state = state.copyWith(
+          processingTripAction: null,
+          tripErrorMessage: DriverTripRestService.waitBlockReasonOf(e) ??
+              'cancel_failed',
+        );
+      }
+      return false;
+    }
+    if (state.activeTrip?.tripId != tripId) return true;
+    state = state.copyWith(
+      pendingOffers: state.pendingOffers
+          .where((o) => o.tripId != tripId)
+          .toList(growable: false),
+      activeTrip: null,
+      tripPendingRating: null,
+      lastCompletedTripId: tripId,
+      processingTripAction: null,
+      tripErrorMessage: null,
+      ignoreActiveTripRestoreTripId: tripId,
+      ignoreActiveTripRestoreUntilMs: DateTime.now()
+          .add(const Duration(seconds: 60))
+          .millisecondsSinceEpoch,
+      chatMessages: const [],
+    );
+    _rt._setAvailability('available');
+    unawaited(_rt._syncDriverForegroundSession());
+    return true;
   }
 }

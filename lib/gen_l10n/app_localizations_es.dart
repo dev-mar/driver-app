@@ -1179,12 +1179,121 @@ class AppLocalizationsEs extends AppLocalizations {
       'El pasajero ya sale al punto de recojo.';
 
   @override
+  String get driverNotifyPickupGraceTitle => 'Tiempo de espera cumplido';
+
+  @override
+  String driverNotifyPickupGraceBody(int minutes) {
+    return 'Tienes $minutes min de gracia en el punto de recojo.';
+  }
+
+  @override
   String get driverArrivalReminderTooltip => 'Avisar otra vez al pasajero';
 
   @override
   String driverArrivalReminderCooldown(int seconds) {
     return 'Podrás volver a avisar en $seconds s';
   }
+
+  @override
+  String get driverTripCancelCta => 'Cancelar viaje';
+
+  @override
+  String get driverTripCancelChooseReason => '¿Por qué cancelas?';
+
+  @override
+  String get driverTripCancelNoteHint => 'Escribe el motivo';
+
+  @override
+  String get driverTripCancelContinue => 'Continuar';
+
+  @override
+  String get driverTripCancelConfirmTitle => 'Confirma la cancelación';
+
+  @override
+  String get driverTripCancelConfirm => 'Confirmar';
+
+  @override
+  String get driverTripCancelBack => 'Volver';
+
+  @override
+  String get driverTripCancelNeedConnection =>
+      'Sin conexión no podemos cancelar. Inténtalo cuando vuelva la señal.';
+
+  @override
+  String get driverTripCancelReasonsLoadError =>
+      'No pudimos cargar los motivos. Revisa tu conexión e intenta de nuevo.';
+
+  @override
+  String get driverTripCancelReasonsEmpty =>
+      'Ahora no hay motivos disponibles para cancelar.';
+
+  @override
+  String get driverTripCancelConfirmFallback =>
+      'Si confirmas, el viaje se cancela. El pasajero vuelve a buscar conductor.';
+
+  @override
+  String get driverTripCancelRetry => 'Intentar de nuevo';
+
+  @override
+  String get driverTripCancelError =>
+      'No pudimos cancelar el viaje. Revisa tu conexión e intenta de nuevo.';
+
+  @override
+  String get driverTripCancelCapExceeded =>
+      'Espera un momento antes de volver a conectarte.';
+
+  @override
+  String get driverTripClaimAsk =>
+      '¿Quieres enviarle un reclamo a nuestro equipo?';
+
+  @override
+  String get driverTripClaimHint =>
+      'Cuéntanos qué pasó. Nuestro equipo puede revisar el viaje.';
+
+  @override
+  String get driverTripClaimSend => 'Enviar reclamo';
+
+  @override
+  String get driverTripClaimSkip => 'Ahora no';
+
+  @override
+  String get driverTripClaimError =>
+      'No pudimos enviar el reclamo. Inténtalo más tarde.';
+
+  @override
+  String get driverTripClaimAlreadySent =>
+      'Ya enviaste un reclamo de este viaje.';
+
+  @override
+  String get driverTripAlreadyFinalized =>
+      'Este viaje ya se cerró. Actualiza el estado para continuar.';
+
+  @override
+  String get driverTripCannotCancelRace =>
+      'El viaje cambió de etapa. Actualiza e inténtalo de nuevo.';
+
+  @override
+  String get driverTripClaimSent => 'Enviamos tu reclamo a nuestro equipo.';
+
+  @override
+  String get driverTripCancelWaitStillWaiting =>
+      'Aún estás en el tiempo de espera.';
+
+  @override
+  String get driverTripCancelWaitStillGrace =>
+      'Aún estás en el tiempo de gracia.';
+
+  @override
+  String get driverTripCancelWaitNotAtPickup =>
+      'Parece que no estás en el punto de recojo.';
+
+  @override
+  String get driverTripCancelWaitNoLocation =>
+      'No pudimos confirmar que estás en el punto de recojo.';
+
+  @override
+  String get driverTripCancelWaitNotEligible =>
+      'El motivo de tiempo de espera no aplica en esta etapa.';
 
   @override
   String get driverTripStartButton => 'Iniciar viaje';

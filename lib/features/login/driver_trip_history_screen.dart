@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/ui/driver_secondary_scaffold.dart';
 import '../../core/utils/money_formatter.dart';
 import '../../gen_l10n/app_localizations.dart';
+import 'driver_trip_rest_service.dart';
 
 class DriverTripHistoryScreen extends StatefulWidget {
   const DriverTripHistoryScreen({super.key});
@@ -915,8 +916,26 @@ class _DriverTripTileState extends State<_DriverTripTile> {
               padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  'ID: ${trip.id}\n${l10n.driverTripHistoryStatusLabel}: $statusText',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ID: ${trip.id}\n${l10n.driverTripHistoryStatusLabel}: $statusText',
+                    ),
+                    if (trip.claimEligible) ...[
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: () => _sendHistoryClaim(trip.id),
+                          child: Text(l10n.driverTripClaimSend),
+                        ),
+                      ),
+                    ] else if (trip.claimSubmitted) ...[
+                      const SizedBox(height: 8),
+                      Text(l10n.driverTripClaimAlreadySent),
+                    ],
+                  ],
                 ),
               ),
             ),
@@ -924,6 +943,51 @@ class _DriverTripTileState extends State<_DriverTripTile> {
         ],
       ),
     );
+  }
+
+  Future<void> _sendHistoryClaim(String tripId) async {
+    final l10n = widget.l10n;
+    final controller = TextEditingController();
+    final send = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.driverTripClaimAsk),
+        content: TextField(
+          controller: controller,
+          minLines: 3,
+          maxLines: 6,
+          decoration: InputDecoration(hintText: l10n.driverTripClaimHint),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.driverTripClaimSkip),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.driverTripClaimSend),
+          ),
+        ],
+      ),
+    );
+    final text = controller.text.trim();
+    controller.dispose();
+    if (send != true || text.length < 10 || !mounted) return;
+    try {
+      await DriverTripRestService().submitTripClaim(
+        tripId: tripId,
+        message: text,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(l10n.driverTripClaimSent)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(l10n.driverTripClaimError)),
+      );
+    }
   }
 
   String _statusText(AppLocalizations l10n, String status) {
@@ -1015,6 +1079,8 @@ class DriverTripHistoryItem {
     this.finalPrice,
     this.createdAt,
     this.currencyCode,
+    this.claimEligible = false,
+    this.claimSubmitted = false,
   });
 
   final String id;
@@ -1023,6 +1089,8 @@ class DriverTripHistoryItem {
   final double? finalPrice;
   final DateTime? createdAt;
   final String? currencyCode;
+  final bool claimEligible;
+  final bool claimSubmitted;
 
   factory DriverTripHistoryItem.fromJson(Map<String, dynamic> json) {
     double? parseNum(dynamic v) {
@@ -1040,6 +1108,8 @@ class DriverTripHistoryItem {
           ? DateTime.tryParse('${json['createdAt']}')
           : null,
       currencyCode: (json['currencyCode'] ?? json['currency'])?.toString(),
+      claimEligible: json['claimEligible'] == true || json['claim_eligible'] == true,
+      claimSubmitted: json['claimSubmitted'] == true || json['claim_submitted'] == true,
     );
   }
 }

@@ -772,6 +772,29 @@ void _bindDriverRealtimeSocketHandlers(
             debugPrint('[DRIVER_RT] Error manejando trip:passenger_en_route: $e');
           }
         });
+
+        socket.on('trip:pickup_grace', (data) {
+          try {
+            if (data is! Map) return;
+            final tripId = data['tripId']?.toString();
+            final current = state.activeTrip;
+            if (tripId == null || current == null || current.tripId != tripId) {
+              return;
+            }
+            if (current.status != 'arrived') return;
+            final raw = data['remainingSec'] ?? data['remaining_sec'];
+            final remaining = raw is num ? raw.toInt() : int.tryParse('$raw') ?? 0;
+            unawaited(
+              DriverNotificationService.instance.showPickupGraceIfBackground(
+                isAppInForeground: DriverAppVisibility.isInForeground.value,
+                tripId: tripId,
+                remainingSec: remaining,
+              ),
+            );
+          } catch (e) {
+            debugPrint('[DRIVER_RT] Error manejando trip:pickup_grace: $e');
+          }
+        });
   
         socket.on('connection:ack', (data) {
           try {
