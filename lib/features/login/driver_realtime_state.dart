@@ -1,4 +1,5 @@
 import 'driver_trip_offer.dart';
+import 'driver_vehicle_display.dart';
 
 /// Convención de errores (login/realtime):
 /// - Estado/controladores publican códigos (`errorCode`, `tripErrorCode`) en
@@ -67,6 +68,9 @@ class DriverRealtimeState {
   /// Ej. "Toyota Corolla · ABC-123" desde `connection:ack.profile.vehicle`.
   final String? driverVehicleLabel;
 
+  /// Marca, modelo y placa por separado para el mini perfil del home.
+  final DriverVehicleParts? driverVehicleParts;
+
   /// Valoración media del conductor si el backend la envía en el perfil.
   final double? driverRating;
 
@@ -123,6 +127,7 @@ class DriverRealtimeState {
     this.driverBearing,
     this.driverDisplayName,
     this.driverVehicleLabel,
+    this.driverVehicleParts,
     this.driverRating,
     this.driverPictureProfile,
     this.driverPictureExpiresAt,
@@ -164,6 +169,7 @@ class DriverRealtimeState {
     Object? driverBearing = copyWithUnset,
     Object? driverDisplayName = copyWithUnset,
     Object? driverVehicleLabel = copyWithUnset,
+    Object? driverVehicleParts = copyWithUnset,
     Object? driverRating = copyWithUnset,
     Object? driverPictureProfile = copyWithUnset,
     Object? driverPictureExpiresAt = copyWithUnset,
@@ -235,6 +241,9 @@ class DriverRealtimeState {
       driverVehicleLabel: identical(driverVehicleLabel, copyWithUnset)
           ? this.driverVehicleLabel
           : driverVehicleLabel as String?,
+      driverVehicleParts: identical(driverVehicleParts, copyWithUnset)
+          ? this.driverVehicleParts
+          : driverVehicleParts as DriverVehicleParts?,
       driverRating: identical(driverRating, copyWithUnset)
           ? this.driverRating
           : driverRating as double?,
@@ -291,6 +300,7 @@ class DriverRealtimeState {
     driverBearing: null,
     driverDisplayName: null,
     driverVehicleLabel: null,
+    driverVehicleParts: null,
     driverRating: null,
     driverPictureProfile: null,
     driverPictureExpiresAt: null,
@@ -343,7 +353,8 @@ extension DriverRealtimeStateAvailabilityUi on DriverRealtimeState {
     if (hasVehicleRegistered == false) return false;
     if (creditsOnlineGateEnabled != true) return false;
     if (activeTrip != null) return false;
-    return insufficientCreditsToGoOnline || errorCode == 'DRIVER_CREDITS_BELOW_MIN';
+    return insufficientCreditsToGoOnline ||
+        errorCode == 'DRIVER_CREDITS_BELOW_MIN';
   }
 
   bool get showDriverCreditsLowWarning {

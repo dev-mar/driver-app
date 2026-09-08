@@ -212,6 +212,7 @@ void _bindDriverRealtimeSocketHandlers(
   
         socket.on('trip:accepted', (data) {
           try {
+            _rt._cancelAcceptWatchdog();
             if (data is! Map) return;
             final tripId = data['tripId']?.toString();
             final status = data['status']?.toString() ?? 'accepted';
@@ -385,6 +386,7 @@ void _bindDriverRealtimeSocketHandlers(
 
         socket.on('trip:error', (data) {
           try {
+            _rt._cancelAcceptWatchdog();
             if (data is! Map) return;
             final code = data['code']?.toString();
             final message = data['message']?.toString();

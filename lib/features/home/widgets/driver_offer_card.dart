@@ -175,6 +175,55 @@ class DriverTripOfferCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (offer.hasPromoBreakdown) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        l10n.driverTripPromoCashDue(
+                          _formatPrice(
+                            offer.cashDuePassenger,
+                            currencyCode: offer.currencyCode,
+                          ),
+                        ),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary.withValues(alpha: 0.95),
+                        ),
+                      ),
+                      Text(
+                        offer.isPassengerReferralSupport
+                            ? l10n.driverTripSupportCompanyPays(
+                                _formatPrice(
+                                  offer.companyGuaranteeToDriver,
+                                  currencyCode: offer.currencyCode,
+                                ),
+                              )
+                            : l10n.driverTripPromoCompanyPays(
+                                _formatPrice(
+                                  offer.companyGuaranteeToDriver,
+                                  currencyCode: offer.currencyCode,
+                                ),
+                              ),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary.withValues(alpha: 0.95),
+                        ),
+                      ),
+                      Text(
+                        l10n.driverTripPromoYouReceive(
+                          _formatPrice(
+                            offer.offeredPrice,
+                            currencyCode: offer.currencyCode,
+                          ),
+                        ),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
                     if (isWebDispatch) ...[
                       const SizedBox(height: 8),
                       Text(

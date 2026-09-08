@@ -85,6 +85,7 @@ String? driverHomeOfferErrorMessage({
 }) {
   final mapped = switch (perOfferCode) {
     'NO_CONNECTION' => l10n.driverOfferErrorNoConnection,
+    'ACCEPT_TIMEOUT' => l10n.driverOfferErrorAcceptTimeout,
     'OFFER_EXPIRED' => l10n.driverOfferErrorExpired,
     'TRIP_ALREADY_PROCESSED' ||
     'TRIP_ALREADY_ACCEPTED' ||

@@ -62,12 +62,12 @@ class DriverHomeActiveTripView extends ConsumerWidget {
         errorMessage: tripErrorMessage,
         onMarkArrived: () =>
             ref.read(driverRealtimeProvider.notifier).markArrived(),
-        onStartTrip: () => ref.read(driverRealtimeProvider.notifier).startTrip(),
+        onStartTrip: () =>
+            ref.read(driverRealtimeProvider.notifier).startTrip(),
         onCompleteTrip: () =>
             ref.read(driverRealtimeProvider.notifier).completeTrip(),
-        onArrivalReminder: () => ref
-            .read(driverRealtimeProvider.notifier)
-            .sendArrivalReminder(),
+        onArrivalReminder: () =>
+            ref.read(driverRealtimeProvider.notifier).sendArrivalReminder(),
         arrivalReminderCooldownUntilMs: realtime.arrivalReminderCooldownUntilMs,
         onNavigateToPickup: () {
           if (trip.pickupLat == null || trip.pickupLng == null) return;
@@ -98,7 +98,7 @@ class DriverHomeActiveTripView extends ConsumerWidget {
 }
 
 /// Lista de disponibilidad, gates y ofertas pendientes (home sin mapa).
-class DriverHomeRequestsPanel extends ConsumerWidget {
+class DriverHomeRequestsPanel extends ConsumerStatefulWidget {
   const DriverHomeRequestsPanel({
     super.key,
     required this.localAuth,
@@ -119,123 +119,186 @@ class DriverHomeRequestsPanel extends ConsumerWidget {
   final Future<void> Function(BuildContext context) onAfterOnlineEnabled;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DriverHomeRequestsPanel> createState() =>
+      _DriverHomeRequestsPanelState();
+}
+
+class _DriverHomeRequestsPanelState
+    extends ConsumerState<DriverHomeRequestsPanel> {
+  static const int _collapseOfferThreshold = 2;
+  static const double _collapseOffset = 28;
+  static const double _expandOffset = 8;
+
+  bool _availabilityCollapsed = false;
+
+  void _setCollapsed(bool value) {
+    if (_availabilityCollapsed == value) return;
+    setState(() => _availabilityCollapsed = value);
+  }
+
+  bool _onScroll(ScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical) return false;
+    final realtime = ref.read(driverRealtimeProvider);
+    final manyOffers = realtime.pendingOffers.length >= _collapseOfferThreshold;
+    if (!manyOffers || realtime.connecting) {
+      _setCollapsed(false);
+      return false;
+    }
+    final offset = notification.metrics.pixels;
+    if (offset > _collapseOffset) {
+      _setCollapsed(true);
+    } else if (offset <= _expandOffset) {
+      _setCollapsed(false);
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final realtime = ref.watch(driverRealtimeProvider);
     final pendingOffers = realtime.pendingOffers;
+    if (pendingOffers.length < _collapseOfferThreshold &&
+        _availabilityCollapsed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _setCollapsed(false);
+      });
+    }
 
     return FadeTransition(
-      opacity: listFade,
+      opacity: widget.listFade,
       child: SlideTransition(
-        position: listSlide,
+        position: widget.listSlide,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          child: CustomScrollView(
-            slivers: [
-              if (showProminentGateError &&
-                  errorMessage != null &&
-                  !realtime.showDriverCreditsBlockedNotice)
-                SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      DriverAnimatedGateNotice(
-                        message: errorMessage!,
-                        errorCode: realtime.errorCode,
-                      ),
-                      const SizedBox(height: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DriverHomeOnlineAvailabilityPanel(
+                localAuth: widget.localAuth,
+                onAfterOnlineEnabled: widget.onAfterOnlineEnabled,
+                collapsed: _availabilityCollapsed,
+                onExpandRequest: () => _setCollapsed(false),
+              ),
+              const SizedBox(height: AppFoundation.spacingLg),
+              Expanded(
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: _onScroll,
+                  child: CustomScrollView(
+                    slivers: [
+                      if (widget.showProminentGateError &&
+                          widget.errorMessage != null &&
+                          !realtime.showDriverCreditsBlockedNotice)
+                        SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              DriverAnimatedGateNotice(
+                                message: widget.errorMessage!,
+                                errorCode: realtime.errorCode,
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                          ),
+                        ),
+                      if (realtime.showDriverCreditsBlockedNotice ||
+                          realtime.showDriverCreditsLowWarning)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: DriverCreditsNoticeCard.fromRealtime(
+                              realtime,
+                            ),
+                          ),
+                        ),
+                      if (widget.blockOnlineForTrips)
+                        SliverToBoxAdapter(
+                          child: DriverHomeVehicleRegistrationBanner(),
+                        ),
+                      if (widget.errorMessage != null &&
+                          !widget.showProminentGateError)
+                        SliverToBoxAdapter(
+                          child: DriverHomeOnlinePermissionErrorSection(
+                            errorMessage: widget.errorMessage!,
+                            errorCode: realtime.errorCode,
+                            l10n: l10n,
+                            animated: true,
+                          ),
+                        ),
+                      if (pendingOffers.isNotEmpty) ...[
+                        SliverToBoxAdapter(
+                          child: _DriverHomeOffersHeader(
+                            count: pendingOffers.length,
+                          ),
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final offer = pendingOffers[index];
+                              final perOfferCode = realtime
+                                  .offersErrorCodeByTripId[offer.tripId];
+                              final offerErrorMessage =
+                                  driverHomeOfferErrorMessage(
+                                    l10n: l10n,
+                                    perOfferCode: perOfferCode,
+                                    fallbackMessage:
+                                        realtime
+                                            .offersErrorMessageByTripId[offer
+                                            .tripId],
+                                  );
+                              return Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: index < pendingOffers.length - 1
+                                      ? 8
+                                      : 0,
+                                ),
+                                child: DriverTripOfferCard(
+                                  l10n: l10n,
+                                  offer: offer,
+                                  isProcessing:
+                                      realtime.processingOfferTripId ==
+                                      offer.tripId,
+                                  isProcessingAccept:
+                                      realtime.processingOfferTripId ==
+                                          offer.tripId &&
+                                      realtime.processingIsAccept,
+                                  errorMessage: offerErrorMessage,
+                                  onAccept: () => ref
+                                      .read(driverRealtimeProvider.notifier)
+                                      .acceptOffer(offer.tripId),
+                                  onReject: () => ref
+                                      .read(driverRealtimeProvider.notifier)
+                                      .rejectOffer(offer.tripId),
+                                ),
+                              );
+                            }, childCount: pendingOffers.length),
+                          ),
+                        ),
+                      ] else ...[
+                        SliverToBoxAdapter(
+                          child: Text(
+                            l10n.driverHomeRequestsTitle,
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(color: AppColors.textPrimary),
+                          ),
+                        ),
+                        const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: DriverEmptyStateCard(
+                            message: l10n.driverHomeRequestsEmpty,
+                            icon: Icons.hourglass_empty_rounded,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
-              if (realtime.showDriverCreditsBlockedNotice ||
-                  realtime.showDriverCreditsLowWarning)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: DriverCreditsNoticeCard.fromRealtime(realtime),
-                  ),
-                ),
-              if (blockOnlineForTrips)
-                SliverToBoxAdapter(
-                  child: DriverHomeVehicleRegistrationBanner(),
-                ),
-              SliverToBoxAdapter(
-                child: DriverHomeOnlineAvailabilityPanel(
-                  localAuth: localAuth,
-                  onAfterOnlineEnabled: onAfterOnlineEnabled,
-                ),
               ),
-              if (errorMessage != null && !showProminentGateError)
-                SliverToBoxAdapter(
-                  child: DriverHomeOnlinePermissionErrorSection(
-                    errorMessage: errorMessage!,
-                    errorCode: realtime.errorCode,
-                    l10n: l10n,
-                    animated: true,
-                  ),
-                ),
-              SliverToBoxAdapter(
-                child: SizedBox(height: AppFoundation.spacingXl),
-              ),
-              if (pendingOffers.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: _DriverHomeOffersHeader(count: pendingOffers.length),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final offer = pendingOffers[index];
-                      final perOfferCode =
-                          realtime.offersErrorCodeByTripId[offer.tripId];
-                      final offerErrorMessage = driverHomeOfferErrorMessage(
-                        l10n: l10n,
-                        perOfferCode: perOfferCode,
-                        fallbackMessage:
-                            realtime.offersErrorMessageByTripId[offer.tripId],
-                      );
-                      return Padding(
-                        padding: EdgeInsets.only(
-                          bottom: index < pendingOffers.length - 1 ? 8 : 0,
-                        ),
-                        child: DriverTripOfferCard(
-                          l10n: l10n,
-                          offer: offer,
-                          isProcessing:
-                              realtime.processingOfferTripId == offer.tripId,
-                          isProcessingAccept:
-                              realtime.processingOfferTripId == offer.tripId &&
-                              realtime.processingIsAccept,
-                          errorMessage: offerErrorMessage,
-                          onAccept: () => ref
-                              .read(driverRealtimeProvider.notifier)
-                              .acceptOffer(offer.tripId),
-                          onReject: () => ref
-                              .read(driverRealtimeProvider.notifier)
-                              .rejectOffer(offer.tripId),
-                        ),
-                      );
-                    }, childCount: pendingOffers.length),
-                  ),
-                ),
-              ] else ...[
-                SliverToBoxAdapter(
-                  child: Text(
-                    l10n.driverHomeRequestsTitle,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 8)),
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: DriverEmptyStateCard(
-                    message: l10n.driverHomeRequestsEmpty,
-                    icon: Icons.hourglass_empty_rounded,
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -338,10 +401,8 @@ Future<void> _openDriverAssignedTripCancel(
   final choice = await showDriverTripCancelReasonSheet(
     context: context,
     connected: ctrl.isSocketConnected,
-    loadReasons: () => ctrl.fetchTripCancelReasons(
-      tripId: trip.tripId,
-      locale: localeCode,
-    ),
+    loadReasons: () =>
+        ctrl.fetchTripCancelReasons(tripId: trip.tripId, locale: localeCode),
   );
   if (choice == null || !context.mounted) return;
   final ok = await ctrl.cancelAssignedTrip(

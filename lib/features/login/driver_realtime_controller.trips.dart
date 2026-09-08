@@ -317,6 +317,30 @@ mixin _DriverRealtimeTripsMixin on StateNotifier<DriverRealtimeState> {
     );
     _clearOfferErrorForTrip(tripId);
     _rt._socket!.emit('trip:accept', {'tripId': tripId});
+    _armAcceptWatchdog(tripId);
+  }
+
+  void _cancelAcceptWatchdog() {
+    _rt._acceptOfferWatchdog?.cancel();
+    _rt._acceptOfferWatchdog = null;
+  }
+
+  void _armAcceptWatchdog(String tripId) {
+    _cancelAcceptWatchdog();
+    _rt._acceptOfferWatchdog = Timer(const Duration(seconds: 15), () {
+      if (_rt._disposed) return;
+      if (state.processingOfferTripId != tripId) return;
+      if (state.activeTrip?.tripId == tripId) return;
+      state = state.copyWith(
+        processingOfferTripId: null,
+        processingIsAccept: false,
+      );
+      _setOfferErrorForTrip(
+        tripId: tripId,
+        code: 'ACCEPT_TIMEOUT',
+        message: null,
+      );
+    });
   }
 
   Future<void> rejectOffer(String tripId) async {

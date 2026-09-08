@@ -62,6 +62,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState>
   Timer? _tripReconnectTimer;
   Timer? _availabilityReconnectTimer;
   Timer? _presenceHeartbeatTimer;
+  Timer? _acceptOfferWatchdog;
   final Random _reconnectJitterRandom = Random();
   int _availabilityReconnectAttempts = 0;
   int _tripReconnectAttempts = 0;
@@ -109,6 +110,8 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState>
     _cancelTripReconnectLoop();
     _cancelAvailabilityReconnectLoop();
     _cancelPresenceHeartbeat();
+    _acceptOfferWatchdog?.cancel();
+    _acceptOfferWatchdog = null;
     _userRequestedOffline = true;
     _availabilitySessionDesired = false;
     unawaited(_goOffline(internal: true, preserveTripState: false));

@@ -76,6 +76,12 @@
   "driverFcmOpenedTripOfferHint": "Acabamos de cargar la solicitud desde la alerta, revisa la lista abajo. Si no aparece, puede haber expirado o falló la conexión: vuelve a ponerte en línea.",
   "driverFcmOpenedTripOfferOfflineHint": "Estás fuera de línea. Activa disponibilidad para poder atender solicitudes desde las alertas.",
   "driverHomeMiniVehicleEmpty": "Vehículo",
+  "driverHomeMiniTierStart": "Start",
+  "driverHomeMiniTierEssential": "Esencial",
+  "driverHomeMiniTierPro": "Pro",
+  "driverHomeMiniTierPremium": "Premium",
+  "driverHomeMiniTierElite": "Elite",
+  "driverHomeMiniCollapsedHint": "Toca para ver tus datos",
   "driverHomeMiniRating": "{rating} ★",
   "@driverHomeMiniRating": {
     "placeholders": {
@@ -523,6 +529,30 @@
   "driverTripReject": "Rechazar",
   "driverTripAccept": "Aceptar",
   "driverTripOfferPriceTbd": "A acordar",
+  "driverTripPromoCashDue": "El pasajero paga {amount} en efectivo",
+  "@driverTripPromoCashDue": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "driverTripPromoCompanyPays": "TEXIAPP abona {amount}",
+  "driverTripSupportCompanyPays": "Abono de la empresa: {amount}",
+  "@driverTripSupportCompanyPays": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "@driverTripPromoCompanyPays": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "driverTripPromoYouReceive": "Tú recibes {amount}",
+  "@driverTripPromoYouReceive": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
   "driverTripOfferBadgeNew": "Nueva",
   "driverTripPaymentCash": "Efectivo",
   "driverTripPaymentQr": "QR",
@@ -556,6 +586,7 @@
   "driverOfferErrorNoConnection": "Sin conexión con el servidor.",
   "driverOfferErrorExpired": "Esta oferta ya no está disponible.",
   "driverOfferErrorTaken": "El viaje ya fue asignado o no está disponible.",
+  "driverOfferErrorAcceptTimeout": "No se pudo aceptar. Inténtalo de nuevo.",
   "driverTripErrorGeneric": "No se pudo actualizar el estado del viaje.",
   "driverTripNavigatePickup": "Navegar al origen",
   "driverTripNavigateDestination": "Navegar al destino",

@@ -52,6 +52,21 @@ class DriverTripOffer {
   /// Requerimientos especiales (con recargo). Ausente = ninguno.
   final List<String> tripSpecials;
 
+  /// Aditivo: lo que el pasajero paga en efectivo si hay beneficio TEXIAPP.
+  final double? cashDuePassenger;
+
+  /// Aditivo: lo que TEXIAPP cubre al conductor.
+  final double? companyGuaranteeToDriver;
+
+  /// Aditivo: descuento aplicado. Ausente = sin promo.
+  final double? promoDiscountAmount;
+
+  /// Aditivo: monto de apoyo TEXIAPP (referidos pasajero).
+  final double? supportAmount;
+
+  /// Aditivo: `passenger_referral` cuando el abono es de la empresa (no créditos).
+  final String? supportSource;
+
   const DriverTripOffer({
     required this.tripId,
     this.offeredPrice,
@@ -69,10 +84,29 @@ class DriverTripOffer {
     this.paymentMethod = 'cash',
     this.tripExtras = const [],
     this.tripSpecials = const [],
+    this.cashDuePassenger,
+    this.companyGuaranteeToDriver,
+    this.promoDiscountAmount,
+    this.supportAmount,
+    this.supportSource,
   });
 
   bool get isAdminWebDispatch =>
       DriverTripOfferSource.isAdminWebDispatch(requestSource);
+
+  bool get hasPromoBreakdown =>
+      cashDuePassenger != null &&
+      companyGuaranteeToDriver != null &&
+      companyGuaranteeToDriver! > 0;
+
+  bool get isPassengerReferralSupport {
+    final src = supportSource?.trim().toLowerCase() ?? '';
+    if (src == 'passenger_referral' ||
+        src == 'passenger_referral_support') {
+      return true;
+    }
+    return (supportAmount ?? 0) > 0;
+  }
 }
 
 /// Construye [DriverTripOffer] desde payload socket o FCM (camelCase backend).
@@ -110,6 +144,21 @@ DriverTripOffer driverTripOfferFromMap(Map<dynamic, dynamic> data) {
     tripSpecials: parseDriverTripSpecials(
       data['tripSpecials'] ?? data['passenger_specials'] ?? data['specials'],
     ),
+    cashDuePassenger: _parseOfferDouble(
+      data['cashDuePassenger'] ?? data['cash_due_passenger'],
+    ),
+    companyGuaranteeToDriver: _parseOfferDouble(
+      data['companyGuaranteeToDriver'] ?? data['company_guarantee_to_driver'],
+    ),
+    promoDiscountAmount: _parseOfferDouble(
+      data['promoDiscountAmount'] ?? data['promo_discount_amount'],
+    ),
+    supportAmount: _parseOfferDouble(
+      data['supportAmount'] ?? data['support_amount'],
+    ),
+    supportSource: (data['supportSource'] ?? data['support_source'])
+        ?.toString()
+        .trim(),
   );
 }
 

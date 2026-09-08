@@ -204,6 +204,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverHomeMiniVehicleEmpty => 'Vehicle';
 
   @override
+  String get driverHomeMiniTierStart => 'Start';
+
+  @override
+  String get driverHomeMiniTierEssential => 'Essential';
+
+  @override
+  String get driverHomeMiniTierPro => 'Pro';
+
+  @override
+  String get driverHomeMiniTierPremium => 'Premium';
+
+  @override
+  String get driverHomeMiniTierElite => 'Elite';
+
+  @override
+  String get driverHomeMiniCollapsedHint => 'Tap to see your details';
+
+  @override
   String driverHomeMiniRating(String rating) {
     return '$rating ★';
   }
@@ -1308,6 +1326,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverTripOfferPriceTbd => 'To be agreed';
 
   @override
+  String driverTripPromoCashDue(String amount) {
+    return 'The passenger pays $amount in cash';
+  }
+
+  @override
+  String driverTripPromoCompanyPays(String amount) {
+    return 'TEXIAPP covers $amount';
+  }
+
+  @override
+  String driverTripSupportCompanyPays(String amount) {
+    return 'Company coverage: $amount';
+  }
+
+  @override
+  String driverTripPromoYouReceive(String amount) {
+    return 'You receive $amount';
+  }
+
+  @override
   String get driverTripOfferBadgeNew => 'New';
 
   @override
@@ -1417,6 +1455,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverOfferErrorTaken => 'Trip already assigned or cancelled.';
+
+  @override
+  String get driverOfferErrorAcceptTimeout => 'Couldn’t accept. Try again.';
 
   @override
   String get driverTripErrorGeneric => 'Could not update trip status.';

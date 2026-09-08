@@ -506,11 +506,16 @@ class _ClubReferralsCard extends StatelessWidget {
             TextField(
               controller: claimCtrl,
               textCapitalization: TextCapitalization.characters,
+              maxLength: 24,
+              inputFormatters: [
+                LengthLimitingTextInputFormatter(24),
+              ],
               style: const TextStyle(color: ClubColors.text),
               decoration: InputDecoration(
                 hintText: l10n.driverClubEnterCodeHint,
                 filled: true,
                 fillColor: ClubColors.cardHi,
+                counterText: '',
               ),
             ),
             if (claimError != null) ...[

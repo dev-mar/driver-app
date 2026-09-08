@@ -61,6 +61,20 @@ void main() {
       expect(fromJson.tripExtras, ['child_seat', 'wheelchair']);
     });
 
+    test('parsea supportAmount y supportSource de apoyo referidos', () {
+      final offer = driverTripOfferFromMap({
+        'tripId': 't-support',
+        'cashDuePassenger': 10,
+        'companyGuaranteeToDriver': 2,
+        'promoDiscountAmount': 2,
+        'supportAmount': 2,
+        'supportSource': 'passenger_referral',
+      });
+      expect(offer.hasPromoBreakdown, isTrue);
+      expect(offer.isPassengerReferralSupport, isTrue);
+      expect(offer.supportAmount, 2);
+    });
+
     test('parsea tripSpecials desde lista y JSON FCM', () {
       final fromList = driverTripOfferFromMap({
         'tripId': 't-3',

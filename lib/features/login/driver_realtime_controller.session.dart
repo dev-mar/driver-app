@@ -10,13 +10,16 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
     final map = Map<String, dynamic>.from(profileRaw);
     final fn = map['fullName']?.toString().trim();
     String? vehicleLabel;
+    DriverVehicleParts? vehicleParts;
     final vehicle = map['vehicle'];
     if (vehicle is Map) {
-      vehicleLabel = buildDriverVehicleLabelFromAckMap(
-        Map<String, dynamic>.from(vehicle),
-      );
+      final vehicleMap = Map<String, dynamic>.from(vehicle);
+      vehicleParts = buildDriverVehiclePartsFromAckMap(vehicleMap);
+      vehicleLabel = buildDriverVehicleLabelFromAckMap(vehicleMap);
     }
+    vehicleParts ??= buildDriverVehiclePartsFromFleetList(map['fleetVehicles']);
     vehicleLabel ??= buildDriverVehicleLabelFromFleetList(map['fleetVehicles']);
+    vehicleParts ??= parseDriverVehiclePartsFromLabel(vehicleLabel);
     double? rating;
     final r = map['averageRating'] ?? map['rating'] ?? map['driverRating'];
     if (r is num) rating = r.toDouble();
@@ -38,6 +41,7 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
         ? fn
         : state.driverDisplayName;
     final newVehicle = vehicleLabel ?? state.driverVehicleLabel;
+    final newVehicleParts = vehicleParts ?? state.driverVehicleParts;
     final newRating = rating ?? state.driverRating;
 
     Object? hasVehicleUpd = DriverRealtimeState.copyWithUnset;
@@ -54,6 +58,7 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
     state = state.copyWith(
       driverDisplayName: newName,
       driverVehicleLabel: newVehicle,
+      driverVehicleParts: newVehicleParts,
       driverRating: newRating,
       driverPictureProfile: picture ?? state.driverPictureProfile,
       driverPictureExpiresAt: pictureExpiresAt ?? state.driverPictureExpiresAt,
@@ -64,9 +69,7 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
   bool _isAuthSocketErrorCode(String code) => code == 'AUTH';
 
   Future<bool> _tryRefreshDriverSession() async {
-    final refreshToken = await DriverSecureStorage.read(
-      'driver_refresh_token',
-    );
+    final refreshToken = await DriverSecureStorage.read('driver_refresh_token');
     if (refreshToken == null || refreshToken.isEmpty) {
       debugPrint('[DRIVER_RT] No hay refresh token para renovar sesión.');
       return false;
@@ -207,6 +210,7 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
       state = state.copyWith(
         driverDisplayName: null,
         driverVehicleLabel: null,
+        driverVehicleParts: null,
         driverRating: null,
         driverPictureProfile: null,
         driverPictureExpiresAt: null,
@@ -227,7 +231,8 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
       final blocked = parseDriverBool(
         sm['goOnlineBlocked'] ?? sm['go_online_blocked'],
       );
-      final reasonRaw = sm['goOnlineBlockReason'] ?? sm['go_online_block_reason'];
+      final reasonRaw =
+          sm['goOnlineBlockReason'] ?? sm['go_online_block_reason'];
       final reason = reasonRaw?.toString().trim();
       final accountBlocked = parseDriverBool(
         sm['accountBlocked'] ?? sm['account_blocked'],
@@ -258,7 +263,9 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
           (state.errorCode == 'DRIVER_ACCOUNT_BLOCKED' && !accountBlocked);
       state = state.copyWith(
         goOnlineBlocked: blocked,
-        goOnlineBlockReason: (reason != null && reason.isNotEmpty) ? reason : null,
+        goOnlineBlockReason: (reason != null && reason.isNotEmpty)
+            ? reason
+            : null,
         accountBlocked: accountBlocked,
         accountBlockReason: (accountReason != null && accountReason.isNotEmpty)
             ? accountReason
@@ -299,6 +306,7 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
       errorCode: null,
       driverDisplayName: null,
       driverVehicleLabel: null,
+      driverVehicleParts: null,
       driverRating: null,
       driverPictureProfile: null,
       driverPictureExpiresAt: null,
@@ -314,9 +322,7 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
         throw const DriverRealtimeException('NO_INTERNET');
       }
 
-      final token = await DriverSecureStorage.read(
-        'driver_token',
-      );
+      final token = await DriverSecureStorage.read('driver_token');
       if (token == null || token.isEmpty) {
         debugPrint('[DRIVER_RT] Token de conductor vacío o nulo.');
         throw const DriverRealtimeException('NO_TOKEN');
@@ -390,7 +396,8 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
       );
       if (preserveTrip) {
         _rt._ensureTripReconnectLoop();
-      } else if (_rt._availabilitySessionDesired && !_rt._userRequestedOffline) {
+      } else if (_rt._availabilitySessionDesired &&
+          !_rt._userRequestedOffline) {
         _rt._ensureAvailabilityReconnectLoop();
       }
     } catch (e, stackTrace) {
@@ -410,7 +417,8 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
       );
       if (preserveTrip) {
         _rt._ensureTripReconnectLoop();
-      } else if (_rt._availabilitySessionDesired && !_rt._userRequestedOffline) {
+      } else if (_rt._availabilitySessionDesired &&
+          !_rt._userRequestedOffline) {
         _rt._ensureAvailabilityReconnectLoop();
       }
     }
@@ -505,7 +513,9 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
         insufficientCreditsToGoOnline: snapshot.insufficientCreditsToGoOnline,
         errorCode: snapshot.insufficientCreditsToGoOnline
             ? 'DRIVER_CREDITS_BELOW_MIN'
-            : (state.errorCode == 'DRIVER_CREDITS_BELOW_MIN' ? null : state.errorCode),
+            : (state.errorCode == 'DRIVER_CREDITS_BELOW_MIN'
+                  ? null
+                  : state.errorCode),
       );
     } catch (_) {
       /* best-effort */

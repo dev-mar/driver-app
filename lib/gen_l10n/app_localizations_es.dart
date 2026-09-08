@@ -204,6 +204,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverHomeMiniVehicleEmpty => 'Vehículo';
 
   @override
+  String get driverHomeMiniTierStart => 'Start';
+
+  @override
+  String get driverHomeMiniTierEssential => 'Esencial';
+
+  @override
+  String get driverHomeMiniTierPro => 'Pro';
+
+  @override
+  String get driverHomeMiniTierPremium => 'Premium';
+
+  @override
+  String get driverHomeMiniTierElite => 'Elite';
+
+  @override
+  String get driverHomeMiniCollapsedHint => 'Toca para ver tus datos';
+
+  @override
   String driverHomeMiniRating(String rating) {
     return '$rating ★';
   }
@@ -1316,6 +1334,26 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverTripOfferPriceTbd => 'A acordar';
 
   @override
+  String driverTripPromoCashDue(String amount) {
+    return 'El pasajero paga $amount en efectivo';
+  }
+
+  @override
+  String driverTripPromoCompanyPays(String amount) {
+    return 'TEXIAPP abona $amount';
+  }
+
+  @override
+  String driverTripSupportCompanyPays(String amount) {
+    return 'Abono de la empresa: $amount';
+  }
+
+  @override
+  String driverTripPromoYouReceive(String amount) {
+    return 'Tú recibes $amount';
+  }
+
+  @override
   String get driverTripOfferBadgeNew => 'Nueva';
 
   @override
@@ -1425,6 +1463,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get driverOfferErrorTaken =>
       'El viaje ya fue asignado o no está disponible.';
+
+  @override
+  String get driverOfferErrorAcceptTimeout =>
+      'No se pudo aceptar. Inténtalo de nuevo.';
 
   @override
   String get driverTripErrorGeneric =>

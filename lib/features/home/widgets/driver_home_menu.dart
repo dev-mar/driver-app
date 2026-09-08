@@ -15,9 +15,10 @@ import '../../../gen_l10n/app_localizations.dart';
 import '../../login/driver_online_auth_sheet.dart';
 import '../../login/driver_realtime_controller.dart';
 import '../../session/driver_operational_profile.dart';
+import '../../login/driver_vehicle_display.dart';
 import 'driver_credits_notice_card.dart';
-import 'driver_home_mini_profile_avatar.dart';
 import 'driver_home_overflow_sheet.dart';
+import 'driver_home_tier_badge.dart';
 
 /// Errores de permisos/GPS al activar online: hint contextual en home.
 const kDriverOnlinePermissionHintCodes = <String>{
@@ -47,7 +48,13 @@ class DriverHomeAppBarMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final canClub = ref.watch(driverOperationalProfileProvider).asData?.value.canOperateAsDriver == true;
+    final canClub =
+        ref
+            .watch(driverOperationalProfileProvider)
+            .asData
+            ?.value
+            .canOperateAsDriver ==
+        true;
 
     return Padding(
       padding: const EdgeInsets.only(right: 4),
@@ -324,15 +331,20 @@ class DriverHomeOnlineAvailabilityPanel extends ConsumerWidget {
     super.key,
     required this.localAuth,
     required this.onAfterOnlineEnabled,
+    this.collapsed = false,
+    this.onExpandRequest,
   });
 
   final LocalAuthentication localAuth;
   final Future<void> Function(BuildContext context) onAfterOnlineEnabled;
+  final bool collapsed;
+  final VoidCallback? onExpandRequest;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final realtime = ref.watch(driverRealtimeProvider);
+    final officialTier = ref.watch(driverHomeClubTierProvider).asData?.value;
     final online = realtime.online;
     final connecting = realtime.connecting;
     final switchVisualOn = realtime.availabilitySwitchVisualOn;
@@ -348,156 +360,72 @@ class DriverHomeOnlineAvailabilityPanel extends ConsumerWidget {
         ? AppColors.success
         : AppColors.textSecondary;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceCard.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(AppFoundation.radiusLg),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          buildDriverHomeMiniProfileAvatar(realtime),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  (realtime.driverDisplayName != null &&
-                          realtime.driverDisplayName!.trim().isNotEmpty)
-                      ? realtime.driverDisplayName!.trim()
-                      : l10n.driverProfileDefaultName,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.35,
-                    color: AppColors.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  (realtime.driverVehicleLabel != null &&
-                          realtime.driverVehicleLabel!.trim().isNotEmpty)
-                      ? realtime.driverVehicleLabel!.trim()
-                      : l10n.driverHomeMiniVehicleEmpty,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    height: 1.25,
-                    color: AppColors.textSecondary.withValues(alpha: 0.96),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (realtime.driverRating != null) ...[
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.star_rounded,
-                        size: 17,
-                        color: AppColors.primary.withValues(alpha: 0.95),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        l10n.driverHomeMiniRating(
-                          realtime.driverRating!.toStringAsFixed(1),
-                        ),
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 8),
-                AnimatedSwitcher(
-                  duration: AppMotion.stepSwitcher,
-                  switchInCurve: AppMotion.emphasized,
-                  switchOutCurve: AppMotion.standard,
-                  transitionBuilder: (child, animation) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, 0.16),
-                          end: Offset.zero,
-                        ).animate(animation),
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: Row(
-                    key: ValueKey<String>('conn-$connectionLabel'),
-                    children: [
-                      TweenAnimationBuilder<double>(
-                        duration: const Duration(milliseconds: 900),
-                        tween: Tween<double>(begin: 0.88, end: 1),
-                        builder: (context, value, child) =>
-                            Transform.scale(scale: value, child: child),
-                        child: Icon(
-                          connectionIcon,
-                          size: 14,
-                          color: connectionColor,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          connectionLabel,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: connectionColor.withValues(alpha: 0.97),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (connecting || isRestoring) ...[
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: const LinearProgressIndicator(minHeight: 3),
-                  ),
-                ],
-              ],
+    final tierVisual = resolveDriverHomeTierVisual(
+      official: officialTier,
+      rating: realtime.driverRating,
+    );
+    final tierLabel = driverHomeTierShortLabel(l10n, tierVisual.code);
+
+    return AnimatedSize(
+      duration: AppMotion.stepSwitcher,
+      curve: AppMotion.emphasized,
+      alignment: Alignment.topCenter,
+      child: Container(
+        padding: collapsed
+            ? const EdgeInsets.fromLTRB(14, 8, 10, 8)
+            : const EdgeInsets.fromLTRB(14, 14, 10, 14),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceCard.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(AppFoundation.radiusLg),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Switch.adaptive(
-                value: switchVisualOn,
-                activeThumbColor: AppColors.onPrimary,
-                activeTrackColor: AppColors.primary,
-                onChanged: connecting
-                    ? null
-                    : (value) => _handleOnlineSwitch(
-                        context: context,
-                        ref: ref,
-                        l10n: l10n,
-                        value: value,
-                        online: online,
-                      ),
+          ],
+        ),
+        child: collapsed
+            ? _CollapsedOnlineBar(
+                label: connectionLabel,
+                icon: connectionIcon,
+                color: connectionColor,
+                hint: l10n.driverHomeMiniCollapsedHint,
+                onTap: onExpandRequest,
+              )
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DriverHomeTierBadge(visual: tierVisual, label: tierLabel),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _ExpandedAvailabilityDetails(
+                      realtime: realtime,
+                      l10n: l10n,
+                      connectionLabel: connectionLabel,
+                      connectionIcon: connectionIcon,
+                      connectionColor: connectionColor,
+                      connecting: connecting,
+                      isRestoring: isRestoring,
+                    ),
+                  ),
+                  Switch.adaptive(
+                    value: switchVisualOn,
+                    activeThumbColor: AppColors.onPrimary,
+                    activeTrackColor: AppColors.primary,
+                    onChanged: connecting
+                        ? null
+                        : (value) => _handleOnlineSwitch(
+                            context: context,
+                            ref: ref,
+                            l10n: l10n,
+                            value: value,
+                            online: online,
+                          ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ],
       ),
     );
   }
@@ -538,6 +466,221 @@ class DriverHomeOnlineAvailabilityPanel extends ConsumerWidget {
         await onAfterOnlineEnabled(context);
       }
     }
+  }
+}
+
+class _CollapsedOnlineBar extends StatelessWidget {
+  const _CollapsedOnlineBar({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.hint,
+    this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final String hint;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap == null
+            ? null
+            : () {
+                HapticFeedback.lightImpact();
+                onTap!();
+              },
+        borderRadius: BorderRadius.circular(AppFoundation.radiusMd),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: color.withValues(alpha: 0.98),
+                  ),
+                ),
+              ),
+              Tooltip(
+                message: hint,
+                child: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: AppColors.textSecondary.withValues(alpha: 0.9),
+                  size: 22,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpandedAvailabilityDetails extends StatelessWidget {
+  const _ExpandedAvailabilityDetails({
+    required this.realtime,
+    required this.l10n,
+    required this.connectionLabel,
+    required this.connectionIcon,
+    required this.connectionColor,
+    required this.connecting,
+    required this.isRestoring,
+  });
+
+  final DriverRealtimeState realtime;
+  final AppLocalizations l10n;
+  final String connectionLabel;
+  final IconData connectionIcon;
+  final Color connectionColor;
+  final bool connecting;
+  final bool isRestoring;
+
+  @override
+  Widget build(BuildContext context) {
+    final name =
+        (realtime.driverDisplayName != null &&
+            realtime.driverDisplayName!.trim().isNotEmpty)
+        ? realtime.driverDisplayName!.trim()
+        : l10n.driverProfileDefaultName;
+    final parts =
+        realtime.driverVehicleParts ??
+        parseDriverVehiclePartsFromLabel(realtime.driverVehicleLabel);
+    final plate = parts?.plate?.trim();
+    final brand = parts?.brand?.trim();
+    final model = truncateDriverVehicleModel(parts?.model, maxChars: 10);
+    final hasVehicleBits =
+        (plate != null && plate.isNotEmpty) ||
+        (brand != null && brand.isNotEmpty) ||
+        model.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          name,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.3,
+            color: AppColors.textPrimary,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 6),
+        if (hasVehicleBits)
+          Row(
+            children: [
+              if (plate != null && plate.isNotEmpty) ...[
+                Flexible(flex: 0, child: DriverHomePlateChip(plate: plate)),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                child: Text(
+                  [
+                    if (brand != null && brand.isNotEmpty) brand,
+                    if (model.isNotEmpty) model,
+                  ].join(' '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    height: 1.2,
+                    color: AppColors.textSecondary.withValues(alpha: 0.96),
+                  ),
+                ),
+              ),
+            ],
+          )
+        else
+          Text(
+            l10n.driverHomeMiniVehicleEmpty,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary.withValues(alpha: 0.96),
+            ),
+          ),
+        if (realtime.driverRating != null) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(
+                Icons.star_rounded,
+                size: 16,
+                color: AppColors.primary.withValues(alpha: 0.95),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                l10n.driverHomeMiniRating(
+                  realtime.driverRating!.toStringAsFixed(1),
+                ),
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 6),
+        AnimatedSwitcher(
+          duration: AppMotion.stepSwitcher,
+          switchInCurve: AppMotion.emphasized,
+          switchOutCurve: AppMotion.standard,
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.16),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: Row(
+            key: ValueKey<String>('conn-$connectionLabel'),
+            children: [
+              Icon(connectionIcon, size: 14, color: connectionColor),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  connectionLabel,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: connectionColor.withValues(alpha: 0.97),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (connecting || isRestoring) ...[
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: const LinearProgressIndicator(minHeight: 3),
+          ),
+        ],
+      ],
+    );
   }
 }
 

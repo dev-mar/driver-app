@@ -434,6 +434,42 @@ abstract class AppLocalizations {
   /// **'Vehicle'**
   String get driverHomeMiniVehicleEmpty;
 
+  /// No description provided for @driverHomeMiniTierStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get driverHomeMiniTierStart;
+
+  /// No description provided for @driverHomeMiniTierEssential.
+  ///
+  /// In en, this message translates to:
+  /// **'Essential'**
+  String get driverHomeMiniTierEssential;
+
+  /// No description provided for @driverHomeMiniTierPro.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro'**
+  String get driverHomeMiniTierPro;
+
+  /// No description provided for @driverHomeMiniTierPremium.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium'**
+  String get driverHomeMiniTierPremium;
+
+  /// No description provided for @driverHomeMiniTierElite.
+  ///
+  /// In en, this message translates to:
+  /// **'Elite'**
+  String get driverHomeMiniTierElite;
+
+  /// No description provided for @driverHomeMiniCollapsedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to see your details'**
+  String get driverHomeMiniCollapsedHint;
+
   /// No description provided for @driverHomeMiniRating.
   ///
   /// In en, this message translates to:
@@ -2366,6 +2402,30 @@ abstract class AppLocalizations {
   /// **'To be agreed'**
   String get driverTripOfferPriceTbd;
 
+  /// No description provided for @driverTripPromoCashDue.
+  ///
+  /// In en, this message translates to:
+  /// **'The passenger pays {amount} in cash'**
+  String driverTripPromoCashDue(String amount);
+
+  /// No description provided for @driverTripPromoCompanyPays.
+  ///
+  /// In en, this message translates to:
+  /// **'TEXIAPP covers {amount}'**
+  String driverTripPromoCompanyPays(String amount);
+
+  /// No description provided for @driverTripSupportCompanyPays.
+  ///
+  /// In en, this message translates to:
+  /// **'Company coverage: {amount}'**
+  String driverTripSupportCompanyPays(String amount);
+
+  /// No description provided for @driverTripPromoYouReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'You receive {amount}'**
+  String driverTripPromoYouReceive(String amount);
+
   /// No description provided for @driverTripOfferBadgeNew.
   ///
   /// In en, this message translates to:
@@ -2563,6 +2623,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Trip already assigned or cancelled.'**
   String get driverOfferErrorTaken;
+
+  /// No description provided for @driverOfferErrorAcceptTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t accept. Try again.'**
+  String get driverOfferErrorAcceptTimeout;
 
   /// No description provided for @driverTripErrorGeneric.
   ///
