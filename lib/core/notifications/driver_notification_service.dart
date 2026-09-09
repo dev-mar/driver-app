@@ -120,11 +120,9 @@ class DriverNotificationService {
     );
   }
 
-  Future<void> showPassengerEnRouteIfBackground({
-    required bool isAppInForeground,
+  Future<void> showPassengerEnRouteNotice({
     required String tripId,
   }) async {
-    if (isAppInForeground) return;
     await initialize();
     final l10n = _l10nForCurrentLocale();
     await _showFcmRaw(
@@ -132,6 +130,14 @@ class DriverNotificationService {
       body: l10n.driverNotifyPassengerEnRouteBody,
       payload: tripId,
     );
+  }
+
+  Future<void> showPassengerEnRouteIfBackground({
+    required bool isAppInForeground,
+    required String tripId,
+  }) async {
+    if (isAppInForeground) return;
+    await showPassengerEnRouteNotice(tripId: tripId);
   }
 
   Future<void> showPickupGraceIfBackground({

@@ -118,7 +118,7 @@ class DriverTripOfferCard extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Expanded(
+                        Flexible(
                           child: Text(
                             hasPrice
                                 ? _formatPrice(
@@ -126,6 +126,8 @@ class DriverTripOfferCard extends StatelessWidget {
                                     currencyCode: offer.currencyCode,
                                   )
                                 : l10n.driverTripOfferPriceTbd,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w800,
@@ -135,44 +137,47 @@ class DriverTripOfferCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: badgeColor.withValues(alpha: 0.16),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: badgeColor.withValues(alpha: 0.42),
-                              width: 1,
+                        DriverTripPaymentChip(
+                          l10n: l10n,
+                          paymentMethod: offer.paymentMethod,
+                        ),
+                        if (isWebDispatch) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: badgeColor.withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: badgeColor.withValues(alpha: 0.42),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.support_agent_rounded,
+                                  size: 13,
+                                  color: badgeColor.withValues(alpha: 0.95),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  l10n.driverTripOfferBadgeOperations,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    color: badgeColor,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isWebDispatch
-                                    ? Icons.support_agent_rounded
-                                    : Icons.bolt_rounded,
-                                size: 13,
-                                color: badgeColor.withValues(alpha: 0.95),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                isWebDispatch
-                                    ? l10n.driverTripOfferBadgeOperations
-                                    : l10n.driverTripOfferBadgeNew,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: badgeColor,
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        ],
                       ],
                     ),
                     if (offer.hasPromoBreakdown) ...[
@@ -184,10 +189,10 @@ class DriverTripOfferCard extends StatelessWidget {
                             currencyCode: offer.currencyCode,
                           ),
                         ),
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary.withValues(alpha: 0.95),
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       Text(
@@ -204,19 +209,6 @@ class DriverTripOfferCard extends StatelessWidget {
                                   currencyCode: offer.currencyCode,
                                 ),
                               ),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary.withValues(alpha: 0.95),
-                        ),
-                      ),
-                      Text(
-                        l10n.driverTripPromoYouReceive(
-                          _formatPrice(
-                            offer.offeredPrice,
-                            currencyCode: offer.currencyCode,
-                          ),
-                        ),
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -240,10 +232,6 @@ class DriverTripOfferCard extends StatelessWidget {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        DriverTripPaymentChip(
-                          l10n: l10n,
-                          paymentMethod: offer.paymentMethod,
-                        ),
                         if (offer.tripExtras.isNotEmpty ||
                             offer.tripSpecials.isNotEmpty)
                           DriverTripExtrasIcons(

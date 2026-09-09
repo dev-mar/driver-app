@@ -245,6 +245,121 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverEarningsCreditsMenu => 'Earnings & credits';
 
   @override
+  String get driverPayoutMenu => 'TEXIAPP payouts';
+
+  @override
+  String get driverPayoutTitle => 'TEXIAPP payouts';
+
+  @override
+  String get driverPayoutHeroLabel => 'Ready to collect';
+
+  @override
+  String get driverPayoutHeroHint =>
+      'Company credits from your trips. Not usage credits.';
+
+  @override
+  String get driverPayoutHeroLocked =>
+      'You have an open request. After it\'s paid, this balance returns to 0.';
+
+  @override
+  String get driverPayoutBreakdownTitle => 'Which trips this comes from';
+
+  @override
+  String get driverPayoutTrip => 'Trip';
+
+  @override
+  String get driverPayoutTotal => 'Total';
+
+  @override
+  String get driverPayoutSourceCampaign => 'Benefit credit';
+
+  @override
+  String get driverPayoutSourceReferral => 'Referral credit';
+
+  @override
+  String get driverPayoutQrTitle => 'Request payout';
+
+  @override
+  String get driverPayoutQrHint =>
+      'Upload your account QR. We\'ll check that the account holder matches you.';
+
+  @override
+  String get driverPayoutQrPick => 'Upload QR photo';
+
+  @override
+  String get driverPayoutQrPicked => 'QR ready · change';
+
+  @override
+  String get driverPayoutQrPickFailed =>
+      'We couldn\'t read that image. Try another QR photo.';
+
+  @override
+  String get driverPayoutSubmit => 'Request payout';
+
+  @override
+  String get driverPayoutSubmitted =>
+      'Request sent. We\'ll update you after review.';
+
+  @override
+  String get driverPayoutSubmitFailed => 'Could not send the request.';
+
+  @override
+  String get driverPayoutUploadFailed => 'Could not upload the QR. Try again.';
+
+  @override
+  String get driverPayoutLoadError =>
+      'We couldn\'t load your collectible balance.';
+
+  @override
+  String get driverPayoutEmpty =>
+      'Nothing to collect yet. It adds up when TEXIAPP owes you a credit.';
+
+  @override
+  String get driverPayoutOpenTicket => 'Payout request';
+
+  @override
+  String get driverPayoutOpenReviewHint =>
+      'It\'s in review. You can\'t send another request yet.';
+
+  @override
+  String get driverPayoutOpenApprovedHint =>
+      'Approved. After disbursement it\'s marked as paid.';
+
+  @override
+  String get driverPayoutTicketItems => 'Trips in this request';
+
+  @override
+  String get driverPayoutHistoryTitle => 'History';
+
+  @override
+  String get driverPayoutHistoryEmpty => 'No payouts or rejections yet.';
+
+  @override
+  String get driverPayoutStatusReview => 'In review';
+
+  @override
+  String get driverPayoutStatusApproved => 'Approved';
+
+  @override
+  String get driverPayoutStatusRejected => 'Rejected';
+
+  @override
+  String get driverPayoutStatusPaid => 'Paid';
+
+  @override
+  String get driverPayoutRejectHolder => 'Account holder doesn\'t match the QR';
+
+  @override
+  String get driverPayoutRejectAmount =>
+      'Requested amount doesn\'t match the benefit total';
+
+  @override
+  String get driverPayoutRejectQr => 'QR could not be read';
+
+  @override
+  String get driverPayoutRejectOther => 'Other note';
+
+  @override
   String get driverClubMenu => 'Driver Club';
 
   @override
@@ -389,7 +504,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverRegFieldReferralCode => 'Referral code (optional)';
 
   @override
-  String get driverRegFieldReferralCodeHint => 'E.g. CARLOS-782';
+  String get driverRegFieldReferralCodeHint => 'E.g. CAR782';
 
   @override
   String get driverEarningsCreditsTitle => 'Earnings & credits';
@@ -1327,12 +1442,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String driverTripPromoCashDue(String amount) {
-    return 'The passenger pays $amount in cash';
+    return 'The passenger pays $amount';
   }
 
   @override
   String driverTripPromoCompanyPays(String amount) {
-    return 'TEXIAPP covers $amount';
+    return 'TEXIAPP pays $amount';
   }
 
   @override

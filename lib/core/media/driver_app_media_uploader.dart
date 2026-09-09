@@ -87,6 +87,23 @@ final class DriverAppMediaUploader {
     );
   }
 
+  Future<String?> uploadCompanyPayoutQrViaPresign({
+    required String bearerToken,
+    required String base64Raw,
+    String contentType = 'image/jpeg',
+  }) {
+    return _decodeAndPresignPut(
+      bearerToken: bearerToken,
+      presignPath: '/api/v2/driver/company-payout/qr/presign',
+      presignBody: <String, dynamic>{
+        'content_type': contentType,
+      },
+      base64Raw: base64Raw,
+      contentType: contentType,
+      debugPurpose: 'company_payout_qr',
+    );
+  }
+
   Future<String?> _decodeAndPresignPut({
     required String bearerToken,
     required String presignPath,

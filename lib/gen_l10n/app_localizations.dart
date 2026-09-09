@@ -512,6 +512,216 @@ abstract class AppLocalizations {
   /// **'Earnings & credits'**
   String get driverEarningsCreditsMenu;
 
+  /// No description provided for @driverPayoutMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'TEXIAPP payouts'**
+  String get driverPayoutMenu;
+
+  /// No description provided for @driverPayoutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'TEXIAPP payouts'**
+  String get driverPayoutTitle;
+
+  /// No description provided for @driverPayoutHeroLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to collect'**
+  String get driverPayoutHeroLabel;
+
+  /// No description provided for @driverPayoutHeroHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Company credits from your trips. Not usage credits.'**
+  String get driverPayoutHeroHint;
+
+  /// No description provided for @driverPayoutHeroLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'You have an open request. After it\'s paid, this balance returns to 0.'**
+  String get driverPayoutHeroLocked;
+
+  /// No description provided for @driverPayoutBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Which trips this comes from'**
+  String get driverPayoutBreakdownTitle;
+
+  /// No description provided for @driverPayoutTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip'**
+  String get driverPayoutTrip;
+
+  /// No description provided for @driverPayoutTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get driverPayoutTotal;
+
+  /// No description provided for @driverPayoutSourceCampaign.
+  ///
+  /// In en, this message translates to:
+  /// **'Benefit credit'**
+  String get driverPayoutSourceCampaign;
+
+  /// No description provided for @driverPayoutSourceReferral.
+  ///
+  /// In en, this message translates to:
+  /// **'Referral credit'**
+  String get driverPayoutSourceReferral;
+
+  /// No description provided for @driverPayoutQrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request payout'**
+  String get driverPayoutQrTitle;
+
+  /// No description provided for @driverPayoutQrHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload your account QR. We\'ll check that the account holder matches you.'**
+  String get driverPayoutQrHint;
+
+  /// No description provided for @driverPayoutQrPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload QR photo'**
+  String get driverPayoutQrPick;
+
+  /// No description provided for @driverPayoutQrPicked.
+  ///
+  /// In en, this message translates to:
+  /// **'QR ready · change'**
+  String get driverPayoutQrPicked;
+
+  /// No description provided for @driverPayoutQrPickFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t read that image. Try another QR photo.'**
+  String get driverPayoutQrPickFailed;
+
+  /// No description provided for @driverPayoutSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Request payout'**
+  String get driverPayoutSubmit;
+
+  /// No description provided for @driverPayoutSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Request sent. We\'ll update you after review.'**
+  String get driverPayoutSubmitted;
+
+  /// No description provided for @driverPayoutSubmitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send the request.'**
+  String get driverPayoutSubmitFailed;
+
+  /// No description provided for @driverPayoutUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not upload the QR. Try again.'**
+  String get driverPayoutUploadFailed;
+
+  /// No description provided for @driverPayoutLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your collectible balance.'**
+  String get driverPayoutLoadError;
+
+  /// No description provided for @driverPayoutEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to collect yet. It adds up when TEXIAPP owes you a credit.'**
+  String get driverPayoutEmpty;
+
+  /// No description provided for @driverPayoutOpenTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Payout request'**
+  String get driverPayoutOpenTicket;
+
+  /// No description provided for @driverPayoutOpenReviewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s in review. You can\'t send another request yet.'**
+  String get driverPayoutOpenReviewHint;
+
+  /// No description provided for @driverPayoutOpenApprovedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved. After disbursement it\'s marked as paid.'**
+  String get driverPayoutOpenApprovedHint;
+
+  /// No description provided for @driverPayoutTicketItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Trips in this request'**
+  String get driverPayoutTicketItems;
+
+  /// No description provided for @driverPayoutHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get driverPayoutHistoryTitle;
+
+  /// No description provided for @driverPayoutHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No payouts or rejections yet.'**
+  String get driverPayoutHistoryEmpty;
+
+  /// No description provided for @driverPayoutStatusReview.
+  ///
+  /// In en, this message translates to:
+  /// **'In review'**
+  String get driverPayoutStatusReview;
+
+  /// No description provided for @driverPayoutStatusApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get driverPayoutStatusApproved;
+
+  /// No description provided for @driverPayoutStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get driverPayoutStatusRejected;
+
+  /// No description provided for @driverPayoutStatusPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get driverPayoutStatusPaid;
+
+  /// No description provided for @driverPayoutRejectHolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Account holder doesn\'t match the QR'**
+  String get driverPayoutRejectHolder;
+
+  /// No description provided for @driverPayoutRejectAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested amount doesn\'t match the benefit total'**
+  String get driverPayoutRejectAmount;
+
+  /// No description provided for @driverPayoutRejectQr.
+  ///
+  /// In en, this message translates to:
+  /// **'QR could not be read'**
+  String get driverPayoutRejectQr;
+
+  /// No description provided for @driverPayoutRejectOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other note'**
+  String get driverPayoutRejectOther;
+
   /// No description provided for @driverClubMenu.
   ///
   /// In en, this message translates to:
@@ -767,7 +977,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverRegFieldReferralCodeHint.
   ///
   /// In en, this message translates to:
-  /// **'E.g. CARLOS-782'**
+  /// **'E.g. CAR782'**
   String get driverRegFieldReferralCodeHint;
 
   /// No description provided for @driverEarningsCreditsTitle.
@@ -2405,13 +2615,13 @@ abstract class AppLocalizations {
   /// No description provided for @driverTripPromoCashDue.
   ///
   /// In en, this message translates to:
-  /// **'The passenger pays {amount} in cash'**
+  /// **'The passenger pays {amount}'**
   String driverTripPromoCashDue(String amount);
 
   /// No description provided for @driverTripPromoCompanyPays.
   ///
   /// In en, this message translates to:
-  /// **'TEXIAPP covers {amount}'**
+  /// **'TEXIAPP pays {amount}'**
   String driverTripPromoCompanyPays(String amount);
 
   /// No description provided for @driverTripSupportCompanyPays.

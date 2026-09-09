@@ -413,10 +413,26 @@ void _bindDriverRealtimeSocketHandlers(
                       .toList()
                 : state.pendingOffers;
   
+            final isLifecycleFail =
+                normalized == 'INVALID_STATUS_TRANSITION' ||
+                normalized == 'INTERNAL_ERROR' ||
+                (message != null &&
+                    message.toLowerCase().contains('parameter'));
+            final currentTrip = state.activeTrip;
+            final revertedTrip =
+                (isLifecycleFail &&
+                    currentTrip != null &&
+                    (currentTrip.status == 'arrived' ||
+                        currentTrip.status == 'started' ||
+                        currentTrip.status == 'in_trip'))
+                ? currentTrip.copyWith(status: 'accepted')
+                : currentTrip;
+
             state = state.copyWith(
               pendingOffers: updatedOffers,
               processingOfferTripId: null,
               processingTripAction: null,
+              activeTrip: revertedTrip,
               tripErrorMessage: message,
               tripErrorCode: normalized ?? 'TRIP_UPDATE_FAILED',
               arrivalReminderErrorCode: null,
@@ -765,8 +781,7 @@ void _bindDriverRealtimeSocketHandlers(
               activeTrip: current.copyWith(passengerEnRouteAt: sentAt),
             );
             unawaited(
-              DriverNotificationService.instance.showPassengerEnRouteIfBackground(
-                isAppInForeground: DriverAppVisibility.isInForeground.value,
+              DriverNotificationService.instance.showPassengerEnRouteNotice(
                 tripId: tripId,
               ),
             );

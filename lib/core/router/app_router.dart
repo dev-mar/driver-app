@@ -7,6 +7,7 @@ import '../../features/login/driver_home_screen.dart';
 import '../../features/login/driver_trip_history_screen.dart';
 import '../../features/earnings/driver_earnings_credits_screen.dart';
 import '../../features/earnings/driver_credits_topup_screen.dart';
+import '../../features/earnings/driver_company_payout_screen.dart';
 import '../../features/club/driver_club_screen.dart';
 import '../session/driver_must_change_password_gate.dart';
 import '../session/driver_registration_resume_gate.dart';
@@ -37,6 +38,7 @@ class AppRouter {
   static const String tripHistory = 'driver_trip_history';
   static const String earningsCredits = 'driver_earnings_credits';
   static const String creditsTopup = 'driver_credits_topup';
+  static const String companyPayout = 'driver_company_payout';
   static const String club = 'driver_club';
   static const String myVehicles = 'driver_my_vehicles';
   static const String settings = 'driver_settings';
@@ -83,6 +85,7 @@ class AppRouter {
       if (location == '/settings' && !hasToken) return '/login';
       if (location == '/earnings-credits' && !hasToken) return '/login';
       if (location == '/credits-topup' && !hasToken) return '/login';
+      if (location == '/company-payout' && !hasToken) return '/login';
       if (location == '/club' && !hasToken) return '/login';
       if (location == '/trip-history' && !hasToken) return '/login';
       if (location == '/registered-images') {
@@ -212,6 +215,11 @@ class AppRouter {
         path: '/credits-topup',
         name: creditsTopup,
         builder: (context, state) => const DriverCreditsTopupScreen(),
+      ),
+      GoRoute(
+        path: '/company-payout',
+        name: companyPayout,
+        builder: (context, state) => const DriverCompanyPayoutScreen(),
       ),
       GoRoute(
         path: '/club',

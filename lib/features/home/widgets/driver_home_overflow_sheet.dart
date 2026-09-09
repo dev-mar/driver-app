@@ -93,6 +93,12 @@ Future<void> showDriverHomeOverflowSheet({
                     label: l10n.driverTopupMenu,
                     onTap: () => context.pushNamed(AppRouter.creditsTopup),
                   ),
+                  _row(
+                    ctx,
+                    icon: Icons.payments_outlined,
+                    label: l10n.driverPayoutMenu,
+                    onTap: () => context.pushNamed(AppRouter.companyPayout),
+                  ),
                   if (canClub)
                     _row(
                       ctx,

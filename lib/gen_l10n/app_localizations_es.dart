@@ -245,6 +245,122 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverEarningsCreditsMenu => 'Ingresos y créditos';
 
   @override
+  String get driverPayoutMenu => 'Por cobrar TEXIAPP';
+
+  @override
+  String get driverPayoutTitle => 'Por cobrar TEXIAPP';
+
+  @override
+  String get driverPayoutHeroLabel => 'Puedes cobrar';
+
+  @override
+  String get driverPayoutHeroHint =>
+      'Abonos de la empresa por tus viajes. No son créditos de uso.';
+
+  @override
+  String get driverPayoutHeroLocked =>
+      'Hay una solicitud en curso. Cuando se pague, este saldo vuelve a 0.';
+
+  @override
+  String get driverPayoutBreakdownTitle => 'De qué viajes viene';
+
+  @override
+  String get driverPayoutTrip => 'Viaje';
+
+  @override
+  String get driverPayoutTotal => 'Total';
+
+  @override
+  String get driverPayoutSourceCampaign => 'Abono de beneficio';
+
+  @override
+  String get driverPayoutSourceReferral => 'Abono por referidos';
+
+  @override
+  String get driverPayoutQrTitle => 'Solicitar cobro';
+
+  @override
+  String get driverPayoutQrHint =>
+      'Sube el QR de tu cuenta. Revisamos que el titular coincida contigo.';
+
+  @override
+  String get driverPayoutQrPick => 'Subir foto del QR';
+
+  @override
+  String get driverPayoutQrPicked => 'QR listo · cambiar';
+
+  @override
+  String get driverPayoutQrPickFailed =>
+      'No pudimos leer esa imagen. Prueba otra foto del QR.';
+
+  @override
+  String get driverPayoutSubmit => 'Pedir cobro';
+
+  @override
+  String get driverPayoutSubmitted =>
+      'Solicitud enviada. Te avisamos cuando la revisemos.';
+
+  @override
+  String get driverPayoutSubmitFailed => 'No se pudo enviar la solicitud.';
+
+  @override
+  String get driverPayoutUploadFailed =>
+      'No se pudo subir el QR. Intenta de nuevo.';
+
+  @override
+  String get driverPayoutLoadError => 'No pudimos cargar tu saldo por cobrar.';
+
+  @override
+  String get driverPayoutEmpty =>
+      'Por ahora no hay monto para cobrar. Se acumula cuando TEXIAPP te debe un abono.';
+
+  @override
+  String get driverPayoutOpenTicket => 'Solicitud de cobro';
+
+  @override
+  String get driverPayoutOpenReviewHint =>
+      'Está en revisión. Aún no puedes pedir otro cobro.';
+
+  @override
+  String get driverPayoutOpenApprovedHint =>
+      'Aprobada. Cuando confirmen el desembolso, pasará a cobrado.';
+
+  @override
+  String get driverPayoutTicketItems => 'Viajes de esta solicitud';
+
+  @override
+  String get driverPayoutHistoryTitle => 'Historial';
+
+  @override
+  String get driverPayoutHistoryEmpty => 'Todavía no hay cobros ni rechazos.';
+
+  @override
+  String get driverPayoutStatusReview => 'En revisión';
+
+  @override
+  String get driverPayoutStatusApproved => 'Aprobado';
+
+  @override
+  String get driverPayoutStatusRejected => 'Rechazado';
+
+  @override
+  String get driverPayoutStatusPaid => 'Cobrado';
+
+  @override
+  String get driverPayoutRejectHolder =>
+      'El titular de la cuenta no coincide con el del QR';
+
+  @override
+  String get driverPayoutRejectAmount =>
+      'El monto del cobro no coincide con el a beneficiar';
+
+  @override
+  String get driverPayoutRejectQr => 'No se pudo leer el QR';
+
+  @override
+  String get driverPayoutRejectOther => 'Otra observación';
+
+  @override
   String get driverClubMenu => 'Club del Conductor';
 
   @override
@@ -389,7 +505,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverRegFieldReferralCode => 'Código de referido (opcional)';
 
   @override
-  String get driverRegFieldReferralCodeHint => 'Ej. CARLOS-782';
+  String get driverRegFieldReferralCodeHint => 'Ej. CAR782';
 
   @override
   String get driverEarningsCreditsTitle => 'Ingresos y créditos';
@@ -1335,12 +1451,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String driverTripPromoCashDue(String amount) {
-    return 'El pasajero paga $amount en efectivo';
+    return 'El pasajero paga $amount';
   }
 
   @override
   String driverTripPromoCompanyPays(String amount) {
-    return 'TEXIAPP abona $amount';
+    return 'TEXIAPP paga $amount';
   }
 
   @override
