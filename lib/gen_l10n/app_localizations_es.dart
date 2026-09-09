@@ -1329,7 +1329,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get driverTripCancelCta => 'Cancelar viaje';
+  String get driverTripCancelCta => 'No continuar';
 
   @override
   String get driverTripCancelChooseReason => '¿Por qué cancelas?';
@@ -1433,7 +1433,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverTripStartButton => 'Iniciar viaje';
 
   @override
-  String get driverTripCompleteButton => 'Finalizar viaje';
+  String get driverTripCompleteButton => 'Llegamos al destino';
 
   @override
   String driverTripOfferPrice(String amount) {

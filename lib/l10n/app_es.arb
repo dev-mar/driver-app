@@ -520,9 +520,9 @@
       "seconds": {"type": "int"}
     }
   },
-  "driverTripCancelCta": "Cancelar viaje",
+  "driverTripCancelCta": "No continuar",
   "@driverTripCancelCta": {
-    "description": "Botón secundario en card accepted/arrived"
+    "description": "Botón secundario en card assigned; mismo color error; copy suave (no Cancelar)"
   },
   "driverTripCancelChooseReason": "¿Por qué cancelas?",
   "driverTripCancelNoteHint": "Escribe el motivo",
@@ -552,7 +552,7 @@
   "driverTripCancelWaitNoLocation": "No pudimos confirmar que estás en el punto de recojo.",
   "driverTripCancelWaitNotEligible": "El motivo de tiempo de espera no aplica en esta etapa.",
   "driverTripStartButton": "Iniciar viaje",
-  "driverTripCompleteButton": "Finalizar viaje",
+  "driverTripCompleteButton": "Llegamos al destino",
   "driverTripOfferPrice": "Precio estimado: {amount}",
   "@driverTripOfferPrice": {
     "placeholders": {

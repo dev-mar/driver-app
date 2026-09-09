@@ -6,6 +6,7 @@ import '../../../gen_l10n/app_localizations.dart';
 import '../../login/driver_realtime_state.dart';
 import 'driver_active_trip_card.dart';
 import 'driver_active_trip_status_helpers.dart';
+import 'driver_pickup_wait.dart';
 
 /// Panel inferior retraíble: colapsado muestra barra con estado y precio; expandido muestra detalle del viaje.
 class DriverRetractableTripCard extends StatelessWidget {
@@ -60,6 +61,11 @@ class DriverRetractableTripCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (trip.passengerEnRouteAt != null &&
+              (trip.status == 'arrived' || trip.status == 'accepted')) ...[
+            const DriverPassengerEnRouteBanner(),
+            const SizedBox(height: 10),
+          ],
           if (expanded) ...[
             Material(
               color: Colors.transparent,

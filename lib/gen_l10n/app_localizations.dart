@@ -2408,10 +2408,10 @@ abstract class AppLocalizations {
   /// **'You can notify again in {seconds} s'**
   String driverArrivalReminderCooldown(int seconds);
 
-  /// Secondary button on accepted/arrived card
+  /// Secondary assigned-trip button; keep error color; softer than Cancel trip
   ///
   /// In en, this message translates to:
-  /// **'Cancel trip'**
+  /// **'Don\'t continue'**
   String get driverTripCancelCta;
 
   /// No description provided for @driverTripCancelChooseReason.
@@ -2585,7 +2585,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverTripCompleteButton.
   ///
   /// In en, this message translates to:
-  /// **'Finish trip'**
+  /// **'We\'ve arrived'**
   String get driverTripCompleteButton;
 
   /// No description provided for @driverTripOfferPrice.

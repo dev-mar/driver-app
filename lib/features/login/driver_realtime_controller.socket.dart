@@ -774,14 +774,18 @@ void _bindDriverRealtimeSocketHandlers(
             if (tripId == null || current == null || current.tripId != tripId) {
               return;
             }
-            if (current.status != 'arrived') return;
+            if (current.status != 'arrived' && current.status != 'accepted') {
+              return;
+            }
             final sentAt = DateTime.tryParse('${data['sentAt'] ?? ''}') ??
                 DateTime.now().toUtc();
             state = state.copyWith(
               activeTrip: current.copyWith(passengerEnRouteAt: sentAt),
             );
+            HapticFeedback.mediumImpact();
             unawaited(
-              DriverNotificationService.instance.showPassengerEnRouteNotice(
+              DriverNotificationService.instance.showPassengerEnRouteIfBackground(
+                isAppInForeground: DriverAppVisibility.isInForeground.value,
                 tripId: tripId,
               ),
             );

@@ -588,6 +588,17 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
           Navigator.of(context, rootNavigator: true).maybePop();
         });
       }
+      final prevEn = previous?.activeTrip?.passengerEnRouteAt;
+      final nextEn = next.activeTrip?.passengerEnRouteAt;
+      if (prevEn == null &&
+          nextEn != null &&
+          !activeTripCardExpanded &&
+          mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          setState(() => activeTripCardExpanded = true);
+        });
+      }
     });
   }
 }

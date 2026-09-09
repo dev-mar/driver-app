@@ -520,9 +520,9 @@
       "seconds": {"type": "int"}
     }
   },
-  "driverTripCancelCta": "Cancel trip",
+  "driverTripCancelCta": "Don't continue",
   "@driverTripCancelCta": {
-    "description": "Secondary button on accepted/arrived card"
+    "description": "Secondary assigned-trip button; keep error color; softer than Cancel trip"
   },
   "driverTripCancelChooseReason": "Why are you cancelling?",
   "driverTripCancelNoteHint": "Write the reason",
@@ -552,7 +552,7 @@
   "driverTripCancelWaitNoLocation": "We couldn't confirm you're at the pickup point.",
   "driverTripCancelWaitNotEligible": "The wait-time reason doesn't apply at this stage.",
   "driverTripStartButton": "Start trip",
-  "driverTripCompleteButton": "Finish trip",
+  "driverTripCompleteButton": "We've arrived",
   "driverTripOfferPrice": "Estimated price: {amount}",
   "@driverTripOfferPrice": {
     "placeholders": {

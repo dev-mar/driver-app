@@ -228,38 +228,6 @@ class DriverActiveTripCard extends StatelessWidget {
             const SizedBox(height: 10),
             DriverPickupWaitClock(spec: pickupWait),
           ],
-          if (trip.status == 'arrived' && trip.passengerEnRouteAt != null) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(AppFoundation.radiusSm),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.28),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.directions_walk_rounded,
-                    size: 18,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      l10n.driverPassengerEnRouteBanner,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
           if (hasRouteDetail) ...[
             const SizedBox(height: 10),
             section(
