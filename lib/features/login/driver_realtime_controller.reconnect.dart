@@ -171,6 +171,9 @@ mixin _DriverRealtimeReconnectMixin on StateNotifier<DriverRealtimeState> {
     if (state.activeTrip != null || state.tripPendingRating != null) return;
     if (state.online) {
       _cancelAvailabilityReconnectLoop();
+      // Permisos / patrón / overlay nativo pausan la app: el switch sigue ON
+      // pero el GPS o `available` pueden no haber llegado al matcher.
+      unawaited(_rt._resyncMatchablePresence());
       return;
     }
     _ensureAvailabilityReconnectLoop();

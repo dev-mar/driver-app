@@ -414,14 +414,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverClubCopyCode => 'Copiar';
 
   @override
+  String get driverClubShare => 'Compartir';
+
+  @override
   String get driverClubCodeCopied => 'Código copiado';
 
   @override
   String get driverClubShareWhatsapp => 'WhatsApp';
 
   @override
-  String driverClubWhatsappShare(String code) {
-    return 'Únete como conductor TEXIAPP con mi código $code';
+  String driverClubWhatsappShare(String code, String storeUrl) {
+    return 'TEXIAPP Conductor\n\nÚnete como conductor TEXIAPP.\nUsa mi código: $code\n\nDescarga la app en Play Store:\n$storeUrl';
   }
 
   @override

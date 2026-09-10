@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/compliance/driver_legal_links.dart';
 import '../../core/config/driver_club_config.dart';
@@ -16,7 +16,6 @@ import 'driver_club_models.dart';
 import 'widgets/club_benefit_tile.dart';
 import 'widgets/club_section_card.dart';
 import 'widgets/club_status_badge.dart';
-import 'widgets/club_whatsapp_icon.dart';
 
 class DriverClubScreen extends ConsumerStatefulWidget {
   const DriverClubScreen({super.key});
@@ -399,7 +398,9 @@ class _ClubReferralsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final code = hub.referralCode ?? '—';
+    final raw = (hub.referralCode ?? '').trim();
+    final hasCode = raw.isNotEmpty;
+    final code = hasCode ? raw : '—';
     return ClubSectionCard(
       accent: ClubColors.gold,
       child: Column(
@@ -423,68 +424,71 @@ class _ClubReferralsCard extends StatelessWidget {
             label: l10n.driverClubYourCode,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              padding: const EdgeInsets.fromLTRB(14, 4, 4, 4),
               decoration: BoxDecoration(
                 color: ClubColors.gold.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: ClubColors.gold.withValues(alpha: 0.35)),
               ),
-              child: SelectableText(
-                code,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: ClubColors.gold,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 2.2,
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      code,
+                      style: const TextStyle(
+                        color: ClubColors.gold,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 2.2,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: l10n.driverClubCopyCode,
+                    onPressed: hasCode
+                        ? () async {
+                            await Clipboard.setData(ClipboardData(text: code));
+                            HapticFeedback.lightImpact();
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(l10n.driverClubCodeCopied)),
+                            );
+                          }
+                        : null,
+                    icon: const Icon(Icons.copy_rounded, size: 22),
+                    color: ClubColors.gold,
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(48, 48),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: l10n.driverClubShare,
+                    onPressed: hasCode
+                        ? () async {
+                            HapticFeedback.lightImpact();
+                            await SharePlus.instance.share(
+                              ShareParams(
+                                text: l10n.driverClubWhatsappShare(
+                                  code,
+                                  DriverClubConfig.playStoreUrl,
+                                ),
+                              ),
+                            );
+                          }
+                        : null,
+                    icon: const Icon(Icons.share_rounded, size: 22),
+                    color: ClubColors.gold,
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(48, 48),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: ClubColors.gold,
-                    foregroundColor: const Color(0xFF1A1400),
-                    minimumSize: const Size(48, 48),
-                  ),
-                  onPressed: () async {
-                    await Clipboard.setData(ClipboardData(text: code));
-                    HapticFeedback.lightImpact();
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l10n.driverClubCodeCopied)),
-                    );
-                  },
-                  icon: const Icon(Icons.content_copy_rounded, size: 18),
-                  label: Text(l10n.driverClubCopyCode),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: ClubColors.text,
-                    side: BorderSide(color: ClubColors.gold.withValues(alpha: 0.5)),
-                    minimumSize: const Size(48, 48),
-                  ),
-                  onPressed: () async {
-                    HapticFeedback.lightImpact();
-                    final text = Uri.encodeComponent(
-                      l10n.driverClubWhatsappShare(code),
-                    );
-                    final uri = Uri.parse('https://wa.me/?text=$text');
-                    await launchUrl(uri, mode: LaunchMode.externalApplication);
-                  },
-                  icon: const ClubWhatsAppIcon(size: 18),
-                  label: Text(l10n.driverClubShareWhatsapp),
-                ),
-              ),
-            ],
-          ),
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton(

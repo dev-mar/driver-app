@@ -13,6 +13,10 @@ class DriverClubConfig {
   static const String _esDefault = 'https://www.taxitexi.com/es/drivers/';
   static const String _enDefault = 'https://www.taxitexi.com/en/drivers/';
 
+  /// Listado prod en Play Store (compartir código Club; no el flavor `.dev`).
+  static const String playStoreUrl =
+      'https://play.google.com/store/apps/details?id=com.taxitexi.texi_driver_app';
+
   static const String hubAnchor = 'driver-club';
   static const String inviteAnchor = 'driver-club-invite';
   static const String walletAnchor = 'driver-club-wallet';

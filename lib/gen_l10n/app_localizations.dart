@@ -818,6 +818,12 @@ abstract class AppLocalizations {
   /// **'Copy'**
   String get driverClubCopyCode;
 
+  /// No description provided for @driverClubShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get driverClubShare;
+
   /// No description provided for @driverClubCodeCopied.
   ///
   /// In en, this message translates to:
@@ -833,8 +839,8 @@ abstract class AppLocalizations {
   /// No description provided for @driverClubWhatsappShare.
   ///
   /// In en, this message translates to:
-  /// **'Join as a TEXIAPP driver with my code {code}'**
-  String driverClubWhatsappShare(String code);
+  /// **'TEXIAPP Driver\n\nJoin as a TEXIAPP driver.\nUse my code: {code}\n\nDownload the app on Play Store:\n{storeUrl}'**
+  String driverClubWhatsappShare(String code, String storeUrl);
 
   /// No description provided for @driverClubEnterCodeHint.
   ///

@@ -451,6 +451,7 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
     _rt._positionSub = null;
     _rt._lastLocationEmittedAt = null;
     _rt._cancelPresenceHeartbeat();
+    _rt._cancelGpsPresenceWatchdog();
 
     if (userInitiated) {
       await _rt._emitAvailabilityOnBreakBeforeDisconnect();

@@ -157,12 +157,14 @@
   "driverClubInviteSubtitle": "Share your code. Grow your network.",
   "driverClubYourCode": "Your code",
   "driverClubCopyCode": "Copy",
+  "driverClubShare": "Share",
   "driverClubCodeCopied": "Code copied",
   "driverClubShareWhatsapp": "WhatsApp",
-  "driverClubWhatsappShare": "Join as a TEXIAPP driver with my code {code}",
+  "driverClubWhatsappShare": "TEXIAPP Driver\n\nJoin as a TEXIAPP driver.\nUse my code: {code}\n\nDownload the app on Play Store:\n{storeUrl}",
   "@driverClubWhatsappShare": {
     "placeholders": {
-      "code": { "type": "String" }
+      "code": { "type": "String" },
+      "storeUrl": { "type": "String" }
     }
   },
   "driverClubEnterCodeHint": "Were you invited? Enter their code",

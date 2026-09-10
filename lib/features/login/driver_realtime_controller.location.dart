@@ -22,6 +22,41 @@ mixin _DriverRealtimeLocationMixin on StateNotifier<DriverRealtimeState> {
     }
   }
 
+  /// Confirma `available` con ack. Reintenta `RATE_LIMITED` (2 s en servidor).
+  Future<void> _confirmAvailableWithRetry() async {
+    if (_rt._disposed || _rt._userRequestedOffline) return;
+    if (!_rt._availabilitySessionDesired) return;
+    if (state.activeTrip != null || state.tripPendingRating != null) return;
+    final socket = _rt._socket;
+    if (socket == null || socket.connected != true) return;
+
+    for (var i = 0; i < 3; i++) {
+      if (_rt._disposed || socket.connected != true) return;
+      try {
+        final ack = await socket
+            .emitWithAckAsync('driver:setAvailability', {
+              'availability': 'available',
+            })
+            .timeout(const Duration(seconds: 4));
+        if (ack is Map) {
+          final ok = ack['ok'] == true;
+          final code = ack['code']?.toString();
+          if (ok) return;
+          if (code == 'RATE_LIMITED') {
+            await Future<void>.delayed(const Duration(milliseconds: 2200));
+            continue;
+          }
+          debugPrint('[DRIVER_RT] setAvailability available ack=$ack');
+          return;
+        }
+        return;
+      } catch (e) {
+        debugPrint('[DRIVER_RT] setAvailability available retry: $e');
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+      }
+    }
+  }
+
   void _emitLocationToServer(
     double lat,
     double lng,
@@ -46,9 +81,145 @@ mixin _DriverRealtimeLocationMixin on StateNotifier<DriverRealtimeState> {
     });
   }
 
+  void _applyPositionToState(Position pos) {
+    state = state.copyWith(
+      driverLat: pos.latitude,
+      driverLng: pos.longitude,
+      driverBearing: pos.heading,
+    );
+  }
+
+  LocationSettings _gpsFixSettings({
+    required LocationAccuracy accuracy,
+    required Duration timeLimit,
+  }) {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return AndroidSettings(
+        accuracy: accuracy,
+        distanceFilter: 0,
+        timeLimit: timeLimit,
+      );
+    }
+    return LocationSettings(
+      accuracy: accuracy,
+      distanceFilter: 0,
+      timeLimit: timeLimit,
+    );
+  }
+
+  /// Tras permisos/patrón el GPS suele estar frío: lastKnown + fix medio/alto.
+  Future<bool> _pushBestEffortFix({required bool force}) async {
+    if (_rt._disposed) return false;
+    var emitted = false;
+
+    try {
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null && _rt._socket?.connected == true) {
+        _applyPositionToState(last);
+        _emitLocationToServer(
+          last.latitude,
+          last.longitude,
+          last.speed,
+          bearing: last.heading,
+          force: force,
+        );
+        emitted = true;
+      }
+    } catch (e) {
+      debugPrint('[DRIVER_RT] getLastKnownPosition: $e');
+    }
+
+    Future<Position?> tryFix(LocationAccuracy accuracy, Duration limit) async {
+      try {
+        return await Geolocator.getCurrentPosition(
+          locationSettings: _gpsFixSettings(
+            accuracy: accuracy,
+            timeLimit: limit,
+          ),
+        );
+      } catch (e) {
+        debugPrint('[DRIVER_RT] getCurrentPosition($accuracy) falló: $e');
+        return null;
+      }
+    }
+
+    var fresh = await tryFix(LocationAccuracy.medium, const Duration(seconds: 8));
+    fresh ??= await tryFix(LocationAccuracy.high, const Duration(seconds: 12));
+    if (fresh != null && !_rt._disposed && _rt._socket?.connected == true) {
+      _applyPositionToState(fresh);
+      _emitLocationToServer(
+        fresh.latitude,
+        fresh.longitude,
+        fresh.speed,
+        bearing: fresh.heading,
+        force: true,
+      );
+      emitted = true;
+    } else if (!emitted &&
+        state.driverLat != null &&
+        state.driverLng != null &&
+        _rt._socket?.connected == true) {
+      _emitLocationToServer(
+        state.driverLat!,
+        state.driverLng!,
+        0,
+        bearing: state.driverBearing ?? 0,
+        force: true,
+      );
+      emitted = true;
+    }
+
+    if (emitted &&
+        !_rt._userRequestedOffline &&
+        _rt._availabilitySessionDesired &&
+        state.activeTrip == null &&
+        state.tripPendingRating == null) {
+      unawaited(_confirmAvailableWithRetry());
+    }
+    return emitted;
+  }
+
+  /// Si el switch ya está ON, reinyecta GPS + `available` (resume tras permisos).
+  Future<void> _resyncMatchablePresence() async {
+    if (_rt._disposed || _rt._userRequestedOffline) return;
+    if (!_rt._availabilitySessionDesired) return;
+    if (_rt._socket?.connected != true) return;
+    await _pushBestEffortFix(force: true);
+  }
+
   void _cancelPresenceHeartbeat() {
     _rt._presenceHeartbeatTimer?.cancel();
     _rt._presenceHeartbeatTimer = null;
+  }
+
+  void _cancelGpsPresenceWatchdog() {
+    _rt._gpsPresenceRetryTimer?.cancel();
+    _rt._gpsPresenceRetryTimer = null;
+  }
+
+  void _scheduleGpsPresenceWatchdog() {
+    _cancelGpsPresenceWatchdog();
+    var attempt = 0;
+    _rt._gpsPresenceRetryTimer = Timer.periodic(const Duration(seconds: 5), (
+      timer,
+    ) {
+      attempt += 1;
+      if (_rt._disposed ||
+          _rt._userRequestedOffline ||
+          !_rt._availabilitySessionDesired ||
+          attempt > 8) {
+        timer.cancel();
+        return;
+      }
+      if (_rt._socket?.connected != true) return;
+      final last = _rt._lastLocationEmittedAt;
+      if (last != null &&
+          DateTime.now().difference(last) < const Duration(seconds: 8)) {
+        if (attempt >= 3) timer.cancel();
+        return;
+      }
+      unawaited(_pushBestEffortFix(force: true));
+    });
   }
 
   void _startPresenceHeartbeat() {
@@ -61,6 +232,18 @@ mixin _DriverRealtimeLocationMixin on StateNotifier<DriverRealtimeState> {
       socket.emit('driver:heartbeat', {
         'clientTs': DateTime.now().toIso8601String(),
       });
+      // Redis GPS caduca si el conductor no se mueve (distanceFilter). Reenviar último fix.
+      final lat = state.driverLat;
+      final lng = state.driverLng;
+      if (lat != null && lng != null) {
+        _emitLocationToServer(
+          lat,
+          lng,
+          0,
+          bearing: state.driverBearing ?? 0,
+          force: true,
+        );
+      }
     });
   }
 
@@ -169,31 +352,8 @@ mixin _DriverRealtimeLocationMixin on StateNotifier<DriverRealtimeState> {
 
   Future<void> _startGpsTracking() async {
     await _rt._positionSub?.cancel();
-    try {
-      final initialPos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          distanceFilter: 0,
-        ),
-      ).timeout(const Duration(seconds: 15));
-      if (_rt._disposed) return;
-      state = state.copyWith(
-        driverLat: initialPos.latitude,
-        driverLng: initialPos.longitude,
-        driverBearing: initialPos.heading,
-      );
-      if (_rt._socket?.connected == true) {
-        _emitLocationToServer(
-          initialPos.latitude,
-          initialPos.longitude,
-          initialPos.speed,
-          bearing: initialPos.heading,
-          force: true,
-        );
-      }
-    } catch (e) {
-      debugPrint('[DRIVER_RT] getCurrentPosition inicial falló: $e');
-    }
+    _scheduleGpsPresenceWatchdog();
+    await _pushBestEffortFix(force: true);
 
     if (_rt._disposed) return;
     _rt._positionSub =
@@ -209,11 +369,7 @@ mixin _DriverRealtimeLocationMixin on StateNotifier<DriverRealtimeState> {
                 'location:update lat=${pos.latitude}, lng=${pos.longitude}',
               );
             }
-            state = state.copyWith(
-              driverLat: pos.latitude,
-              driverLng: pos.longitude,
-              driverBearing: pos.heading,
-            );
+            _applyPositionToState(pos);
             _emitLocationToServer(
               pos.latitude,
               pos.longitude,
