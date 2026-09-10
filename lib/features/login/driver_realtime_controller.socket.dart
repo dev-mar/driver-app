@@ -262,12 +262,18 @@ void _bindDriverRealtimeSocketHandlers(
             String? paymentFromOffer;
             List<String> extrasFromOffer = const [];
             List<String> specialsFromOffer = const [];
+            double? cashDueFromOffer;
+            double? guaranteeFromOffer;
+            String? supportSourceFromOffer;
             if (tripId != null) {
               for (final o in state.pendingOffers) {
                 if (o.tripId == tripId) {
                   paymentFromOffer = o.paymentMethod;
                   extrasFromOffer = o.tripExtras;
                   specialsFromOffer = o.tripSpecials;
+                  cashDueFromOffer = o.cashDuePassenger;
+                  guaranteeFromOffer = o.companyGuaranteeToDriver;
+                  supportSourceFromOffer = o.supportSource;
                   break;
                 }
               }
@@ -291,6 +297,20 @@ void _bindDriverRealtimeSocketHandlers(
             );
             final tripSpecials =
                 parsedSpecials.isNotEmpty ? parsedSpecials : specialsFromOffer;
+            final cashDuePassenger = parseDriverDouble(
+                  data['cashDuePassenger'] ?? data['cash_due_passenger'],
+                ) ??
+                cashDueFromOffer;
+            final companyGuaranteeToDriver = parseDriverDouble(
+                  data['companyGuaranteeToDriver'] ??
+                      data['company_guarantee_to_driver'],
+                ) ??
+                guaranteeFromOffer;
+            final supportSource =
+                (data['supportSource'] ?? data['support_source'])
+                    ?.toString()
+                    .trim() ??
+                supportSourceFromOffer;
             _rt._logVerbose(
               'trip:accepted recibido tripId=$tripId status=$status '
               'pickup=($pickupLat,$pickupLng) dest=($destLat,$destLng)',
@@ -321,6 +341,9 @@ void _bindDriverRealtimeSocketHandlers(
                     paymentMethod: paymentMethod,
                     tripExtras: tripExtras,
                     tripSpecials: tripSpecials,
+                    cashDuePassenger: cashDuePassenger,
+                    companyGuaranteeToDriver: companyGuaranteeToDriver,
+                    supportSource: supportSource,
                   ),
                   data,
                 ),
@@ -770,19 +793,10 @@ void _bindDriverRealtimeSocketHandlers(
           try {
             if (data is! Map) return;
             final tripId = data['tripId']?.toString();
-            final current = state.activeTrip;
-            if (tripId == null || current == null || current.tripId != tripId) {
-              return;
-            }
-            if (current.status != 'arrived' && current.status != 'accepted') {
-              return;
-            }
+            if (tripId == null || tripId.isEmpty) return;
             final sentAt = DateTime.tryParse('${data['sentAt'] ?? ''}') ??
                 DateTime.now().toUtc();
-            state = state.copyWith(
-              activeTrip: current.copyWith(passengerEnRouteAt: sentAt),
-            );
-            HapticFeedback.mediumImpact();
+            _rt.applyPassengerEnRouteNotice(tripId: tripId, sentAt: sentAt);
             unawaited(
               DriverNotificationService.instance.showPassengerEnRouteIfBackground(
                 isAppInForeground: DriverAppVisibility.isInForeground.value,
@@ -964,6 +978,19 @@ void _bindDriverRealtimeSocketHandlers(
                         activeTripData['passenger_specials'] ??
                         activeTripData['specials'],
                   );
+                  final ackCashDue = parseDriverDouble(
+                    activeTripData['cashDuePassenger'] ??
+                        activeTripData['cash_due_passenger'],
+                  );
+                  final ackGuarantee = parseDriverDouble(
+                    activeTripData['companyGuaranteeToDriver'] ??
+                        activeTripData['company_guarantee_to_driver'],
+                  );
+                  final ackSupportSource =
+                      (activeTripData['supportSource'] ??
+                              activeTripData['support_source'])
+                          ?.toString()
+                          .trim();
                   if (tripId != null) {
                 if (_rt._shouldIgnoreRestoreTrip(tripId)) {
                   state = state.copyWith(
@@ -994,6 +1021,9 @@ void _bindDriverRealtimeSocketHandlers(
                     paymentMethod: paymentMethod,
                     tripExtras: ackExtras,
                     tripSpecials: ackSpecials,
+                    cashDuePassenger: ackCashDue,
+                    companyGuaranteeToDriver: ackGuarantee,
+                    supportSource: ackSupportSource,
                     ),
                     activeTripData,
                   );
@@ -1034,6 +1064,9 @@ void _bindDriverRealtimeSocketHandlers(
                           tripSpecials: ackSpecials.isNotEmpty
                               ? ackSpecials
                               : existingTrip.tripSpecials,
+                          cashDuePassenger: ackCashDue,
+                          companyGuaranteeToDriver: ackGuarantee,
+                          supportSource: ackSupportSource,
                         ),
                           activeTripData,
                         )

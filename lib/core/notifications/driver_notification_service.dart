@@ -158,7 +158,18 @@ class DriverNotificationService {
   Future<void> showFcmForegroundMessage(RemoteMessage message) async {
     if (!_initialized) await initialize();
     final event = message.data['event']?.toString();
-    if (event == 'passenger_en_route' || event == 'pickup_grace') {
+    if (event == 'passenger_en_route') {
+      final tripId =
+          message.data['tripId']?.toString() ??
+          message.data['trip_id']?.toString() ??
+          '';
+      if (tripId.isNotEmpty) {
+        ingestDriverPassengerEnRoutePush(tripId: tripId);
+      }
+      await showPassengerEnRouteNotice(tripId: tripId);
+      return;
+    }
+    if (event == 'pickup_grace') {
       return;
     }
     final n = message.notification;

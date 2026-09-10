@@ -49,6 +49,26 @@ mixin _DriverRealtimeTripsMixin on StateNotifier<DriverRealtimeState> {
     return DateTime.now().millisecondsSinceEpoch <= untilMs;
   }
 
+  /// Aviso «Ya salgo»: WS o FCM. Pinta la franja aunque la card esté colapsada.
+  void applyPassengerEnRouteNotice({
+    required String tripId,
+    DateTime? sentAt,
+    bool playHaptic = true,
+  }) {
+    final current = state.activeTrip;
+    if (current == null || current.tripId != tripId) return;
+    if (current.status != 'arrived' && current.status != 'accepted') return;
+    final already = current.passengerEnRouteAt;
+    final at = sentAt ?? DateTime.now().toUtc();
+    state = state.copyWith(
+      activeTrip: current.copyWith(passengerEnRouteAt: at),
+    );
+    if (playHaptic && already == null) {
+      HapticFeedback.mediumImpact();
+      SystemSound.play(SystemSoundType.alert);
+    }
+  }
+
   void sendTripChatTemplate({
     required String tripId,
     required String templateCode,

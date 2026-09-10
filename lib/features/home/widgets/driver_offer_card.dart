@@ -7,6 +7,7 @@ import '../../../core/utils/money_formatter.dart';
 import '../../../gen_l10n/app_localizations.dart';
 import '../../login/driver_trip_offer.dart';
 import 'driver_trip_payment_chip.dart';
+import 'driver_trip_promo_breakdown.dart';
 import 'driver_trip_extras_icons.dart';
 
 class DriverTripOfferCard extends StatelessWidget {
@@ -30,7 +31,7 @@ class DriverTripOfferCard extends StatelessWidget {
   });
 
   static String _formatPrice(double? value, {String? currencyCode}) {
-    return formatMoney(value, currencyCode: currencyCode);
+    return formatTripMoney(value, currencyCode: currencyCode);
   }
 
   static String _formatDistance(double? km) {
@@ -182,38 +183,14 @@ class DriverTripOfferCard extends StatelessWidget {
                     ),
                     if (offer.hasPromoBreakdown) ...[
                       const SizedBox(height: 8),
-                      Text(
-                        l10n.driverTripPromoCashDue(
-                          _formatPrice(
-                            offer.cashDuePassenger,
-                            currencyCode: offer.currencyCode,
-                          ),
-                        ),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      Text(
-                        offer.isPassengerReferralSupport
-                            ? l10n.driverTripSupportCompanyPays(
-                                _formatPrice(
-                                  offer.companyGuaranteeToDriver,
-                                  currencyCode: offer.currencyCode,
-                                ),
-                              )
-                            : l10n.driverTripPromoCompanyPays(
-                                _formatPrice(
-                                  offer.companyGuaranteeToDriver,
-                                  currencyCode: offer.currencyCode,
-                                ),
-                              ),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
-                        ),
+                      DriverTripPromoBreakdown(
+                        l10n: l10n,
+                        cashDuePassenger: offer.cashDuePassenger,
+                        companyGuaranteeToDriver:
+                            offer.companyGuaranteeToDriver,
+                        currencyCode: offer.currencyCode,
+                        isReferralSupport: offer.isPassengerReferralSupport,
+                        emphasizeCompanyLine: true,
                       ),
                     ],
                     if (isWebDispatch) ...[

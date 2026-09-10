@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_motion.dart';
 import '../../../gen_l10n/app_localizations.dart';
 
-/// Botones de apertura de navegación externa con pulso suave y copy que clarifica el gesto.
+/// Atajo a Maps dentro del detalle del viaje: no imita los CTA primarios (Llegué / Iniciar).
 class DriverAssistedTripNavButtons extends StatefulWidget {
   const DriverAssistedTripNavButtons({
     super.key,
@@ -14,6 +15,8 @@ class DriverAssistedTripNavButtons extends StatefulWidget {
     required this.l10n,
     required this.onNavigateToPickup,
     required this.onNavigateToDestination,
+    this.pickupHint,
+    this.destinationHint,
   });
 
   final bool showPickup;
@@ -22,6 +25,8 @@ class DriverAssistedTripNavButtons extends StatefulWidget {
   final AppLocalizations l10n;
   final VoidCallback onNavigateToPickup;
   final VoidCallback onNavigateToDestination;
+  final String? pickupHint;
+  final String? destinationHint;
 
   @override
   State<DriverAssistedTripNavButtons> createState() =>
@@ -38,9 +43,9 @@ class DriverAssistedTripNavButtonsState extends State<DriverAssistedTripNavButto
     super.initState();
     _pulse = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2400),
+      duration: const Duration(milliseconds: 2200),
     )..repeat(reverse: true);
-    _t = CurvedAnimation(parent: _pulse, curve: Curves.easeInOutCubic);
+    _t = CurvedAnimation(parent: _pulse, curve: AppMotion.standard);
   }
 
   @override
@@ -58,13 +63,13 @@ class DriverAssistedTripNavButtonsState extends State<DriverAssistedTripNavButto
         ? canUsePickup
         : !canUseDestination;
     final isPickup = shouldUsePickup;
-    final title = isPickup
-        ? widget.l10n.driverTripNavigatePickup
-        : widget.l10n.driverTripNavigateDestination;
-    final subtitle = isPickup
+    final fallbackHint = isPickup
         ? widget.l10n.tripOrigin
         : widget.l10n.tripDestination;
-    final icon = isPickup ? Icons.near_me_rounded : Icons.turn_right_rounded;
+    final addressHint = isPickup ? widget.pickupHint : widget.destinationHint;
+    final hint = (addressHint != null && addressHint.trim().isNotEmpty)
+        ? addressHint.trim()
+        : fallbackHint;
     final onTap = isPickup
         ? widget.onNavigateToPickup
         : widget.onNavigateToDestination;
@@ -72,19 +77,104 @@ class DriverAssistedTripNavButtonsState extends State<DriverAssistedTripNavButto
     return AnimatedBuilder(
       animation: _t,
       builder: (context, child) {
-        final wave = isPickup ? _t.value : (1 - _t.value);
-        return _assistedNavPill(
-          context,
-          glow: 0.24 + 0.52 * wave,
-          iconScale: 1.0 + 0.09 * wave,
-          isPickup: isPickup,
-          title: title,
-          subtitle: subtitle,
-          icon: icon,
-          onTap: () {
-            HapticFeedback.lightImpact();
-            onTap();
-          },
+        final wave = 0.55 + 0.45 * _t.value;
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onTap();
+            },
+            borderRadius: BorderRadius.circular(14),
+            child: Ink(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.14 + 0.08 * wave),
+                    AppColors.surface.withValues(alpha: 0.35),
+                  ],
+                ),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.28 + 0.22 * wave),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
+                child: Row(
+                  children: [
+                    Transform.scale(
+                      scale: 0.96 + 0.06 * wave,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.primary,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(
+                                alpha: 0.28 + 0.22 * wave,
+                              ),
+                              blurRadius: 10 + 6 * wave,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          isPickup
+                              ? Icons.explore_rounded
+                              : Icons.near_me_rounded,
+                          color: AppColors.onPrimary,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            widget.l10n.driverTripOpenMapsCta,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                              height: 1.15,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            hint,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.95,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.north_east_rounded,
+                      size: 18,
+                      color: AppColors.primary.withValues(alpha: 0.9),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         );
       },
     );
@@ -103,119 +193,5 @@ class DriverAssistedTripNavButtonsState extends State<DriverAssistedTripNavButto
       default:
         return true;
     }
-  }
-
-  Widget _assistedNavPill(
-    BuildContext context, {
-    required double glow,
-    required double iconScale,
-    required bool isPickup,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    final borderColor = AppColors.primary.withValues(
-      alpha: isPickup ? glow * 0.55 : glow * 0.7,
-    );
-    final bg = isPickup
-        ? AppColors.primary.withValues(alpha: 0.12 + 0.06 * glow)
-        : AppColors.primary.withValues(alpha: 0.88 + 0.06 * glow);
-    final fg = isPickup ? AppColors.textPrimary : AppColors.onPrimary;
-    final subFg = isPickup
-        ? AppColors.textSecondary.withValues(alpha: 0.9)
-        : AppColors.onPrimary.withValues(alpha: 0.88);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: borderColor,
-              width: isPickup ? 1.25 : 1.15,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(
-                  alpha: isPickup ? 0.08 : 0.2,
-                ),
-                blurRadius: 10 + 6 * glow,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
-            child: Row(
-              children: [
-                Transform.scale(
-                  scale: iconScale,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color:
-                          (isPickup ? AppColors.primary : AppColors.onPrimary)
-                              .withValues(alpha: isPickup ? 0.18 : 0.22),
-                      borderRadius: BorderRadius.circular(11),
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 22,
-                      color: isPickup ? AppColors.primary : AppColors.onPrimary,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: fg,
-                                height: 1.15,
-                              ),
-                            ),
-                          ),
-                          Icon(
-                            Icons.open_in_new_rounded,
-                            size: 16,
-                            color: subFg,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        subtitle.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.6,
-                          color: subFg,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

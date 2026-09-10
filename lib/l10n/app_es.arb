@@ -520,9 +520,9 @@
       "seconds": {"type": "int"}
     }
   },
-  "driverTripCancelCta": "No continuar",
+  "driverTripCancelCta": "No continuar el viaje",
   "@driverTripCancelCta": {
-    "description": "Botón secundario en card assigned; mismo color error; copy suave (no Cancelar)"
+    "description": "Botón secundario al pie de la card assigned; copy preciso, color error"
   },
   "driverTripCancelChooseReason": "¿Por qué cancelas?",
   "driverTripCancelNoteHint": "Escribe el motivo",
@@ -625,6 +625,10 @@
   "driverTripErrorGeneric": "No se pudo actualizar el estado del viaje.",
   "driverTripNavigatePickup": "Navegar al origen",
   "driverTripNavigateDestination": "Navegar al destino",
+  "driverTripOpenMapsCta": "Abrir mapa",
+  "@driverTripOpenMapsCta": {
+    "description": "Atajo Maps dentro del detalle; no imita Llegué/Iniciar"
+  },
   "driverRegisteredImagesMenu": "Imágenes registradas",
   "driverTripChatOpenCta": "Chat seguro",
   "driverTripChatTitle": "Chat del viaje",
@@ -1088,6 +1092,8 @@
   "driverAppUpdateOptionalMessage": "Hay una actualización en Play Store. Te recomendamos instalarla para la mejor experiencia.",
   "driverAppUpdateOpenStore": "Ir a Play Store",
   "driverAppUpdateLater": "Más tarde",
+  "driverAppUpdateDownloadedMessage": "La actualización se descargó. Reinicia para instalarla.",
+  "driverAppUpdateRestart": "Reiniciar",
   "driverPasswordResetForgotLink": "¿Olvidaste tu contraseña?",
   "driverPasswordResetTitle": "Restablecer contraseña",
   "driverPasswordResetLead": "Confirma tu número. Lo más rápido es enviar el mensaje de WhatsApp. Si prefieres, te enviamos un código al correo.",

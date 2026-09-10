@@ -164,7 +164,7 @@ class DriverRetractableTripCard extends StatelessWidget {
                             ),
                             if (trip.estimatedPrice != null)
                               Text(
-                                formatMoney(
+                                formatTripMoney(
                                   trip.estimatedPrice,
                                   currencyCode: trip.currencyCode,
                                 ),

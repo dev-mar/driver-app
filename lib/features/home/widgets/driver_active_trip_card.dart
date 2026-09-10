@@ -11,6 +11,7 @@ import 'driver_active_trip_status_helpers.dart';
 import 'driver_pickup_wait.dart';
 import 'driver_trip_cancel_reason.dart';
 import 'driver_trip_payment_chip.dart';
+import 'driver_trip_promo_breakdown.dart';
 import 'driver_trip_extras_icons.dart';
 
 class DriverActiveTripCard extends StatelessWidget {
@@ -166,7 +167,7 @@ class DriverActiveTripCard extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 l10n.driverTripEstimatedPrice(
-                                  formatMoney(
+                                  formatTripMoney(
                                     trip.estimatedPrice,
                                     currencyCode: trip.currencyCode,
                                   ),
@@ -183,6 +184,19 @@ class DriverActiveTripCard extends StatelessWidget {
                             ),
                           ],
                         ),
+                        if (trip.hasPromoBreakdown) ...[
+                          const SizedBox(height: 8),
+                          DriverTripPromoBreakdown(
+                            l10n: l10n,
+                            cashDuePassenger: trip.cashDuePassenger,
+                            companyGuaranteeToDriver:
+                                trip.companyGuaranteeToDriver,
+                            currencyCode: trip.currencyCode,
+                            isReferralSupport:
+                                trip.isPassengerReferralSupport,
+                            emphasizeCompanyLine: true,
+                          ),
+                        ],
                         if (trip.tripExtras.isNotEmpty ||
                             trip.tripSpecials.isNotEmpty) ...[
                           const SizedBox(height: 6),
@@ -217,6 +231,19 @@ class DriverActiveTripCard extends StatelessWidget {
                             ],
                           ),
                         ),
+                        if (trip.hasPromoBreakdown) ...[
+                          const SizedBox(height: 8),
+                          DriverTripPromoBreakdown(
+                            l10n: l10n,
+                            cashDuePassenger: trip.cashDuePassenger,
+                            companyGuaranteeToDriver:
+                                trip.companyGuaranteeToDriver,
+                            currencyCode: trip.currencyCode,
+                            isReferralSupport:
+                                trip.isPassengerReferralSupport,
+                            emphasizeCompanyLine: true,
+                          ),
+                        ],
                       ],
                     ],
                   ),
@@ -418,23 +445,31 @@ class DriverActiveTripCard extends StatelessWidget {
                         ],
                       ],
                     ),
+                  if ((hasOriginLine || hasDestLine || hasMetrics) &&
+                      ((trip.pickupLat != null && trip.pickupLng != null) ||
+                          (trip.destinationLat != null &&
+                              trip.destinationLng != null))) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Divider(
+                        height: 1,
+                        color: AppColors.border.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    DriverAssistedTripNavButtons(
+                      showPickup:
+                          trip.pickupLat != null && trip.pickupLng != null,
+                      showDestination: trip.destinationLat != null &&
+                          trip.destinationLng != null,
+                      tripStatus: trip.status,
+                      pickupHint: trip.originAddress,
+                      destinationHint: trip.destinationAddress,
+                      l10n: l10n,
+                      onNavigateToPickup: onNavigateToPickup,
+                      onNavigateToDestination: onNavigateToDestination,
+                    ),
+                  ],
                 ],
-              ),
-            ),
-          ],
-          if ((trip.pickupLat != null && trip.pickupLng != null) ||
-              (trip.destinationLat != null && trip.destinationLng != null)) ...[
-            const SizedBox(height: 10),
-            section(
-              padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-              child: DriverAssistedTripNavButtons(
-                showPickup: trip.pickupLat != null && trip.pickupLng != null,
-                showDestination:
-                    trip.destinationLat != null && trip.destinationLng != null,
-                tripStatus: trip.status,
-                l10n: l10n,
-                onNavigateToPickup: onNavigateToPickup,
-                onNavigateToDestination: onNavigateToDestination,
               ),
             ),
           ],
@@ -527,6 +562,29 @@ class DriverActiveTripCard extends StatelessWidget {
               ),
             ],
           ],
+          if ((trip.status == 'started' || trip.status == 'in_trip') &&
+              canAct) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: processingAction == 'completed'
+                    ? null
+                    : onCompleteTrip,
+                icon: processingAction == 'completed'
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.onPrimary,
+                        ),
+                      )
+                    : const Icon(Icons.check_circle_rounded, size: 22),
+                label: Text(l10n.driverTripCompleteButton),
+              ),
+            ),
+          ],
           if (onCancelTrip != null &&
               driverTripCanCancelAssigned(trip.status) &&
               canAct) ...[
@@ -549,29 +607,6 @@ class DriverActiveTripCard extends StatelessWidget {
                     color: AppColors.error.withValues(alpha: 0.55),
                   ),
                 ),
-              ),
-            ),
-          ],
-          if ((trip.status == 'started' || trip.status == 'in_trip') &&
-              canAct) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: processingAction == 'completed'
-                    ? null
-                    : onCompleteTrip,
-                icon: processingAction == 'completed'
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.onPrimary,
-                        ),
-                      )
-                    : const Icon(Icons.check_circle_rounded, size: 22),
-                label: Text(l10n.driverTripCompleteButton),
               ),
             ),
           ],

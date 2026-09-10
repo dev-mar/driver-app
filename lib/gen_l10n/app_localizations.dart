@@ -2408,10 +2408,10 @@ abstract class AppLocalizations {
   /// **'You can notify again in {seconds} s'**
   String driverArrivalReminderCooldown(int seconds);
 
-  /// Secondary assigned-trip button; keep error color; softer than Cancel trip
+  /// Secondary assigned-trip button at the bottom; keep error color
   ///
   /// In en, this message translates to:
-  /// **'Don\'t continue'**
+  /// **'Don\'t continue the trip'**
   String get driverTripCancelCta;
 
   /// No description provided for @driverTripCancelChooseReason.
@@ -2857,6 +2857,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Navigate to destination'**
   String get driverTripNavigateDestination;
+
+  /// Maps shortcut inside trip detail; must not look like Arrived/Start
+  ///
+  /// In en, this message translates to:
+  /// **'Open map'**
+  String get driverTripOpenMapsCta;
 
   /// No description provided for @driverRegisteredImagesMenu.
   ///
@@ -4906,6 +4912,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Later'**
   String get driverAppUpdateLater;
+
+  /// No description provided for @driverAppUpdateDownloadedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The update downloaded. Restart to install it.'**
+  String get driverAppUpdateDownloadedMessage;
+
+  /// No description provided for @driverAppUpdateRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart'**
+  String get driverAppUpdateRestart;
 
   /// No description provided for @driverPasswordResetForgotLink.
   ///

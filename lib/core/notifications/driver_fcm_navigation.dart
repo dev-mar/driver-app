@@ -7,10 +7,13 @@ import '../router/app_router.dart';
 /// (`event=trip_offer`). [DriverHomeScreen] muestra un SnackBar y fusiona la oferta.
 final ValueNotifier<int> driverFcmTripOfferOpenBump = ValueNotifier<int>(0);
 final ValueNotifier<int> driverTripChatOpenBump = ValueNotifier<int>(0);
+final ValueNotifier<int> driverPassengerEnRouteBump = ValueNotifier<int>(0);
 
 /// Datos de la última notificación de oferta abierta (se consume una vez en Home).
 Map<String, String>? _pendingTripOfferFromNotification;
 String? _pendingTripChatTripIdFromNotification;
+String? _pendingPassengerEnRouteTripId;
+DateTime? _pendingPassengerEnRouteAt;
 
 /// Obtiene y borra el payload guardado al abrir desde la notificación.
 Map<String, String>? takePendingTripOfferFromNotification() {
@@ -23,6 +26,26 @@ String? takePendingTripChatTripIdFromNotification() {
   final id = _pendingTripChatTripIdFromNotification;
   _pendingTripChatTripIdFromNotification = null;
   return id;
+}
+
+void ingestDriverPassengerEnRoutePush({
+  required String tripId,
+  DateTime? sentAt,
+}) {
+  final id = tripId.trim();
+  if (id.isEmpty) return;
+  _pendingPassengerEnRouteTripId = id;
+  _pendingPassengerEnRouteAt = sentAt ?? DateTime.now().toUtc();
+  driverPassengerEnRouteBump.value = driverPassengerEnRouteBump.value + 1;
+}
+
+({String tripId, DateTime sentAt})? takePendingPassengerEnRoute() {
+  final id = _pendingPassengerEnRouteTripId;
+  final at = _pendingPassengerEnRouteAt;
+  _pendingPassengerEnRouteTripId = null;
+  _pendingPassengerEnRouteAt = null;
+  if (id == null || id.isEmpty) return null;
+  return (tripId: id, sentAt: at ?? DateTime.now().toUtc());
 }
 
 void _markPendingDriverTripChatOpen(String tripId) {
@@ -43,6 +66,20 @@ void _markPendingDriverTripChatOpen(String tripId) {
 /// Llamar desde [FirebaseMessaging.onMessageOpenedApp] y [getInitialMessage].
 void handleDriverFcmNotificationOpen(RemoteMessage message) {
   final event = message.data['event']?.toString();
+  if (event == 'passenger_en_route') {
+    final tripId = message.data['tripId']?.toString().trim();
+    if (tripId != null && tripId.isNotEmpty) {
+      ingestDriverPassengerEnRoutePush(tripId: tripId);
+    }
+    try {
+      AppRouter.router.go('/home');
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[DriverFCM] router.go(/home) passenger_en_route: $e $st');
+      }
+    }
+    return;
+  }
   if (event == 'pickup_grace') {
     try {
       AppRouter.router.go('/home');

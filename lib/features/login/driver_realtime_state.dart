@@ -432,6 +432,15 @@ class DriverActiveTrip {
   /// Último aviso "Ya salgo" del pasajero (WS). Solo se muestra en `arrived`.
   final DateTime? passengerEnRouteAt;
 
+  /// Aditivo: lo que el pasajero paga si hay beneficio TEXIAPP.
+  final double? cashDuePassenger;
+
+  /// Aditivo: lo que TEXIAPP cubre al conductor.
+  final double? companyGuaranteeToDriver;
+
+  /// Aditivo: `passenger_referral` cuando el abono es de la empresa.
+  final String? supportSource;
+
   const DriverActiveTrip({
     required this.tripId,
     required this.status,
@@ -455,7 +464,20 @@ class DriverActiveTrip {
     this.waitSec,
     this.waitGraceSec,
     this.passengerEnRouteAt,
+    this.cashDuePassenger,
+    this.companyGuaranteeToDriver,
+    this.supportSource,
   });
+
+  bool get hasPromoBreakdown =>
+      cashDuePassenger != null &&
+      companyGuaranteeToDriver != null &&
+      companyGuaranteeToDriver! > 0;
+
+  bool get isPassengerReferralSupport {
+    final src = supportSource?.trim().toLowerCase() ?? '';
+    return src == 'passenger_referral' || src == 'passenger_referral_support';
+  }
 
   DriverActiveTrip copyWith({
     String? tripId,
@@ -480,6 +502,9 @@ class DriverActiveTrip {
     int? waitSec,
     int? waitGraceSec,
     DateTime? passengerEnRouteAt,
+    double? cashDuePassenger,
+    double? companyGuaranteeToDriver,
+    String? supportSource,
   }) {
     return DriverActiveTrip(
       tripId: tripId ?? this.tripId,
@@ -505,6 +530,10 @@ class DriverActiveTrip {
       waitSec: waitSec ?? this.waitSec,
       waitGraceSec: waitGraceSec ?? this.waitGraceSec,
       passengerEnRouteAt: passengerEnRouteAt ?? this.passengerEnRouteAt,
+      cashDuePassenger: cashDuePassenger ?? this.cashDuePassenger,
+      companyGuaranteeToDriver:
+          companyGuaranteeToDriver ?? this.companyGuaranteeToDriver,
+      supportSource: supportSource ?? this.supportSource,
     );
   }
 }

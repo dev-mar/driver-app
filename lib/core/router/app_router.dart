@@ -28,6 +28,9 @@ const String _kDriverTokenKey = 'driver_token';
 class AppRouter {
   AppRouter._();
 
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
   static const String login = 'driver_login';
   static const String forgotPassword = 'driver_forgot_password';
   static const String changePassword = 'driver_change_password';
@@ -57,6 +60,7 @@ class AppRouter {
   }
 
   static final GoRouter router = GoRouter(
+    navigatorKey: navigatorKey,
     initialLocation: '/login',
     redirect: (BuildContext context, GoRouterState state) async {
       final hasToken = await _hasStoredToken();

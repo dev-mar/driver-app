@@ -1,12 +1,14 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';import 'package:package_info_plus/package_info_plus.dart';
+import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config/driver_backend_config.dart';
 import '../network/driver_api_client.dart';
 import '../../gen_l10n/app_localizations.dart';
+import 'play_in_app_update_helper.dart';
 
 enum DriverAppVersionGateOutcome {
   ok,
@@ -183,14 +185,27 @@ class DriverAppVersionGate {
   static Future<bool> runStartupCheck(BuildContext context) async {
     final result = await ensureChecked();
     if (!context.mounted) return false;
+
     if (!result.canProceed) {
+      final started = await PlayInAppUpdateHelper.tryImmediateUpdate();
+      if (started) return false;
+      if (!context.mounted) return false;
       await showGateUi(context, result);
       return false;
     }
+
     if (result.outcome == DriverAppVersionGateOutcome.optionalUpdate) {
-      await showGateUi(context, result);
+      PlayInAppUpdateHelper.ensureFlexibleUpdateListener();
+      final started = await PlayInAppUpdateHelper.tryFlexibleUpdate();
+      if (!started) {
+        if (!context.mounted) return false;
+        await showGateUi(context, result);
+      }
       if (!context.mounted) return false;
+      return true;
     }
+
+    PlayInAppUpdateHelper.scheduleOptionalPlayUpdateCheck();
     return true;
   }
 }

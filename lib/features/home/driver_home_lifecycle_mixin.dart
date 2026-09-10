@@ -14,8 +14,10 @@ import '../../core/notifications/driver_fcm_navigation.dart'
     show
         driverFcmTripOfferOpenBump,
         driverTripChatOpenBump,
+        driverPassengerEnRouteBump,
         takePendingTripOfferFromNotification,
-        takePendingTripChatTripIdFromNotification;
+        takePendingTripChatTripIdFromNotification,
+        takePendingPassengerEnRoute;
 import '../../core/notifications/driver_trip_chat_visibility.dart';
 import '../../core/router/app_router.dart';
 import '../../core/session/driver_internal_tools_gate.dart';
@@ -50,6 +52,7 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
   bool keepScreenOnApplied = false;
   int lastHandledFcmTripOfferBump = 0;
   int lastHandledTripChatOpenBump = 0;
+  int lastHandledPassengerEnRouteBump = 0;
   bool handlingAuthSessionExpired = false;
   bool openingVehicleRegistrationForm = false;
   bool vehicleFormAutoOpenAttempted = false;
@@ -65,9 +68,11 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
     WidgetsBinding.instance.addObserver(this);
     driverFcmTripOfferOpenBump.addListener(onFcmTripOfferOpenBump);
     driverTripChatOpenBump.addListener(onTripChatOpenBump);
+    driverPassengerEnRouteBump.addListener(onPassengerEnRouteBump);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       onFcmTripOfferOpenBump();
       onTripChatOpenBump();
+      onPassengerEnRouteBump();
       unawaited(maybeOpenVehicleRegistrationForm());
     });
     homeListEntrance = AnimationController(
@@ -154,6 +159,7 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
     driverSessionExpulsionHandler = null;
     driverFcmTripOfferOpenBump.removeListener(onFcmTripOfferOpenBump);
     driverTripChatOpenBump.removeListener(onTripChatOpenBump);
+    driverPassengerEnRouteBump.removeListener(onPassengerEnRouteBump);
     unawaited(WakelockPlus.disable());
     homeListEntrance.dispose();
     WidgetsBinding.instance.removeObserver(this);
@@ -210,6 +216,22 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
       if (!driverTripChatPhaseActive(activeTrip?.status)) return;
       if (tripChatSheetDisplayed) return;
       await openTripChatSheet(tripId: tripId);
+    });
+  }
+
+  void onPassengerEnRouteBump() {
+    final bump = driverPassengerEnRouteBump.value;
+    if (bump <= lastHandledPassengerEnRouteBump) return;
+    lastHandledPassengerEnRouteBump = bump;
+    if (!mounted) return;
+    final pending = takePendingPassengerEnRoute();
+    if (pending == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(driverRealtimeProvider.notifier).applyPassengerEnRouteNotice(
+        tripId: pending.tripId,
+        sentAt: pending.sentAt,
+      );
     });
   }
 

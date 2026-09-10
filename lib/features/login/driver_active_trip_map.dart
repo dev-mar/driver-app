@@ -371,11 +371,15 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
     try {
       final pickupIcon = await buildDriverWaypointMapPinIcon(
         logicalSize: 54,
-        fill: const Color(0xFFFFC107),
+        fill: kDriverPinBrandYellow,
+        stroke: kDriverPinBrandBlack,
+        style: DriverWaypointPinStyle.pickupPerson,
       );
       final destinationIcon = await buildDriverWaypointMapPinIcon(
         logicalSize: 54,
-        fill: const Color(0xFFE53935),
+        fill: kDriverPinBrandBlack,
+        stroke: kDriverPinBrandYellow,
+        style: DriverWaypointPinStyle.destinationX,
       );
       final tollIcon = await buildDriverRouteReferenceIcon(
         icon: Icons.toll_rounded,
@@ -716,6 +720,7 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
           icon:
               _pickupOnTripIcon ??
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
+          anchor: const Offset(0.5, kDriverWaypointPinTipAnchorY),
           zIndexInt: 20,
           infoWindow: InfoWindow(title: l10n.driverMapPickupPoint),
         ),
@@ -729,6 +734,7 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
           icon:
               _destinationOnTripIcon ??
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          anchor: const Offset(0.5, kDriverWaypointPinTipAnchorY),
           zIndexInt: 10,
           infoWindow: InfoWindow(title: l10n.driverMapDestinationPoint),
         ),

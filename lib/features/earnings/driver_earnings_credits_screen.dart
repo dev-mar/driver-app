@@ -753,7 +753,7 @@ class _CompletedTripTile extends StatelessWidget {
     final price = trip.finalPrice ?? trip.estimatedPrice;
     final cc = trip.currencyCode ?? 'BOB';
     final priceLabel = price != null
-        ? formatMoney(price, currencyCode: cc)
+        ? formatTripMoney(price, currencyCode: cc)
         : l10n.driverTripHistoryPricePending;
     final when = trip.createdAt.toString();
     return Material(

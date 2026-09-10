@@ -1329,7 +1329,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get driverTripCancelCta => 'No continuar';
+  String get driverTripCancelCta => 'No continuar el viaje';
 
   @override
   String get driverTripCancelChooseReason => '¿Por qué cancelas?';
@@ -1593,6 +1593,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverTripNavigateDestination => 'Navegar al destino';
+
+  @override
+  String get driverTripOpenMapsCta => 'Abrir mapa';
 
   @override
   String get driverRegisteredImagesMenu => 'Imágenes registradas';
@@ -2745,6 +2748,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverAppUpdateLater => 'Más tarde';
+
+  @override
+  String get driverAppUpdateDownloadedMessage =>
+      'La actualización se descargó. Reinicia para instalarla.';
+
+  @override
+  String get driverAppUpdateRestart => 'Reiniciar';
 
   @override
   String get driverPasswordResetForgotLink => '¿Olvidaste tu contraseña?';

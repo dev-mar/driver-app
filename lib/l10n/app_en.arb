@@ -520,9 +520,9 @@
       "seconds": {"type": "int"}
     }
   },
-  "driverTripCancelCta": "Don't continue",
+  "driverTripCancelCta": "Don't continue the trip",
   "@driverTripCancelCta": {
-    "description": "Secondary assigned-trip button; keep error color; softer than Cancel trip"
+    "description": "Secondary assigned-trip button at the bottom; keep error color"
   },
   "driverTripCancelChooseReason": "Why are you cancelling?",
   "driverTripCancelNoteHint": "Write the reason",
@@ -625,6 +625,10 @@
   "driverTripErrorGeneric": "Could not update trip status.",
   "driverTripNavigatePickup": "Navigate to pickup",
   "driverTripNavigateDestination": "Navigate to destination",
+  "driverTripOpenMapsCta": "Open map",
+  "@driverTripOpenMapsCta": {
+    "description": "Maps shortcut inside trip detail; must not look like Arrived/Start"
+  },
   "driverRegisteredImagesMenu": "Registered images",
   "driverTripChatOpenCta": "Secure chat",
   "driverTripChatTitle": "Trip chat",
@@ -1088,6 +1092,8 @@
   "driverAppUpdateOptionalMessage": "An update is available on the Play Store. We recommend installing it for the best experience.",
   "driverAppUpdateOpenStore": "Go to Play Store",
   "driverAppUpdateLater": "Later",
+  "driverAppUpdateDownloadedMessage": "The update downloaded. Restart to install it.",
+  "driverAppUpdateRestart": "Restart",
   "driverPasswordResetForgotLink": "Forgot your password?",
   "driverPasswordResetTitle": "Reset password",
   "driverPasswordResetLead": "Confirm your number. The fastest option is to send a WhatsApp message. Or we can email you a code.",
