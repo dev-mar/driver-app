@@ -61,6 +61,21 @@ void main() {
       expect(fromJson.tripExtras, ['child_seat', 'wheelchair']);
     });
 
+    test('parsea coords de preview sin marcar accept', () {
+      final offer = driverTripOfferFromMap({
+        'tripId': 't-geo',
+        'pickupLat': '-17.39',
+        'pickupLng': '-66.15',
+        'destinationLat': -17.40,
+        'destinationLng': -66.16,
+        'routeOverviewEncoded': 'abc',
+      });
+      expect(offer.hasPreviewMapCoords, isTrue);
+      expect(offer.pickupLat, closeTo(-17.39, 0.001));
+      expect(offer.destinationLng, closeTo(-66.16, 0.001));
+      expect(offer.routeOverviewEncoded, 'abc');
+    });
+
     test('parsea supportAmount y supportSource de apoyo referidos', () {
       final offer = driverTripOfferFromMap({
         'tripId': 't-support',

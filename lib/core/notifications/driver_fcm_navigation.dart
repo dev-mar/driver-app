@@ -56,6 +56,9 @@ void _markPendingDriverTripChatOpen(String tripId) {
 ({String? tripId, bool openChat}) _parseDriverNotificationPayload(String? raw) {
   final payload = raw?.trim() ?? '';
   if (payload.isEmpty) return (tripId: null, openChat: false);
+  if (payload.startsWith('ops:')) {
+    return (tripId: null, openChat: false);
+  }
   if (payload.startsWith('chat:')) {
     final tripId = payload.substring(5).trim();
     return (tripId: tripId.isEmpty ? null : tripId, openChat: true);
@@ -76,6 +79,16 @@ void handleDriverFcmNotificationOpen(RemoteMessage message) {
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('[DriverFCM] router.go(/home) passenger_en_route: $e $st');
+      }
+    }
+    return;
+  }
+  if (event == 'ops_notice') {
+    try {
+      AppRouter.router.go('/home');
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[DriverFCM] router.go(/home) ops_notice: $e $st');
       }
     }
     return;

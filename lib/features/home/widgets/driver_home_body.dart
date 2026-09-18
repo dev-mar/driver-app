@@ -108,6 +108,7 @@ class DriverHomeRequestsPanel extends ConsumerStatefulWidget {
     required this.showProminentGateError,
     required this.blockOnlineForTrips,
     required this.onAfterOnlineEnabled,
+    required this.onPreviewOffer,
   });
 
   final LocalAuthentication localAuth;
@@ -117,6 +118,7 @@ class DriverHomeRequestsPanel extends ConsumerStatefulWidget {
   final bool showProminentGateError;
   final bool blockOnlineForTrips;
   final Future<void> Function(BuildContext context) onAfterOnlineEnabled;
+  final ValueChanged<String> onPreviewOffer;
 
   @override
   ConsumerState<DriverHomeRequestsPanel> createState() =>
@@ -273,6 +275,8 @@ class _DriverHomeRequestsPanelState
                                   onReject: () => ref
                                       .read(driverRealtimeProvider.notifier)
                                       .rejectOffer(offer.tripId),
+                                  onPreview: () =>
+                                      widget.onPreviewOffer(offer.tripId),
                                 ),
                               );
                             }, childCount: pendingOffers.length),

@@ -67,6 +67,13 @@ class DriverTripOffer {
   /// Aditivo: `passenger_referral` cuando el abono es de la empresa (no créditos).
   final String? supportSource;
 
+  /// Aditivo: coords para previsualizar la ruta. Ausentes = hoja sin mapa.
+  final double? pickupLat;
+  final double? pickupLng;
+  final double? destinationLat;
+  final double? destinationLng;
+  final String? routeOverviewEncoded;
+
   const DriverTripOffer({
     required this.tripId,
     this.offeredPrice,
@@ -89,6 +96,11 @@ class DriverTripOffer {
     this.promoDiscountAmount,
     this.supportAmount,
     this.supportSource,
+    this.pickupLat,
+    this.pickupLng,
+    this.destinationLat,
+    this.destinationLng,
+    this.routeOverviewEncoded,
   });
 
   bool get isAdminWebDispatch =>
@@ -107,6 +119,12 @@ class DriverTripOffer {
     }
     return (supportAmount ?? 0) > 0;
   }
+
+  bool get hasPreviewMapCoords =>
+      pickupLat != null &&
+      pickupLng != null &&
+      destinationLat != null &&
+      destinationLng != null;
 }
 
 /// Construye [DriverTripOffer] desde payload socket o FCM (camelCase backend).
@@ -159,7 +177,24 @@ DriverTripOffer driverTripOfferFromMap(Map<dynamic, dynamic> data) {
     supportSource: (data['supportSource'] ?? data['support_source'])
         ?.toString()
         .trim(),
+    pickupLat: _parseOfferDouble(data['pickupLat'] ?? data['pickup_lat']),
+    pickupLng: _parseOfferDouble(data['pickupLng'] ?? data['pickup_lng']),
+    destinationLat: _parseOfferDouble(
+      data['destinationLat'] ?? data['destination_lat'] ?? data['dropoffLat'],
+    ),
+    destinationLng: _parseOfferDouble(
+      data['destinationLng'] ?? data['destination_lng'] ?? data['dropoffLng'],
+    ),
+    routeOverviewEncoded: _trimOfferText(
+      data['routeOverviewEncoded'] ?? data['route_overview_encoded'],
+    ),
   );
+}
+
+String? _trimOfferText(dynamic raw) {
+  final value = raw?.toString().trim();
+  if (value == null || value.isEmpty) return null;
+  return value;
 }
 
 String normalizeDriverTripPaymentMethod(dynamic raw) {

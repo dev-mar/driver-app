@@ -8,6 +8,9 @@
   "commonCancel": "Cancelar",
   "commonClose": "Cerrar",
   "commonLoading": "Cargando...",
+  "texiBrandLoaderA11y": "Cargando TEXIAPP",
+  "texiBrandLoaderDriverPin": "Conductor disponible",
+  "texiBrandLoaderPassengerPin": "Pasajero",
   "commonError": "Algo salió mal",
   "settingsLanguage": "Idioma",
   "languageSpanish": "Español",
@@ -565,6 +568,9 @@
   },
   "driverTripReject": "Rechazar",
   "driverTripAccept": "Aceptar",
+  "driverTripOfferDetail": "Detalle",
+  "driverTripOfferDetailTitle": "Detalle del viaje",
+  "driverTripOfferPreviewBack": "Atrás",
   "driverTripOfferPriceTbd": "A acordar",
   "driverTripPromoCashDue": "El pasajero paga {amount}",
   "@driverTripPromoCashDue": {
@@ -572,8 +578,10 @@
       "amount": { "type": "String" }
     }
   },
-  "driverTripPromoCompanyPays": "TEXIAPP paga {amount}",
-  "driverTripSupportCompanyPays": "Abono de la empresa: {amount}",
+  "driverTripPromoPassengerPaysLabel": "El pasajero paga",
+  "driverTripPromoCompanyCoversLabel": "TEXIAPP cubre",
+  "driverTripPromoCompanyPays": "TEXIAPP cubre {amount}",
+  "driverTripSupportCompanyPays": "TEXIAPP cubre {amount}",
   "@driverTripSupportCompanyPays": {
     "placeholders": {
       "amount": { "type": "String" }

@@ -146,6 +146,24 @@ abstract class AppLocalizations {
   /// **'Loading...'**
   String get commonLoading;
 
+  /// No description provided for @texiBrandLoaderA11y.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading TEXIAPP'**
+  String get texiBrandLoaderA11y;
+
+  /// No description provided for @texiBrandLoaderDriverPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Available driver'**
+  String get texiBrandLoaderDriverPin;
+
+  /// No description provided for @texiBrandLoaderPassengerPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Passenger'**
+  String get texiBrandLoaderPassengerPin;
+
   /// No description provided for @commonError.
   ///
   /// In en, this message translates to:
@@ -2612,6 +2630,24 @@ abstract class AppLocalizations {
   /// **'Accept'**
   String get driverTripAccept;
 
+  /// No description provided for @driverTripOfferDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get driverTripOfferDetail;
+
+  /// No description provided for @driverTripOfferDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip details'**
+  String get driverTripOfferDetailTitle;
+
+  /// No description provided for @driverTripOfferPreviewBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get driverTripOfferPreviewBack;
+
   /// No description provided for @driverTripOfferPriceTbd.
   ///
   /// In en, this message translates to:
@@ -2624,16 +2660,28 @@ abstract class AppLocalizations {
   /// **'The passenger pays {amount}'**
   String driverTripPromoCashDue(String amount);
 
+  /// No description provided for @driverTripPromoPassengerPaysLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'The passenger pays'**
+  String get driverTripPromoPassengerPaysLabel;
+
+  /// No description provided for @driverTripPromoCompanyCoversLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'TEXIAPP covers'**
+  String get driverTripPromoCompanyCoversLabel;
+
   /// No description provided for @driverTripPromoCompanyPays.
   ///
   /// In en, this message translates to:
-  /// **'TEXIAPP pays {amount}'**
+  /// **'TEXIAPP covers {amount}'**
   String driverTripPromoCompanyPays(String amount);
 
   /// No description provided for @driverTripSupportCompanyPays.
   ///
   /// In en, this message translates to:
-  /// **'Company coverage: {amount}'**
+  /// **'TEXIAPP covers {amount}'**
   String driverTripSupportCompanyPays(String amount);
 
   /// No description provided for @driverTripPromoYouReceive.

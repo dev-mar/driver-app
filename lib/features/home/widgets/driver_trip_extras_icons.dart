@@ -60,7 +60,8 @@ class DriverTripExtrasIcons extends StatelessWidget {
           },
           borderRadius: BorderRadius.circular(999),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
               color: specialCodes.isNotEmpty
                   ? _special.withValues(alpha: 0.14)
@@ -80,7 +81,7 @@ class DriverTripExtrasIcons extends StatelessWidget {
                   if (i > 0) const SizedBox(width: 5),
                   Icon(
                     driverTripSpecialIcon(specialCodes[i]),
-                    size: 13,
+                    size: 16,
                     color: _special.withValues(alpha: 0.95),
                   ),
                 ],
@@ -90,7 +91,7 @@ class DriverTripExtrasIcons extends StatelessWidget {
                   if (i > 0) const SizedBox(width: 5),
                   Icon(
                     driverTripExtraIcon(extraCodes[i]),
-                    size: 13,
+                    size: 16,
                     color: _muted.withValues(alpha: 0.95),
                   ),
                 ],

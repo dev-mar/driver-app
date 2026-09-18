@@ -17,6 +17,8 @@ class DriverNotificationService {
 
   static const String _channelId = 'texi_driver_trip_offers';
   static const String _channelName = 'Solicitudes de viaje';
+  static const String _opsChannelId = 'texi_driver_ops_notices';
+  static const String _opsChannelName = 'Avisos TEXIAPP';
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -50,11 +52,19 @@ class DriverNotificationService {
       importance: Importance.high,
       playSound: true,
     );
-    await _plugin
+    const opsChannel = AndroidNotificationChannel(
+      _opsChannelId,
+      _opsChannelName,
+      description: 'Novedades, beneficios y avisos de la app. Independiente de las solicitudes de viaje.',
+      importance: Importance.defaultImportance,
+      playSound: true,
+    );
+    final androidPlugin = _plugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.createNotificationChannel(channel);
+        >();
+    await androidPlugin?.createNotificationChannel(channel);
+    await androidPlugin?.createNotificationChannel(opsChannel);
 
     _initialized = true;
     debugPrint('[DriverNotification] Inicializado.');
@@ -95,13 +105,16 @@ class DriverNotificationService {
     if ((title == null || title.isEmpty) && (body == null || body.isEmpty)) {
       return;
     }
+    final isOps = event == 'ops_notice';
     final tripId =
         message.data['tripId']?.toString() ??
         message.data['trip_id']?.toString();
+    final campaignId = message.data['campaignId']?.toString();
     await inst._showFcmRaw(
       title: title?.isNotEmpty == true ? title! : 'Texi Conductor',
       body: body ?? '',
-      payload: tripId,
+      payload: isOps ? 'ops:${campaignId ?? ''}' : tripId,
+      opsNotice: isOps,
     );
   }
 
@@ -181,24 +194,34 @@ class DriverNotificationService {
     final body = n?.body?.trim().isNotEmpty == true
         ? n!.body!.trim()
         : (message.data['body']?.toString() ?? '');
+    final isOps = event == 'ops_notice';
     final tripId =
         message.data['tripId']?.toString() ??
         message.data['trip_id']?.toString();
-    await _showFcmRaw(title: title, body: body, payload: tripId);
+    final campaignId = message.data['campaignId']?.toString();
+    await _showFcmRaw(
+      title: title,
+      body: body,
+      payload: isOps ? 'ops:${campaignId ?? ''}' : tripId,
+      opsNotice: isOps,
+    );
   }
 
   Future<void> _showFcmRaw({
     required String title,
     required String body,
     String? payload,
+    bool opsNotice = false,
   }) async {
     if (!_initialized) await initialize();
-    const android = AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: 'Notificaciones FCM y solicitudes de viaje.',
-      importance: Importance.high,
-      priority: Priority.high,
+    final android = AndroidNotificationDetails(
+      opsNotice ? _opsChannelId : _channelId,
+      opsNotice ? _opsChannelName : _channelName,
+      channelDescription: opsNotice
+          ? 'Novedades y avisos de la app.'
+          : 'Notificaciones FCM y solicitudes de viaje.',
+      importance: opsNotice ? Importance.defaultImportance : Importance.high,
+      priority: opsNotice ? Priority.defaultPriority : Priority.high,
       playSound: true,
     );
     final details = NotificationDetails(android: android);

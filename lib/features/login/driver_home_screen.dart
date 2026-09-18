@@ -11,8 +11,10 @@ import '../home/driver_home_online_errors.dart';
 import '../home/driver_home_view_state.dart';
 import '../home/widgets/driver_home_body.dart';
 import '../home/widgets/driver_home_menu.dart';
+import '../home/widgets/driver_offer_preview_view.dart';
 import '../session/driver_operational_profile.dart';
 import 'driver_realtime_controller.dart';
+import 'driver_trip_offer.dart';
 
 /// Orquestador del home conductor: wiring entre realtime, mapa y lista de ofertas.
 class DriverHomeScreen extends ConsumerStatefulWidget {
@@ -114,23 +116,87 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
 
     final activeTrip = realtime.activeTrip;
 
+    if (activeTrip != null && previewOfferTripId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        closeOfferPreview();
+      });
+    }
+
     if (activeTrip == null || !view.shouldShowMap) {
+      DriverTripOffer? previewOffer;
+      final previewId = previewOfferTripId;
+      if (previewId != null) {
+        for (final offer in realtime.pendingOffers) {
+          if (offer.tripId == previewId) {
+            previewOffer = offer;
+            break;
+          }
+        }
+        if (previewOffer == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            closeOfferPreview();
+          });
+        }
+      }
+
       return wrapWithVehicleFormOpeningOverlay(
-        Scaffold(
-          appBar: AppBar(
-            title: Text(l10n.driverHomeTitle),
-            actions: [
-              DriverHomeAppBarMenu(onLogout: () => logout(context)),
-            ],
-          ),
-          body: DriverHomeRequestsPanel(
-            localAuth: localAuth,
-            listFade: homeListFade,
-            listSlide: homeListSlide,
-            errorMessage: errorMessage,
-            showProminentGateError: showProminentGateError,
-            blockOnlineForTrips: blockOnlineForTrips,
-            onAfterOnlineEnabled: maybeSuggestBackgroundLocationAfterOnline,
+        PopScope(
+          canPop: previewOffer == null,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) closeOfferPreview();
+          },
+          child: Scaffold(
+            appBar: AppBar(
+              leading: previewOffer != null
+                  ? IconButton(
+                      tooltip: l10n.driverTripOfferPreviewBack,
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      onPressed: closeOfferPreview,
+                    )
+                  : null,
+              title: Text(
+                previewOffer != null
+                    ? l10n.driverTripOfferDetailTitle
+                    : l10n.driverHomeTitle,
+              ),
+              actions: [
+                DriverHomeAppBarMenu(onLogout: () => logout(context)),
+              ],
+            ),
+            body: previewOffer != null
+                ? DriverOfferPreviewView(
+                    offer: previewOffer,
+                    isProcessing:
+                        realtime.processingOfferTripId == previewOffer.tripId,
+                    isProcessingAccept:
+                        realtime.processingOfferTripId ==
+                            previewOffer.tripId &&
+                        realtime.processingIsAccept,
+                    errorMessage: driverHomeOfferErrorMessage(
+                      l10n: l10n,
+                      perOfferCode: realtime
+                          .offersErrorCodeByTripId[previewOffer.tripId],
+                      fallbackMessage: realtime
+                          .offersErrorMessageByTripId[previewOffer.tripId],
+                    ),
+                    onBack: closeOfferPreview,
+                    onAccept: () => ref
+                        .read(driverRealtimeProvider.notifier)
+                        .acceptOffer(previewOffer!.tripId),
+                  )
+                : DriverHomeRequestsPanel(
+                    localAuth: localAuth,
+                    listFade: homeListFade,
+                    listSlide: homeListSlide,
+                    errorMessage: errorMessage,
+                    showProminentGateError: showProminentGateError,
+                    blockOnlineForTrips: blockOnlineForTrips,
+                    onAfterOnlineEnabled:
+                        maybeSuggestBackgroundLocationAfterOnline,
+                    onPreviewOffer: openOfferPreview,
+                  ),
           ),
         ),
       );

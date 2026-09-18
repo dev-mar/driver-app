@@ -58,6 +58,18 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
   bool vehicleFormAutoOpenAttempted = false;
   String? activeTripCardExpansionTripId;
   bool activeTripCardExpanded = true;
+  String? previewOfferTripId;
+
+  void openOfferPreview(String tripId) {
+    final id = tripId.trim();
+    if (id.isEmpty || !mounted) return;
+    setState(() => previewOfferTripId = id);
+  }
+
+  void closeOfferPreview() {
+    if (!mounted || previewOfferTripId == null) return;
+    setState(() => previewOfferTripId = null);
+  }
 
   void logUiVerbose(String message) {
     if (!verboseUiLogs) return;
@@ -180,6 +192,14 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
             .onNotificationOpenedWithTripOffer(payload);
       }
       if (!mounted) return;
+      final previewTripId = payload?['tripId']?.toString().trim() ?? '';
+      final canPreview = appliedFromNotification == true &&
+          previewTripId.isNotEmpty &&
+          ref.read(driverRealtimeProvider).activeTrip == null;
+      if (canPreview) {
+        openOfferPreview(previewTripId);
+        return;
+      }
       final messenger = ScaffoldMessenger.maybeOf(context);
       if (messenger == null) return;
       final l10n = AppLocalizations.of(context);

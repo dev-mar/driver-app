@@ -33,6 +33,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonLoading => 'Loading...';
 
   @override
+  String get texiBrandLoaderA11y => 'Loading TEXIAPP';
+
+  @override
+  String get texiBrandLoaderDriverPin => 'Available driver';
+
+  @override
+  String get texiBrandLoaderPassengerPin => 'Passenger';
+
+  @override
   String get commonError => 'Something went wrong';
 
   @override
@@ -1441,6 +1450,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverTripAccept => 'Accept';
 
   @override
+  String get driverTripOfferDetail => 'Details';
+
+  @override
+  String get driverTripOfferDetailTitle => 'Trip details';
+
+  @override
+  String get driverTripOfferPreviewBack => 'Back';
+
+  @override
   String get driverTripOfferPriceTbd => 'To be agreed';
 
   @override
@@ -1449,13 +1467,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get driverTripPromoPassengerPaysLabel => 'The passenger pays';
+
+  @override
+  String get driverTripPromoCompanyCoversLabel => 'TEXIAPP covers';
+
+  @override
   String driverTripPromoCompanyPays(String amount) {
-    return 'TEXIAPP pays $amount';
+    return 'TEXIAPP covers $amount';
   }
 
   @override
   String driverTripSupportCompanyPays(String amount) {
-    return 'Company coverage: $amount';
+    return 'TEXIAPP covers $amount';
   }
 
   @override
