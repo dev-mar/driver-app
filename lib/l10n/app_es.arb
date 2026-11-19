@@ -98,6 +98,10 @@
   "driverHomeMenuSectionActivity": "Actividad",
   "driverHomeMenuSectionSession": "Sesión",
   "driverHomeMenuTitle": "Menú",
+  "noticesInboxTitle": "Avisos",
+  "noticesInboxEntry": "Avisos TEXIAPP",
+  "noticesMarkAll": "Leídos",
+  "noticesEmpty": "Aún no hay avisos. Cuando enviemos una novedad, aparecerá aquí.",
   "driverEarningsCreditsMenu": "Ingresos y créditos",
   "driverPayoutMenu": "Por cobrar TEXIAPP",
   "driverPayoutTitle": "Por cobrar TEXIAPP",
@@ -514,6 +518,9 @@
   "driverNotifyPassengerEnRouteTitle": "El pasajero ya sale",
   "driverNotifyPassengerEnRouteBody": "El pasajero ya sale al punto de recojo.",
   "driverNotifyPickupGraceTitle": "Tiempo de espera cumplido",
+  "driverNotifyTripCancelledTitle": "Viaje cancelado",
+  "driverNotifyTripCancelledBody": "El pasajero canceló la solicitud.",
+  "driverOnlineErrorTripEndedWhileAway": "El pasajero canceló el viaje. Ya puedes recibir otra solicitud.",
   "driverNotifyPickupGraceBody": "Tienes {minutes} min de gracia en el punto de recojo.",
   "@driverNotifyPickupGraceBody": {
     "placeholders": {"minutes": {"type": "int"}}
@@ -568,7 +575,31 @@
   },
   "driverTripReject": "Rechazar",
   "driverTripAccept": "Aceptar",
+  "driverTripCounter": "Ofertar",
+  "driverTripCounterTitle": "Contraoferta",
+  "driverTripCounterHint": "Elige cuánto sumar al costo actual.",
+  "driverTripCounterCurrent": "Costo actual",
+  "driverTripCounterAdd": "Puedes sumar",
+  "driverTripCounterTotal": "Total",
+  "driverTripCounterAddon": "+{amount}",
+  "@driverTripCounterAddon": {
+    "placeholders": {
+      "amount": { "type": "int" }
+    }
+  },
+  "driverTripCounterPercent": "{percent}%",
+  "@driverTripCounterPercent": {
+    "placeholders": {
+      "percent": { "type": "int" }
+    }
+  },
+  "driverTripCounterSend": "Enviar oferta",
+  "driverTripCounterSent": "Contraoferta enviada. El pasajero puede elegirla.",
+  "driverTripCounterAboveCap": "Ese monto supera el tope permitido.",
+  "driverTripCounterNotHigher": "La oferta debe ser mayor al costo actual.",
+  "driverTripCounterFailed": "No se pudo enviar la contraoferta.",
   "driverTripOfferDetail": "Detalle",
+  "driverTripOfferSeeOnMap": "Ver detalle del viaje en mapa",
   "driverTripOfferDetailTitle": "Detalle del viaje",
   "driverTripOfferPreviewBack": "Atrás",
   "driverTripOfferPriceTbd": "A acordar",
@@ -601,6 +632,7 @@
   "driverTripOfferBadgeNew": "Nueva",
   "driverTripPaymentCash": "Efectivo",
   "driverTripPaymentQr": "QR",
+  "driverTripPaymentMethodLabel": "Forma de pago",
   "driverTripExtrasTitle": "El pasajero indicó",
   "driverTripExtrasHint": "Informativo. Cierra para volver a la lista de solicitudes.",
   "driverTripAddonsHint": "Revisa preferencias y requerimientos. Cierra para volver a la lista.",
@@ -613,6 +645,11 @@
   "driverTripExtraWheelchairAlert": "Pasajero con silla de ruedas.",
   "driverTripExtraWheelchairDetail": "Requiere espacio en el maletero para silla plegable. Por favor, brinda asistencia si es necesario.",
   "driverTripExtraOver4": "Más de 4 personas",
+  "driverTripExtraLuggage": "Maletas",
+  "driverTripExtraAc": "Aire acondicionado",
+  "driverTripSpecialSeats6": "Hasta 6 asientos",
+  "driverTripSpecialRoofRack": "Parrilla",
+  "driverTripSpecialCargo": "Carga",
   "driverTripExtraLuggageAlert": "Con maletas.",
   "driverTripExtraLuggageDetail": "El pasajero lleva maletas. Asegúrate de tener el maletero vacío para el equipaje.",
   "driverTripExtraAcAlert": "Aire acondicionado.",
@@ -635,9 +672,9 @@
   "driverTripErrorGeneric": "No se pudo actualizar el estado del viaje.",
   "driverTripNavigatePickup": "Navegar al origen",
   "driverTripNavigateDestination": "Navegar al destino",
-  "driverTripOpenMapsCta": "Abrir mapa",
+  "driverTripOpenMapsCta": "Navegar",
   "@driverTripOpenMapsCta": {
-    "description": "Atajo Maps dentro del detalle; no imita Llegué/Iniciar"
+    "description": "Atajo compacto de navegación externa junto a las direcciones del viaje"
   },
   "driverRegisteredImagesMenu": "Imágenes registradas",
   "driverTripChatOpenCta": "Chat seguro",
@@ -678,6 +715,8 @@
   "driverHomeBackgroundLocationBody": "Para que los pasajeros puedan encontrarte cuando la app no está a la vista, concede ubicación «Todo el tiempo» en el siguiente paso. Solo se usa mientras estás conectado como conductor. Puedes cambiarlo en los ajustes del sistema cuando quieras.",
   "driverHomeBackgroundLocationLater": "Ahora no",
   "driverHomeBackgroundLocationContinue": "Continuar",
+  "driverBackgroundOfferWindowTitle": "Sigues en línea",
+  "driverBackgroundOfferWindowBody": "Llevas 15 minutos con Texi en segundo plano. Abre la app para seguir recibiendo viajes. Si no la abres, te pasaremos a offline.",
   "driverForegroundNotifyTitle": "Texi · Modo conductor",
   "driverForegroundNotifyBodySearching": "Buscando viajes. El GPS sigue activo para ubicarte.",
   "driverForegroundNotifyBodyTrip": "Viaje activo · compartiendo ubicación.",
@@ -1147,5 +1186,38 @@
   "driverChangePasswordLogout": "Cerrar sesión",
   "driverChangePasswordErrorCurrent": "La contraseña temporal no es correcta.",
   "driverChangePasswordErrorSame": "La nueva contraseña debe ser distinta a la temporal.",
-  "driverChangePasswordErrorGeneric": "No se pudo actualizar la contraseña."
+  "driverChangePasswordErrorGeneric": "No se pudo actualizar la contraseña.",
+  "driverTexiRutaEntry": "TEXI Ruta",
+  "driverTexiRutaTitle": "TEXI Ruta",
+  "driverTexiRutaIntro": "Aquí ves las salidas que te asignaron y las reservas de cada una.",
+  "driverTexiRutaSwitch": "Pasar a TEXI Ruta",
+  "driverTexiRutaConfirmTitle": "Cambiar de servicio",
+  "driverTexiRutaConfirmBody": "Vas a salir del servicio de solicitudes. No recibirás viajes hasta que vuelvas y actives tu disponibilidad.",
+  "driverTexiRutaConfirmAction": "Sí, cambiar",
+  "driverTexiRutaLeave": "Volver a solicitudes",
+  "driverTexiRutaLeaveBody": "Dejarás TEXI Ruta. No quedarás disponible para solicitudes hasta que lo actives.",
+  "driverTexiRutaNoTrips": "No tienes salidas asignadas.",
+  "driverTexiRutaBookings": "Reservas",
+  "driverTexiRutaNoBookings": "Esta salida todavía no tiene reservas.",
+  "driverTexiRutaOpen": "Abrir abordaje",
+  "driverTexiRutaCode": "Código de la reserva",
+  "driverTexiRutaConfirmBoard": "Confirmar subida",
+  "driverTexiRutaClose": "Cerrar abordaje",
+  "driverTexiRutaCloseBody": "Quien no haya subido quedará como no presentado. Esta acción necesita conexión.",
+  "driverTexiRutaPassenger": "Pasajero",
+  "driverTexiRutaSeats": "{count} asientos",
+  "@driverTexiRutaSeats": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "driverTexiRutaStatusScheduled": "Programada",
+  "driverTexiRutaStatusAvailable": "Disponible",
+  "driverTexiRutaStatusBoarding": "Abordando",
+  "driverTexiRutaStatusProgress": "En camino",
+  "driverTexiRutaStatusDelayed": "Demorada",
+  "driverTexiRutaBookingConfirmed": "Por subir",
+  "driverTexiRutaBookingBoarded": "Subió",
+  "driverTexiRutaBookingNoShow": "No se presentó",
+  "driverTexiRutaNetwork": "Esta acción necesita conexión. Intenta de nuevo."
 }

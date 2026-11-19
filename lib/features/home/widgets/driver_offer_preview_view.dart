@@ -37,20 +37,26 @@ class DriverOfferPreviewView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final hasPrice = offer.offeredPrice != null;
-    final passengerName = (offer.passengerName ?? '').trim().isNotEmpty
-        ? offer.passengerName!
-        : l10n.driverTripRatingPassengerDefault;
     final originText = (offer.originAddress ?? '').isNotEmpty
         ? offer.originAddress!
         : l10n.tripOrigin;
     final destText = (offer.destinationAddress ?? '').isNotEmpty
         ? offer.destinationAddress!
         : l10n.tripDestination;
+    final hasPrice = offer.offeredPrice != null;
+    final passengerName = (offer.passengerName ?? '').trim().isNotEmpty
+        ? offer.passengerName!
+        : l10n.driverTripRatingPassengerDefault;
     final hasTripKm = offer.tripDistanceKm != null;
     final hasTripEta = offer.etaToDestinationMinutes != null;
+    final hasPassenger = (offer.passengerName ?? '').trim().isNotEmpty;
+    final hasRating = !offer.isAdminWebDispatch;
+    final hasPickupMetrics =
+        offer.etaMinutes != null || offer.distanceToPickupKm != null;
     final hasExtras =
         offer.tripExtras.isNotEmpty || offer.tripSpecials.isNotEmpty;
+    final showPassengerBlock =
+        hasPassenger || hasRating || hasPickupMetrics;
 
     return Stack(
       children: [
@@ -141,7 +147,7 @@ class DriverOfferPreviewView extends StatelessWidget {
               child: Material(
                 color: Colors.transparent,
                 child: Container(
-                  constraints: const BoxConstraints(maxHeight: 420),
+                  constraints: const BoxConstraints(maxHeight: 400),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceCard.withValues(alpha: 0.97),
                     borderRadius: BorderRadius.circular(AppFoundation.radiusLg),
@@ -185,34 +191,43 @@ class DriverOfferPreviewView extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          hasPrice
-                              ? DriverTripOfferCard.formatPrice(
-                                  offer.offeredPrice,
-                                  currencyCode: offer.currencyCode,
-                                )
-                              : l10n.driverTripOfferPriceTbd,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
-                            letterSpacing: -0.4,
-                          ),
-                        ),
                         const SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.center,
-                          child: DriverTripPaymentChip(
-                            l10n: l10n,
-                            paymentMethod: offer.paymentMethod,
-                          ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                hasPrice
+                                    ? DriverTripOfferCard.formatPrice(
+                                        offer.offeredPrice,
+                                        currencyCode: offer.currencyCode,
+                                      )
+                                    : l10n.driverTripOfferPriceTbd,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textPrimary,
+                                  letterSpacing: -0.4,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: DriverTripPaymentTile(
+                                l10n: l10n,
+                                paymentMethod: offer.paymentMethod,
+                                compact: true,
+                              ),
+                            ),
+                          ],
                         ),
                         if (offer.hasPromoBreakdown) ...[
                           const SizedBox(height: 10),
                           DriverTripPromoBreakdown(
                             l10n: l10n,
+                            tripFare: offer.offeredPrice,
                             cashDuePassenger: offer.cashDuePassenger,
                             companyGuaranteeToDriver:
                                 offer.companyGuaranteeToDriver,
@@ -222,111 +237,48 @@ class DriverOfferPreviewView extends StatelessWidget {
                             emphasizeCompanyLine: true,
                           ),
                         ],
-                        const SizedBox(height: 12),
-                        _AddressMini(
-                          icon: Icons.place_rounded,
-                          iconColor: const Color(0xFF00BFA5),
-                          text: originText,
-                        ),
-                        const SizedBox(height: 6),
-                        _AddressMini(
-                          icon: Icons.flag_rounded,
-                          iconColor: AppColors.primary,
-                          text: destText,
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface.withValues(alpha: 0.38),
-                            borderRadius: BorderRadius.circular(
-                              AppFoundation.radiusSm,
-                            ),
-                            border: Border.all(
-                              color: AppColors.border.withValues(alpha: 0.55),
-                            ),
+                        if (!offer.hasPreviewMapCoords) ...[
+                          const SizedBox(height: 12),
+                          DriverOfferRouteTimeline(
+                            originText: originText,
+                            destinationText: destText,
+                            tripDistanceKm: offer.tripDistanceKm,
+                            etaToDestinationMinutes:
+                                offer.etaToDestinationMinutes,
                           ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.person_rounded,
-                                    size: 18,
-                                    color: AppColors.primary,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      passengerName,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                  if (!offer.isAdminWebDispatch) ...[
-                                    const Icon(
-                                      Icons.star_rounded,
-                                      size: 16,
-                                      color: AppColors.primary,
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      (offer.passengerRating ?? 5.0)
-                                          .toStringAsFixed(1),
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ],
+                        ],
+                        if (showPassengerBlock) ...[
+                          const SizedBox(height: 12),
+                          DriverOfferPassengerBlock(
+                            l10n: l10n,
+                            name: passengerName,
+                            rating: hasRating
+                                ? (offer.passengerRating ?? 5.0)
+                                : null,
+                            etaToPickupMinutes: offer.etaMinutes,
+                            distanceToPickupKm: offer.distanceToPickupKm,
+                          ),
+                        ],
+                        if (hasExtras) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface.withValues(alpha: 0.38),
+                              borderRadius: BorderRadius.circular(
+                                AppFoundation.radiusSm,
                               ),
-                              if (offer.etaMinutes != null ||
-                                  offer.distanceToPickupKm != null) ...[
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 6,
-                                  children: [
-                                    if (offer.etaMinutes != null)
-                                      DriverOfferMetricChip(
-                                        icon: Icons.schedule_rounded,
-                                        label:
-                                            DriverTripOfferCard.formatDuration(
-                                          offer.etaMinutes,
-                                        ),
-                                      ),
-                                    if (offer.distanceToPickupKm != null)
-                                      DriverOfferMetricChip(
-                                        icon: Icons.near_me_rounded,
-                                        label:
-                                            DriverTripOfferCard.formatDistance(
-                                          offer.distanceToPickupKm,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ],
-                              if (hasExtras) ...[
-                                const SizedBox(height: 8),
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: DriverTripExtrasIcons(
-                                    l10n: l10n,
-                                    extras: offer.tripExtras,
-                                    specials: offer.tripSpecials,
-                                  ),
-                                ),
-                              ],
-                            ],
+                              border: Border.all(
+                                color: AppColors.border.withValues(alpha: 0.55),
+                              ),
+                            ),
+                            child: DriverTripExtrasDescribedList(
+                              l10n: l10n,
+                              extras: offer.tripExtras,
+                              specials: offer.tripSpecials,
+                            ),
                           ),
-                        ),
+                        ],
                         if (errorMessage != null &&
                             errorMessage!.isNotEmpty) ...[
                           const SizedBox(height: 10),
@@ -419,42 +371,6 @@ class DriverOfferPreviewView extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AddressMini extends StatelessWidget {
-  const _AddressMini({
-    required this.icon,
-    required this.iconColor,
-    required this.text,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 16, color: iconColor),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-              height: 1.25,
             ),
           ),
         ),

@@ -146,7 +146,8 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
   Future<void> setOnline(bool value, {bool forceOffline = false}) async {
     if (value == state.online &&
         !state.connecting &&
-        !(forceOffline && !value)) {
+        !(forceOffline && !value) &&
+        !(!value && _rt._availabilitySessionDesired)) {
       return;
     }
     if (value) {
@@ -194,6 +195,7 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
     }
     _rt._userRequestedOffline = true;
     _rt._availabilitySessionDesired = false;
+    _rt._cancelBackgroundOfferWindow();
     state = state.copyWith(
       availabilityDesired: false,
       errorCode: state.errorCode,
@@ -554,15 +556,10 @@ mixin _DriverRealtimeSessionMixin on StateNotifier<DriverRealtimeState> {
     if (tripId.isEmpty) return false;
 
     final offer = _tripOfferFromFcmPayload(data);
-    final list = List<DriverTripOffer>.from(state.pendingOffers);
-    final ix = list.indexWhere((o) => o.tripId == tripId);
-    if (ix >= 0) {
-      list[ix] = offer;
-    } else {
-      list.add(offer);
-    }
-    state = state.copyWith(pendingOffers: list);
-    _rt._clearOfferErrorForTrip(tripId);
+    final alreadyListed = state.pendingOffers.any((o) => o.tripId == tripId);
+    final added = _rt.ingestPendingOffer(offer);
+    final listed = state.pendingOffers.any((o) => o.tripId == tripId);
+    if (!added && !alreadyListed && !listed) return false;
     unawaited(_syncDriverForegroundSession());
 
     await setOnline(true);

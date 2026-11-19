@@ -182,10 +182,78 @@ mixin _DriverRealtimeReconnectMixin on StateNotifier<DriverRealtimeState> {
     }
   }
 
+  /// Al volver de Google Maps (o cualquier segundo plano): si el socket murió
+  /// pero la UI sigue “online” o con viaje, pide un `connection:ack` nuevo
+  /// sin tirar el viaje local. El ack decide si el viaje sigue o ya se canceló.
+  Future<void> reconcileAfterAppResume() async {
+    if (_rt._disposed || _rt._userRequestedOffline) return;
+    final hasWork =
+        state.activeTrip != null || state.tripPendingRating != null;
+    if (!hasWork && !_rt._availabilitySessionDesired) return;
+    final socketAlive = _rt._socket?.connected == true;
+    if (socketAlive && state.online) return;
+    await _rt._goOffline(
+      internal: true,
+      preserveTripState: true,
+      preservePendingOffers: true,
+    );
+    if (_rt._disposed || _rt._userRequestedOffline) return;
+    await _rt.setOnline(true);
+  }
+
+  bool _backgroundOfferWindowEligible() {
+    if (_rt._disposed || _rt._userRequestedOffline) return false;
+    if (!_rt._availabilitySessionDesired) return false;
+    if (state.activeTrip != null || state.tripPendingRating != null) return false;
+    return true;
+  }
+
+  void _cancelBackgroundOfferWindow() {
+    _rt._backgroundOfferWindowTimer?.cancel();
+    _rt._backgroundOfferWindowTimer = null;
+    _rt._backgroundOfferOfflineTimer?.cancel();
+    _rt._backgroundOfferOfflineTimer = null;
+    unawaited(
+      DriverNotificationService.instance.cancelBackgroundOfferWindowNotice(),
+    );
+  }
+
+  /// Online esperando solicitudes: 15 min en segundo plano y sigue elegible.
+  /// Con viaje, calificación pendiente u offline no arma esta ventana.
+  void onDriverAppBackgrounded() {
+    _rt._appInBackground = true;
+    if (!_backgroundOfferWindowEligible()) {
+      _cancelBackgroundOfferWindow();
+      return;
+    }
+    if (_rt._backgroundOfferWindowTimer != null ||
+        _rt._backgroundOfferOfflineTimer != null) {
+      return;
+    }
+    _rt._backgroundOfferWindowTimer = Timer(const Duration(minutes: 15), () {
+      _rt._backgroundOfferWindowTimer = null;
+      if (!_backgroundOfferWindowEligible() || !_rt._appInBackground) return;
+      unawaited(
+        DriverNotificationService.instance.showBackgroundOfferWindowNotice(),
+      );
+      _rt._backgroundOfferOfflineTimer = Timer(const Duration(minutes: 2), () {
+        _rt._backgroundOfferOfflineTimer = null;
+        if (!_backgroundOfferWindowEligible() || !_rt._appInBackground) return;
+        unawaited(_rt.setOnline(false));
+      });
+    });
+  }
+
+  /// Volver a primer plano reinicia el lapso. No pide pasar a online otra vez.
+  void onDriverAppForegrounded() {
+    _rt._appInBackground = false;
+    _cancelBackgroundOfferWindow();
+  }
+
   void touchReconnectIfHasActiveWork() {
     if (_rt._userRequestedOffline || _rt._disposed) return;
     if (state.activeTrip == null && state.tripPendingRating == null) return;
-    if (state.online) {
+    if (state.online && _rt._socket?.connected == true) {
       _rt._lastTouchReconnect = null;
       return;
     }

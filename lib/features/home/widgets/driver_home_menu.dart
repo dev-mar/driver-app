@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:local_auth/local_auth.dart';
 
 import '../../../core/compliance/driver_play_permission_disclosures.dart';
+import '../../../core/network/driver_profile_api_providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_foundation.dart';
@@ -16,7 +17,9 @@ import '../../login/driver_online_auth_sheet.dart';
 import '../../login/driver_realtime_controller.dart';
 import '../../session/driver_operational_profile.dart';
 import '../../login/driver_vehicle_display.dart';
+import '../../notices/driver_notices_repository.dart';
 import 'driver_credits_notice_card.dart';
+import 'driver_home_mini_profile_avatar.dart';
 import 'driver_home_overflow_sheet.dart';
 import 'driver_home_tier_badge.dart';
 
@@ -55,6 +58,8 @@ class DriverHomeAppBarMenu extends ConsumerWidget {
             ?.value
             .canOperateAsDriver ==
         true;
+    final noticesUnread =
+        ref.watch(driverNoticesUnreadProvider).asData?.value ?? 0;
 
     return Padding(
       padding: const EdgeInsets.only(right: 4),
@@ -63,13 +68,20 @@ class DriverHomeAppBarMenu extends ConsumerWidget {
           backgroundColor: AppColors.surfaceCard,
           foregroundColor: AppColors.textPrimary,
         ),
-        icon: const Icon(Icons.grid_view_rounded),
+        icon: Badge(
+          isLabelVisible: noticesUnread > 0,
+          backgroundColor: AppColors.primary,
+          textColor: AppColors.background,
+          label: Text(noticesUnread > 99 ? '99+' : '$noticesUnread'),
+          child: const Icon(Icons.grid_view_rounded),
+        ),
         tooltip: l10n.driverHomeMenuTitle,
         onPressed: () {
           showDriverHomeOverflowSheet(
             context: context,
             canClub: canClub,
             onLogout: onLogout,
+            noticesUnread: noticesUnread,
           );
         },
       ),
@@ -344,7 +356,9 @@ class DriverHomeOnlineAvailabilityPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final realtime = ref.watch(driverRealtimeProvider);
-    final officialTier = ref.watch(driverHomeClubTierProvider).asData?.value;
+    final profilePicture = driverHomeMeProfilePictureUrl(
+      ref.watch(driverMeProfileDataProvider).asData?.value,
+    );
     final online = realtime.online;
     final connecting = realtime.connecting;
     final switchVisualOn = realtime.availabilitySwitchVisualOn;
@@ -359,12 +373,6 @@ class DriverHomeOnlineAvailabilityPanel extends ConsumerWidget {
     final connectionColor = switchVisualOn
         ? AppColors.success
         : AppColors.textSecondary;
-
-    final tierVisual = resolveDriverHomeTierVisual(
-      official: officialTier,
-      rating: realtime.driverRating,
-    );
-    final tierLabel = driverHomeTierShortLabel(l10n, tierVisual.code);
 
     return AnimatedSize(
       duration: AppMotion.stepSwitcher,
@@ -397,7 +405,10 @@ class DriverHomeOnlineAvailabilityPanel extends ConsumerWidget {
             : Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  DriverHomeTierBadge(visual: tierVisual, label: tierLabel),
+                  buildDriverHomeMiniProfileAvatar(
+                    realtime,
+                    fallbackPictureUrl: profilePicture,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _ExpandedAvailabilityDetails(

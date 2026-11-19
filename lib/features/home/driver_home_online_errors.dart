@@ -54,6 +54,8 @@ String? driverHomeOnlineErrorMessage({
       return l10n.driverOnlineErrorActiveTripCantGoOffline;
     case 'SOCKET_RECONNECTING':
       return l10n.driverOnlineErrorReconnecting;
+    case 'TRIP_ENDED_WHILE_AWAY':
+      return l10n.driverOnlineErrorTripEndedWhileAway;
     case 'RBAC_FORBIDDEN':
       return l10n.driverOnlineErrorRbacForbidden;
     case 'RBAC_NO_IDENTITY':

@@ -12,7 +12,7 @@ class DriverOfferPreviewMap extends StatefulWidget {
   const DriverOfferPreviewMap({
     super.key,
     required this.offer,
-    this.bottomPadding = 280,
+    this.bottomPadding = 240,
   });
 
   final DriverTripOffer offer;
@@ -44,6 +44,8 @@ class _DriverOfferPreviewMapState extends State<DriverOfferPreviewMap> {
   GoogleMapController? _mapController;
   BitmapDescriptor? _pickupIcon;
   BitmapDescriptor? _destIcon;
+  double _pickupAnchorY = kDriverWaypointPinTipAnchorY;
+  double _destAnchorY = kDriverWaypointPinTipAnchorY;
   List<LatLng> _polyline = const [];
 
   LatLng? get _pickup {
@@ -58,11 +60,20 @@ class _DriverOfferPreviewMapState extends State<DriverOfferPreviewMap> {
     return LatLng(o.destinationLat!, o.destinationLng!);
   }
 
+  var _iconsReady = false;
+
   @override
   void initState() {
     super.initState();
-    _loadIcons();
     _loadRoute();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_iconsReady) return;
+    _iconsReady = true;
+    _loadIcons();
   }
 
   @override
@@ -71,25 +82,41 @@ class _DriverOfferPreviewMapState extends State<DriverOfferPreviewMap> {
     if (oldWidget.offer.tripId != widget.offer.tripId ||
         oldWidget.offer.pickupLat != widget.offer.pickupLat ||
         oldWidget.offer.destinationLat != widget.offer.destinationLat ||
+        oldWidget.offer.originAddress != widget.offer.originAddress ||
+        oldWidget.offer.destinationAddress !=
+            widget.offer.destinationAddress ||
         oldWidget.offer.routeOverviewEncoded !=
             widget.offer.routeOverviewEncoded) {
+      _loadIcons();
       _loadRoute();
     }
   }
 
   Future<void> _loadIcons() async {
-    final pickup = await buildDriverWaypointMapPinIcon(
+    final l10n = AppLocalizations.of(context);
+    final originLabel = (widget.offer.originAddress ?? '').trim().isNotEmpty
+        ? widget.offer.originAddress!
+        : l10n.tripOrigin;
+    final destLabel =
+        (widget.offer.destinationAddress ?? '').trim().isNotEmpty
+            ? widget.offer.destinationAddress!
+            : l10n.tripDestination;
+    final pickup = await buildDriverLabeledWaypointPinIcon(
       fill: _pickupFill,
+      label: originLabel,
       style: DriverWaypointPinStyle.pickupPerson,
     );
-    final dest = await buildDriverWaypointMapPinIcon(
+    final dest = await buildDriverLabeledWaypointPinIcon(
       fill: AppColors.primary,
+      label: destLabel,
       style: DriverWaypointPinStyle.destinationX,
     );
     if (!mounted) return;
     setState(() {
       _pickupIcon = pickup;
       _destIcon = dest;
+      _pickupAnchorY = labeledWaypointPinAnchorY(originLabel);
+      _destAnchorY = labeledWaypointPinAnchorY(destLabel);
     });
   }
 
@@ -182,7 +209,7 @@ class _DriverOfferPreviewMapState extends State<DriverOfferPreviewMap> {
           icon:
               _pickupIcon ??
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-          anchor: const Offset(0.5, kDriverWaypointPinTipAnchorY),
+          anchor: Offset(0.5, _pickupAnchorY),
           infoWindow: InfoWindow(
             title: widget.offer.originAddress ?? l10n.tripOrigin,
           ),
@@ -197,7 +224,7 @@ class _DriverOfferPreviewMapState extends State<DriverOfferPreviewMap> {
           icon:
               _destIcon ??
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
-          anchor: const Offset(0.5, kDriverWaypointPinTipAnchorY),
+          anchor: Offset(0.5, _destAnchorY),
           infoWindow: InfoWindow(
             title: widget.offer.destinationAddress ?? l10n.tripDestination,
           ),

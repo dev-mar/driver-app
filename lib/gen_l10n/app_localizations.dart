@@ -524,6 +524,30 @@ abstract class AppLocalizations {
   /// **'Menu'**
   String get driverHomeMenuTitle;
 
+  /// No description provided for @noticesInboxTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notices'**
+  String get noticesInboxTitle;
+
+  /// No description provided for @noticesInboxEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'TEXIAPP notices'**
+  String get noticesInboxEntry;
+
+  /// No description provided for @noticesMarkAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Read all'**
+  String get noticesMarkAll;
+
+  /// No description provided for @noticesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No notices yet. When we send an update, it will show up here.'**
+  String get noticesEmpty;
+
   /// No description provided for @driverEarningsCreditsMenu.
   ///
   /// In en, this message translates to:
@@ -2414,6 +2438,24 @@ abstract class AppLocalizations {
   /// **'Wait time is over'**
   String get driverNotifyPickupGraceTitle;
 
+  /// No description provided for @driverNotifyTripCancelledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip cancelled'**
+  String get driverNotifyTripCancelledTitle;
+
+  /// No description provided for @driverNotifyTripCancelledBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The rider cancelled the request.'**
+  String get driverNotifyTripCancelledBody;
+
+  /// No description provided for @driverOnlineErrorTripEndedWhileAway.
+  ///
+  /// In en, this message translates to:
+  /// **'The rider cancelled the trip. You can receive another request.'**
+  String get driverOnlineErrorTripEndedWhileAway;
+
   /// No description provided for @driverNotifyPickupGraceBody.
   ///
   /// In en, this message translates to:
@@ -2630,11 +2672,95 @@ abstract class AppLocalizations {
   /// **'Accept'**
   String get driverTripAccept;
 
+  /// No description provided for @driverTripCounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer'**
+  String get driverTripCounter;
+
+  /// No description provided for @driverTripCounterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Counter-offer'**
+  String get driverTripCounterTitle;
+
+  /// No description provided for @driverTripCounterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how much to add to the current fare.'**
+  String get driverTripCounterHint;
+
+  /// No description provided for @driverTripCounterCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current fare'**
+  String get driverTripCounterCurrent;
+
+  /// No description provided for @driverTripCounterAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add'**
+  String get driverTripCounterAdd;
+
+  /// No description provided for @driverTripCounterTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get driverTripCounterTotal;
+
+  /// No description provided for @driverTripCounterAddon.
+  ///
+  /// In en, this message translates to:
+  /// **'+{amount}'**
+  String driverTripCounterAddon(int amount);
+
+  /// No description provided for @driverTripCounterPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String driverTripCounterPercent(int percent);
+
+  /// No description provided for @driverTripCounterSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send offer'**
+  String get driverTripCounterSend;
+
+  /// No description provided for @driverTripCounterSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Counter-offer sent. The passenger can choose it.'**
+  String get driverTripCounterSent;
+
+  /// No description provided for @driverTripCounterAboveCap.
+  ///
+  /// In en, this message translates to:
+  /// **'That amount is above the allowed cap.'**
+  String get driverTripCounterAboveCap;
+
+  /// No description provided for @driverTripCounterNotHigher.
+  ///
+  /// In en, this message translates to:
+  /// **'The offer must be higher than the current fare.'**
+  String get driverTripCounterNotHigher;
+
+  /// No description provided for @driverTripCounterFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The counter-offer could not be sent.'**
+  String get driverTripCounterFailed;
+
   /// No description provided for @driverTripOfferDetail.
   ///
   /// In en, this message translates to:
   /// **'Details'**
   String get driverTripOfferDetail;
+
+  /// No description provided for @driverTripOfferSeeOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'See trip details on the map'**
+  String get driverTripOfferSeeOnMap;
 
   /// No description provided for @driverTripOfferDetailTitle.
   ///
@@ -2708,6 +2834,12 @@ abstract class AppLocalizations {
   /// **'QR'**
   String get driverTripPaymentQr;
 
+  /// No description provided for @driverTripPaymentMethodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment method'**
+  String get driverTripPaymentMethodLabel;
+
   /// No description provided for @driverTripExtrasTitle.
   ///
   /// In en, this message translates to:
@@ -2779,6 +2911,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More than 4 people'**
   String get driverTripExtraOver4;
+
+  /// No description provided for @driverTripExtraLuggage.
+  ///
+  /// In en, this message translates to:
+  /// **'Luggage'**
+  String get driverTripExtraLuggage;
+
+  /// No description provided for @driverTripExtraAc.
+  ///
+  /// In en, this message translates to:
+  /// **'A/C'**
+  String get driverTripExtraAc;
+
+  /// No description provided for @driverTripSpecialSeats6.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to 6 seats'**
+  String get driverTripSpecialSeats6;
+
+  /// No description provided for @driverTripSpecialRoofRack.
+  ///
+  /// In en, this message translates to:
+  /// **'Roof rack'**
+  String get driverTripSpecialRoofRack;
+
+  /// No description provided for @driverTripSpecialCargo.
+  ///
+  /// In en, this message translates to:
+  /// **'Cargo'**
+  String get driverTripSpecialCargo;
 
   /// No description provided for @driverTripExtraLuggageAlert.
   ///
@@ -2912,10 +3074,10 @@ abstract class AppLocalizations {
   /// **'Navigate to destination'**
   String get driverTripNavigateDestination;
 
-  /// Maps shortcut inside trip detail; must not look like Arrived/Start
+  /// Compact external-navigation shortcut beside the trip addresses
   ///
   /// In en, this message translates to:
-  /// **'Open map'**
+  /// **'Navigate'**
   String get driverTripOpenMapsCta;
 
   /// No description provided for @driverRegisteredImagesMenu.
@@ -3067,6 +3229,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue'**
   String get driverHomeBackgroundLocationContinue;
+
+  /// No description provided for @driverBackgroundOfferWindowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re still online'**
+  String get driverBackgroundOfferWindowTitle;
+
+  /// No description provided for @driverBackgroundOfferWindowBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Texi has been in the background for 15 minutes. Open the app to keep receiving trips. If you don\'t, we\'ll set you offline.'**
+  String get driverBackgroundOfferWindowBody;
 
   /// No description provided for @driverForegroundNotifyTitle.
   ///
@@ -5212,6 +5386,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not update the password.'**
   String get driverChangePasswordErrorGeneric;
+
+  /// No description provided for @driverTexiRutaEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'TEXI Ruta'**
+  String get driverTexiRutaEntry;
+
+  /// No description provided for @driverTexiRutaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'TEXI Ruta'**
+  String get driverTexiRutaTitle;
+
+  /// No description provided for @driverTexiRutaIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Here you see the departures assigned to you and the bookings on each one.'**
+  String get driverTexiRutaIntro;
+
+  /// No description provided for @driverTexiRutaSwitch.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to TEXI Ruta'**
+  String get driverTexiRutaSwitch;
+
+  /// No description provided for @driverTexiRutaConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change service'**
+  String get driverTexiRutaConfirmTitle;
+
+  /// No description provided for @driverTexiRutaConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You will leave ride requests. You will not receive trips until you come back and turn availability on.'**
+  String get driverTexiRutaConfirmBody;
+
+  /// No description provided for @driverTexiRutaConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, switch'**
+  String get driverTexiRutaConfirmAction;
+
+  /// No description provided for @driverTexiRutaLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to requests'**
+  String get driverTexiRutaLeave;
+
+  /// No description provided for @driverTexiRutaLeaveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You will leave TEXI Ruta. You will not be available for requests until you turn it on.'**
+  String get driverTexiRutaLeaveBody;
+
+  /// No description provided for @driverTexiRutaNoTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'You have no assigned departures.'**
+  String get driverTexiRutaNoTrips;
+
+  /// No description provided for @driverTexiRutaBookings.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookings'**
+  String get driverTexiRutaBookings;
+
+  /// No description provided for @driverTexiRutaNoBookings.
+  ///
+  /// In en, this message translates to:
+  /// **'This departure has no bookings yet.'**
+  String get driverTexiRutaNoBookings;
+
+  /// No description provided for @driverTexiRutaOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open boarding'**
+  String get driverTexiRutaOpen;
+
+  /// No description provided for @driverTexiRutaCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking code'**
+  String get driverTexiRutaCode;
+
+  /// No description provided for @driverTexiRutaConfirmBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm boarding'**
+  String get driverTexiRutaConfirmBoard;
+
+  /// No description provided for @driverTexiRutaClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close boarding'**
+  String get driverTexiRutaClose;
+
+  /// No description provided for @driverTexiRutaCloseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone who did not board will be marked as a no-show. This action needs a connection.'**
+  String get driverTexiRutaCloseBody;
+
+  /// No description provided for @driverTexiRutaPassenger.
+  ///
+  /// In en, this message translates to:
+  /// **'Passenger'**
+  String get driverTexiRutaPassenger;
+
+  /// No description provided for @driverTexiRutaSeats.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} seats'**
+  String driverTexiRutaSeats(int count);
+
+  /// No description provided for @driverTexiRutaStatusScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get driverTexiRutaStatusScheduled;
+
+  /// No description provided for @driverTexiRutaStatusAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get driverTexiRutaStatusAvailable;
+
+  /// No description provided for @driverTexiRutaStatusBoarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Boarding'**
+  String get driverTexiRutaStatusBoarding;
+
+  /// No description provided for @driverTexiRutaStatusProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'On the way'**
+  String get driverTexiRutaStatusProgress;
+
+  /// No description provided for @driverTexiRutaStatusDelayed.
+  ///
+  /// In en, this message translates to:
+  /// **'Delayed'**
+  String get driverTexiRutaStatusDelayed;
+
+  /// No description provided for @driverTexiRutaBookingConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get driverTexiRutaBookingConfirmed;
+
+  /// No description provided for @driverTexiRutaBookingBoarded.
+  ///
+  /// In en, this message translates to:
+  /// **'Boarded'**
+  String get driverTexiRutaBookingBoarded;
+
+  /// No description provided for @driverTexiRutaBookingNoShow.
+  ///
+  /// In en, this message translates to:
+  /// **'No-show'**
+  String get driverTexiRutaBookingNoShow;
+
+  /// No description provided for @driverTexiRutaNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'This action needs a connection. Try again.'**
+  String get driverTexiRutaNetwork;
 }
 
 class _AppLocalizationsDelegate

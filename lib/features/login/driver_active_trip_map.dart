@@ -12,6 +12,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_foundation.dart';
 import '../../core/network/directions_service.dart';
 import '../../gen_l10n/app_localizations.dart';
+import '../home/widgets/driver_active_trip_nav_buttons.dart';
 import 'driver_trip_marker.dart';
 import 'driver_realtime_controller.dart';
 
@@ -25,6 +26,7 @@ class DriverActiveTripMapView extends StatefulWidget {
     this.driverBearing,
     required this.trip,
     required this.bottomCard,
+    required this.onOpenNavigation,
   });
 
   final double? driverLat;
@@ -32,6 +34,12 @@ class DriverActiveTripMapView extends StatefulWidget {
   final double? driverBearing;
   final DriverActiveTrip trip;
   final Widget bottomCard;
+  final Future<void> Function({
+    required double lat,
+    required double lng,
+    required String label,
+  })
+  onOpenNavigation;
 
   @override
   State<DriverActiveTripMapView> createState() =>
@@ -212,10 +220,13 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
       _fetchRoutesAndFit();
       return;
     }
-    _routeFetchDebounce = Timer(TripRouteTrackingPolicy.mapRouteRefreshDebounce, () {
-      if (!mounted) return;
-      _fetchRoutesAndFit();
-    });
+    _routeFetchDebounce = Timer(
+      TripRouteTrackingPolicy.mapRouteRefreshDebounce,
+      () {
+        if (!mounted) return;
+        _fetchRoutesAndFit();
+      },
+    );
   }
 
   Future<void> _restoreMapPreferences() async {
@@ -601,17 +612,11 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
     _lastFitAt = now;
     if (smoothOnly) {
       controller.animateCamera(
-        CameraUpdate.newLatLngBounds(
-          bounds,
-          _navigationBoundsPaddingSmooth,
-        ),
+        CameraUpdate.newLatLngBounds(bounds, _navigationBoundsPaddingSmooth),
       );
     } else {
       controller.animateCamera(
-        CameraUpdate.newLatLngBounds(
-          bounds,
-          _navigationBoundsPaddingNormal,
-        ),
+        CameraUpdate.newLatLngBounds(bounds, _navigationBoundsPaddingNormal),
       );
     }
   }
@@ -700,7 +705,9 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
       case RouteReferenceType.landmark:
         final title = ref.title.trim();
         return InfoWindow(
-          title: title.isNotEmpty ? title : l10n.driverDirectionsRelevantIntersection,
+          title: title.isNotEmpty
+              ? title
+              : l10n.driverDirectionsRelevantIntersection,
           snippet: ref.snippet,
         );
     }
@@ -845,6 +852,46 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
     return polylines;
   }
 
+  ({double lat, double lng, bool isPickup})? _assistedNavPoint() {
+    final trip = widget.trip;
+    final hasPickup = trip.pickupLat != null && trip.pickupLng != null;
+    final hasDestination =
+        trip.destinationLat != null && trip.destinationLng != null;
+    if (!hasPickup && !hasDestination) return null;
+    final toPickup = driverNavigateToPickupFirst(trip.status)
+        ? hasPickup
+        : !hasDestination;
+    if (toPickup && hasPickup) {
+      return (lat: trip.pickupLat!, lng: trip.pickupLng!, isPickup: true);
+    }
+    if (hasDestination) {
+      return (
+        lat: trip.destinationLat!,
+        lng: trip.destinationLng!,
+        isPickup: false,
+      );
+    }
+    return (lat: trip.pickupLat!, lng: trip.pickupLng!, isPickup: true);
+  }
+
+  String _assistedNavTooltip(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final point = _assistedNavPoint();
+    if (point == null || point.isPickup) return l10n.driverTripNavigatePickup;
+    return l10n.driverTripNavigateDestination;
+  }
+
+  void _openAssistedNavigation() {
+    final point = _assistedNavPoint();
+    if (point == null) return;
+    final l10n = AppLocalizations.of(context);
+    widget.onOpenNavigation(
+      lat: point.lat,
+      lng: point.lng,
+      label: point.isPickup ? l10n.tripOrigin : l10n.tripDestination,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -883,40 +930,52 @@ class _DriverActiveTripMapViewState extends State<DriverActiveTripMapView> {
           right: 16,
           child: SafeArea(
             bottom: false,
-            child: Material(
-              color: AppColors.surfaceCard.withValues(alpha: 0.94),
-              shape: const CircleBorder(),
-              elevation: 10,
-              shadowColor: Colors.black.withValues(alpha: 0.28),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  _updateMapPreferences(() {
-                    _followNavigationCamera = !_followNavigationCamera;
-                    _showFollowHint = true;
-                  });
-                  if (_followNavigationCamera) {
-                    _fitBounds();
-                  }
-                  Future<void>.delayed(const Duration(seconds: 2), () {
-                    if (!mounted) return;
-                    setState(() => _showFollowHint = false);
-                  });
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(11),
-                  child: Icon(
-                    _followNavigationCamera
-                        ? Icons.gps_fixed_rounded
-                        : Icons.gps_not_fixed_rounded,
-                    size: 22,
-                    color: _followNavigationCamera
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Material(
+                  color: AppColors.surfaceCard.withValues(alpha: 0.94),
+                  shape: const CircleBorder(),
+                  elevation: 10,
+                  shadowColor: Colors.black.withValues(alpha: 0.28),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      _updateMapPreferences(() {
+                        _followNavigationCamera = !_followNavigationCamera;
+                        _showFollowHint = true;
+                      });
+                      if (_followNavigationCamera) {
+                        _fitBounds();
+                      }
+                      Future<void>.delayed(const Duration(seconds: 2), () {
+                        if (!mounted) return;
+                        setState(() => _showFollowHint = false);
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(11),
+                      child: Icon(
+                        _followNavigationCamera
+                            ? Icons.gps_fixed_rounded
+                            : Icons.gps_not_fixed_rounded,
+                        size: 22,
+                        color: _followNavigationCamera
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                if (_assistedNavPoint() != null) ...[
+                  const SizedBox(height: AppFoundation.spacingMd),
+                  DriverMapAssistedNavButton(
+                    tooltip: _assistedNavTooltip(context),
+                    onPressed: _openAssistedNavigation,
+                  ),
+                ],
+              ],
             ),
           ),
         ),

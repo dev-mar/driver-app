@@ -54,6 +54,15 @@ void runDriverHomeBuildEffects({
     });
   }
 
+  if (isRatingSheetOpen && tripPendingRating == null) {
+    setRatingSheetOpen(false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final nav = Navigator.of(context);
+      if (nav.canPop()) nav.pop();
+    });
+  }
+
   if (tripPendingRating != null &&
       tripPendingRating.tripId != lastRatedTripId &&
       !isRatingSheetOpen) {

@@ -1,8 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:local_auth/local_auth.dart';
+
+import '../../../core/router/app_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_foundation.dart';
@@ -54,6 +58,7 @@ class DriverHomeActiveTripView extends ConsumerWidget {
       driverLng: realtime.driverLng,
       driverBearing: realtime.driverBearing,
       trip: trip,
+      onOpenNavigation: onOpenNavigation,
       bottomCard: DriverRetractableTripCard(
         trip: trip,
         expanded: expanded,
@@ -275,6 +280,16 @@ class _DriverHomeRequestsPanelState
                                   onReject: () => ref
                                       .read(driverRealtimeProvider.notifier)
                                       .rejectOffer(offer.tripId),
+                                  onCounter: offer.negotiationEnabled
+                                      ? (amount) => ref
+                                            .read(
+                                              driverRealtimeProvider.notifier,
+                                            )
+                                            .sendCounterOffer(
+                                              offer.tripId,
+                                              amount,
+                                            )
+                                      : null,
                                   onPreview: () =>
                                       widget.onPreviewOffer(offer.tripId),
                                 ),
@@ -301,6 +316,21 @@ class _DriverHomeRequestsPanelState
                       ],
                     ],
                   ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 52,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.onPrimary,
+                  ),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    context.pushNamed(AppRouter.texiRuta);
+                  },
+                  child: Text(l10n.driverTexiRutaEntry),
                 ),
               ),
             ],

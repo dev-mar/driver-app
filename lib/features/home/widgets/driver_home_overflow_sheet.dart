@@ -11,6 +11,7 @@ Future<void> showDriverHomeOverflowSheet({
   required BuildContext context,
   required bool canClub,
   required VoidCallback onLogout,
+  int noticesUnread = 0,
 }) async {
   HapticFeedback.lightImpact();
   final l10n = AppLocalizations.of(context);
@@ -66,6 +67,13 @@ Future<void> showDriverHomeOverflowSheet({
                     icon: Icons.person_outline_rounded,
                     label: l10n.driverProfileMenu,
                     onTap: () => context.goNamed(AppRouter.profile),
+                  ),
+                  _row(
+                    ctx,
+                    icon: Icons.notifications_none_rounded,
+                    label: l10n.noticesInboxEntry,
+                    badge: noticesUnread,
+                    onTap: () => context.pushNamed(AppRouter.notices),
                   ),
                   _row(
                     ctx,
@@ -150,6 +158,7 @@ Widget _row(
   required String label,
   required VoidCallback onTap,
   Color? accent,
+  int badge = 0,
 }) {
   final color = accent ?? AppColors.textPrimary;
   return Padding(
@@ -182,6 +191,24 @@ Widget _row(
                     ),
                   ),
                 ),
+                if (badge > 0) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Text(
+                      badge > 99 ? '99+' : '$badge',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
                 Icon(
                   Icons.chevron_right_rounded,
                   color: AppColors.textSecondary.withValues(alpha: 0.7),

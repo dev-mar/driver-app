@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../core/network/driver_api_client.dart';
+import '../../core/network/driver_session_guard.dart';
 import 'driver_realtime_state.dart';
 import '../home/widgets/driver_trip_cancel_reason.dart';
 
@@ -15,6 +16,53 @@ class DriverTripRestService {
   static const _realtimeReceiveTimeout = Duration(seconds: 15);
 
   Future<bool> tryRefreshSession() => _client.tryRefreshSession();
+
+  /// Acepta la oferta por HTTP. Un solo intento: el servidor no es idempotente.
+  Future<DriverTripAcceptResult> acceptTripOffer(String tripId) async {
+    try {
+      final res = await _client.postWithRetry<Map<String, dynamic>>(
+        path: '/drivers/me/trips/$tripId/accept',
+        flow: 'driver_trip_accept',
+        maxAttempts: 1,
+        data: const <String, dynamic>{},
+        connectTimeout: _realtimeConnectTimeout,
+        receiveTimeout: _realtimeReceiveTimeout,
+      );
+      return DriverTripAcceptResult.ok(
+        DriverApiClient.parseSuccessData(res.data),
+      );
+    } on DriverApiSessionException {
+      return const DriverTripAcceptResult.fail('NO_CONNECTION');
+    } on DriverApiResponseException catch (e) {
+      return DriverTripAcceptResult.fail(e.code);
+    } on DioException catch (e) {
+      final code = stableApiErrorCodeFromResponse(e.response?.data);
+      return DriverTripAcceptResult.fail(code ?? 'NO_CONNECTION');
+    }
+  }
+
+  Future<String?> sendCounterOffer({
+    required String tripId,
+    required double amount,
+  }) async {
+    try {
+      await _client.postWithRetry<Map<String, dynamic>>(
+        path: '/drivers/me/trips/$tripId/counter-offer',
+        flow: 'driver_trip_counter',
+        maxAttempts: 1,
+        data: {'amount': amount},
+        connectTimeout: _realtimeConnectTimeout,
+        receiveTimeout: _realtimeReceiveTimeout,
+      );
+      return null;
+    } on DriverApiResponseException catch (e) {
+      return e.code;
+    } on DioException catch (e) {
+      return stableApiErrorCodeFromResponse(e.response?.data) ?? 'NO_CONNECTION';
+    } catch (_) {
+      return 'NO_CONNECTION';
+    }
+  }
 
   Future<DriverProfilePictureSnapshot?> fetchProfilePictureSnapshot() async {
     try {
@@ -242,6 +290,16 @@ class DriverTripRatingResult {
   const DriverTripRatingResult({required this.claimEligible});
 
   final bool claimEligible;
+}
+
+class DriverTripAcceptResult {
+  const DriverTripAcceptResult.ok(this.data) : code = null;
+  const DriverTripAcceptResult.fail(this.code) : data = null;
+
+  final Map<String, dynamic>? data;
+  final String? code;
+
+  bool get ok => data != null;
 }
 
 class DriverProfilePictureSnapshot {

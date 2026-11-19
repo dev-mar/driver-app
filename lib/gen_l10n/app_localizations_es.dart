@@ -251,6 +251,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverHomeMenuTitle => 'Menú';
 
   @override
+  String get noticesInboxTitle => 'Avisos';
+
+  @override
+  String get noticesInboxEntry => 'Avisos TEXIAPP';
+
+  @override
+  String get noticesMarkAll => 'Leídos';
+
+  @override
+  String get noticesEmpty =>
+      'Aún no hay avisos. Cuando enviemos una novedad, aparecerá aquí.';
+
+  @override
   String get driverEarningsCreditsMenu => 'Ingresos y créditos';
 
   @override
@@ -1328,6 +1341,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverNotifyPickupGraceTitle => 'Tiempo de espera cumplido';
 
   @override
+  String get driverNotifyTripCancelledTitle => 'Viaje cancelado';
+
+  @override
+  String get driverNotifyTripCancelledBody =>
+      'El pasajero canceló la solicitud.';
+
+  @override
+  String get driverOnlineErrorTripEndedWhileAway =>
+      'El pasajero canceló el viaje. Ya puedes recibir otra solicitud.';
+
+  @override
   String driverNotifyPickupGraceBody(int minutes) {
     return 'Tienes $minutes min de gracia en el punto de recojo.';
   }
@@ -1459,7 +1483,55 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverTripAccept => 'Aceptar';
 
   @override
+  String get driverTripCounter => 'Ofertar';
+
+  @override
+  String get driverTripCounterTitle => 'Contraoferta';
+
+  @override
+  String get driverTripCounterHint => 'Elige cuánto sumar al costo actual.';
+
+  @override
+  String get driverTripCounterCurrent => 'Costo actual';
+
+  @override
+  String get driverTripCounterAdd => 'Puedes sumar';
+
+  @override
+  String get driverTripCounterTotal => 'Total';
+
+  @override
+  String driverTripCounterAddon(int amount) {
+    return '+$amount';
+  }
+
+  @override
+  String driverTripCounterPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get driverTripCounterSend => 'Enviar oferta';
+
+  @override
+  String get driverTripCounterSent =>
+      'Contraoferta enviada. El pasajero puede elegirla.';
+
+  @override
+  String get driverTripCounterAboveCap => 'Ese monto supera el tope permitido.';
+
+  @override
+  String get driverTripCounterNotHigher =>
+      'La oferta debe ser mayor al costo actual.';
+
+  @override
+  String get driverTripCounterFailed => 'No se pudo enviar la contraoferta.';
+
+  @override
   String get driverTripOfferDetail => 'Detalle';
+
+  @override
+  String get driverTripOfferSeeOnMap => 'Ver detalle del viaje en mapa';
 
   @override
   String get driverTripOfferDetailTitle => 'Detalle del viaje';
@@ -1506,6 +1578,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverTripPaymentQr => 'QR';
 
   @override
+  String get driverTripPaymentMethodLabel => 'Forma de pago';
+
+  @override
   String get driverTripExtrasTitle => 'El pasajero indicó';
 
   @override
@@ -1543,6 +1618,21 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverTripExtraOver4 => 'Más de 4 personas';
+
+  @override
+  String get driverTripExtraLuggage => 'Maletas';
+
+  @override
+  String get driverTripExtraAc => 'Aire acondicionado';
+
+  @override
+  String get driverTripSpecialSeats6 => 'Hasta 6 asientos';
+
+  @override
+  String get driverTripSpecialRoofRack => 'Parrilla';
+
+  @override
+  String get driverTripSpecialCargo => 'Carga';
 
   @override
   String get driverTripExtraLuggageAlert => 'Con maletas.';
@@ -1622,7 +1712,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get driverTripNavigateDestination => 'Navegar al destino';
 
   @override
-  String get driverTripOpenMapsCta => 'Abrir mapa';
+  String get driverTripOpenMapsCta => 'Navegar';
 
   @override
   String get driverRegisteredImagesMenu => 'Imágenes registradas';
@@ -1708,6 +1798,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get driverHomeBackgroundLocationContinue => 'Continuar';
+
+  @override
+  String get driverBackgroundOfferWindowTitle => 'Sigues en línea';
+
+  @override
+  String get driverBackgroundOfferWindowBody =>
+      'Llevas 15 minutos con Texi en segundo plano. Abre la app para seguir recibiendo viajes. Si no la abres, te pasaremos a offline.';
 
   @override
   String get driverForegroundNotifyTitle => 'Texi · Modo conductor';
@@ -2920,4 +3017,96 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get driverChangePasswordErrorGeneric =>
       'No se pudo actualizar la contraseña.';
+
+  @override
+  String get driverTexiRutaEntry => 'TEXI Ruta';
+
+  @override
+  String get driverTexiRutaTitle => 'TEXI Ruta';
+
+  @override
+  String get driverTexiRutaIntro =>
+      'Aquí ves las salidas que te asignaron y las reservas de cada una.';
+
+  @override
+  String get driverTexiRutaSwitch => 'Pasar a TEXI Ruta';
+
+  @override
+  String get driverTexiRutaConfirmTitle => 'Cambiar de servicio';
+
+  @override
+  String get driverTexiRutaConfirmBody =>
+      'Vas a salir del servicio de solicitudes. No recibirás viajes hasta que vuelvas y actives tu disponibilidad.';
+
+  @override
+  String get driverTexiRutaConfirmAction => 'Sí, cambiar';
+
+  @override
+  String get driverTexiRutaLeave => 'Volver a solicitudes';
+
+  @override
+  String get driverTexiRutaLeaveBody =>
+      'Dejarás TEXI Ruta. No quedarás disponible para solicitudes hasta que lo actives.';
+
+  @override
+  String get driverTexiRutaNoTrips => 'No tienes salidas asignadas.';
+
+  @override
+  String get driverTexiRutaBookings => 'Reservas';
+
+  @override
+  String get driverTexiRutaNoBookings =>
+      'Esta salida todavía no tiene reservas.';
+
+  @override
+  String get driverTexiRutaOpen => 'Abrir abordaje';
+
+  @override
+  String get driverTexiRutaCode => 'Código de la reserva';
+
+  @override
+  String get driverTexiRutaConfirmBoard => 'Confirmar subida';
+
+  @override
+  String get driverTexiRutaClose => 'Cerrar abordaje';
+
+  @override
+  String get driverTexiRutaCloseBody =>
+      'Quien no haya subido quedará como no presentado. Esta acción necesita conexión.';
+
+  @override
+  String get driverTexiRutaPassenger => 'Pasajero';
+
+  @override
+  String driverTexiRutaSeats(int count) {
+    return '$count asientos';
+  }
+
+  @override
+  String get driverTexiRutaStatusScheduled => 'Programada';
+
+  @override
+  String get driverTexiRutaStatusAvailable => 'Disponible';
+
+  @override
+  String get driverTexiRutaStatusBoarding => 'Abordando';
+
+  @override
+  String get driverTexiRutaStatusProgress => 'En camino';
+
+  @override
+  String get driverTexiRutaStatusDelayed => 'Demorada';
+
+  @override
+  String get driverTexiRutaBookingConfirmed => 'Por subir';
+
+  @override
+  String get driverTexiRutaBookingBoarded => 'Subió';
+
+  @override
+  String get driverTexiRutaBookingNoShow => 'No se presentó';
+
+  @override
+  String get driverTexiRutaNetwork =>
+      'Esta acción necesita conexión. Intenta de nuevo.';
 }

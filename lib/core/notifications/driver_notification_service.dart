@@ -15,6 +15,7 @@ class DriverNotificationService {
   static final DriverNotificationService instance =
       DriverNotificationService._();
 
+  static const int _backgroundOfferWindowNoticeId = 87115;
   static const String _channelId = 'texi_driver_trip_offers';
   static const String _channelName = 'Solicitudes de viaje';
   static const String _opsChannelId = 'texi_driver_ops_notices';
@@ -94,6 +95,10 @@ class DriverNotificationService {
       final l10n = inst._l10nForCurrentLocale();
       title = l10n.driverNotifyPassengerEnRouteTitle;
       body = l10n.driverNotifyPassengerEnRouteBody;
+    } else if (event == 'trip_cancelled') {
+      final l10n = inst._l10nForCurrentLocale();
+      title = l10n.driverNotifyTripCancelledTitle;
+      body = l10n.driverNotifyTripCancelledBody;
     } else if (event == 'pickup_grace') {
       final copy = inst._pickupGraceCopy(message);
       title = copy.title;
@@ -182,6 +187,22 @@ class DriverNotificationService {
       await showPassengerEnRouteNotice(tripId: tripId);
       return;
     }
+    if (event == 'trip_cancelled') {
+      final tripId =
+          message.data['tripId']?.toString() ??
+          message.data['trip_id']?.toString() ??
+          '';
+      if (tripId.isNotEmpty) {
+        ingestDriverTripCancelledPush(tripId: tripId);
+      }
+      final l10n = _l10nForCurrentLocale();
+      await _showFcmRaw(
+        title: l10n.driverNotifyTripCancelledTitle,
+        body: l10n.driverNotifyTripCancelledBody,
+        payload: tripId,
+      );
+      return;
+    }
     if (event == 'pickup_grace') {
       return;
     }
@@ -234,6 +255,31 @@ class DriverNotificationService {
     if (response.payload != null && kDebugMode) {
       debugPrint('[DriverNotification] Tapped payload=${response.payload}');
     }
+  }
+
+  Future<void> showBackgroundOfferWindowNotice() async {
+    await initialize();
+    final l10n = _l10nForCurrentLocale();
+    final android = AndroidNotificationDetails(
+      _channelId,
+      _channelName,
+      channelDescription: 'Aviso al llevar 15 minutos online en segundo plano.',
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+    );
+    await _plugin.show(
+      _backgroundOfferWindowNoticeId,
+      l10n.driverBackgroundOfferWindowTitle,
+      l10n.driverBackgroundOfferWindowBody,
+      NotificationDetails(android: android),
+      payload: 'bg_offer_window',
+    );
+  }
+
+  Future<void> cancelBackgroundOfferWindowNotice() async {
+    if (!_initialized) return;
+    await _plugin.cancel(_backgroundOfferWindowNoticeId);
   }
 
   Future<void> showTripChatMessageIfBackground({

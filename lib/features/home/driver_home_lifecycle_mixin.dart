@@ -15,9 +15,11 @@ import '../../core/notifications/driver_fcm_navigation.dart'
         driverFcmTripOfferOpenBump,
         driverTripChatOpenBump,
         driverPassengerEnRouteBump,
+        driverTripCancelledBump,
         takePendingTripOfferFromNotification,
         takePendingTripChatTripIdFromNotification,
-        takePendingPassengerEnRoute;
+        takePendingPassengerEnRoute,
+        takePendingTripCancelled;
 import '../../core/notifications/driver_trip_chat_visibility.dart';
 import '../../core/router/app_router.dart';
 import '../../core/session/driver_internal_tools_gate.dart';
@@ -43,8 +45,6 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
   bool isRatingSheetOpen = false;
   bool tripChatSheetDisplayed = false;
   final LocalAuthentication localAuth = LocalAuthentication();
-  DateTime? lastBackgroundAt;
-  bool keepActivePromptOpen = false;
   bool? prevShowMapForEntrance;
   late AnimationController homeListEntrance;
   late Animation<double> homeListFade;
@@ -53,6 +53,7 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
   int lastHandledFcmTripOfferBump = 0;
   int lastHandledTripChatOpenBump = 0;
   int lastHandledPassengerEnRouteBump = 0;
+  int lastHandledTripCancelledBump = 0;
   bool handlingAuthSessionExpired = false;
   bool openingVehicleRegistrationForm = false;
   bool vehicleFormAutoOpenAttempted = false;
@@ -81,10 +82,12 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
     driverFcmTripOfferOpenBump.addListener(onFcmTripOfferOpenBump);
     driverTripChatOpenBump.addListener(onTripChatOpenBump);
     driverPassengerEnRouteBump.addListener(onPassengerEnRouteBump);
+    driverTripCancelledBump.addListener(onTripCancelledBump);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       onFcmTripOfferOpenBump();
       onTripChatOpenBump();
       onPassengerEnRouteBump();
+      onTripCancelledBump();
       unawaited(maybeOpenVehicleRegistrationForm());
     });
     homeListEntrance = AnimationController(
@@ -172,6 +175,7 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
     driverFcmTripOfferOpenBump.removeListener(onFcmTripOfferOpenBump);
     driverTripChatOpenBump.removeListener(onTripChatOpenBump);
     driverPassengerEnRouteBump.removeListener(onPassengerEnRouteBump);
+    driverTripCancelledBump.removeListener(onTripCancelledBump);
     unawaited(WakelockPlus.disable());
     homeListEntrance.dispose();
     WidgetsBinding.instance.removeObserver(this);
@@ -236,6 +240,19 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
       if (!driverTripChatPhaseActive(activeTrip?.status)) return;
       if (tripChatSheetDisplayed) return;
       await openTripChatSheet(tripId: tripId);
+    });
+  }
+
+  void onTripCancelledBump() {
+    final bump = driverTripCancelledBump.value;
+    if (bump <= lastHandledTripCancelledBump) return;
+    lastHandledTripCancelledBump = bump;
+    if (!mounted) return;
+    final tripId = takePendingTripCancelled();
+    if (tripId == null || tripId.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(driverRealtimeProvider.notifier).applyRemoteTripCancelled(tripId);
     });
   }
 
@@ -369,98 +386,26 @@ mixin DriverHomeLifecycleMixin<T extends ConsumerStatefulWidget>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!mounted) return;
     if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive ||
         state == AppLifecycleState.hidden) {
-      lastBackgroundAt = DateTime.now();
+      ref.read(driverRealtimeProvider.notifier).onDriverAppBackgrounded();
+      return;
+    }
+    if (state == AppLifecycleState.inactive) {
       return;
     }
     if (state == AppLifecycleState.resumed) {
+      ref.read(driverRealtimeProvider.notifier).onDriverAppForegrounded();
       syncKeepScreenOnForDriverMode();
       ref.read(driverRealtimeProvider.notifier).resyncForegroundService();
-      unawaited(maybePromptKeepActiveAfterBackground());
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        ref
-            .read(driverRealtimeProvider.notifier)
-            .touchReconnectIfWantedOnline();
+        unawaited(
+          ref.read(driverRealtimeProvider.notifier).reconcileAfterAppResume(),
+        );
       });
       return;
     }
     syncKeepScreenOnForDriverMode();
-  }
-
-  Future<void> maybePromptKeepActiveAfterBackground() async {
-    if (!mounted || keepActivePromptOpen) return;
-    final l10n = AppLocalizations.of(context);
-    final rt = ref.read(driverRealtimeProvider);
-    if (!rt.availabilitySwitchVisualOn) return;
-    if (rt.activeTrip != null || rt.tripPendingRating != null) return;
-    final lastBackgroundAt = this.lastBackgroundAt;
-    if (lastBackgroundAt == null) return;
-    if (DateTime.now().difference(lastBackgroundAt) <
-        const Duration(minutes: 15)) {
-      return;
-    }
-
-    keepActivePromptOpen = true;
-    var keepActive = false;
-    var secondsLeft = 120;
-    Timer? countdown;
-
-    if (!mounted) {
-      keepActivePromptOpen = false;
-      return;
-    }
-
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            countdown ??= Timer.periodic(const Duration(seconds: 1), (_) {
-              if (!ctx.mounted) return;
-              if (secondsLeft <= 0) {
-                Navigator.of(ctx).pop();
-                return;
-              }
-              setStateDialog(() => secondsLeft -= 1);
-            });
-            return AlertDialog(
-              backgroundColor: AppColors.surface,
-              title: Text(l10n.driverTripBackgroundPromptTitle),
-              content: Text(
-                l10n.driverTripBackgroundPromptBody(secondsLeft.toString()),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    keepActive = false;
-                    Navigator.of(ctx).pop();
-                  },
-                  child: Text(l10n.driverTripBackgroundPromptDisconnect),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    keepActive = true;
-                    Navigator.of(ctx).pop();
-                  },
-                  child: Text(l10n.driverTripBackgroundPromptKeep),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-    countdown?.cancel();
-    keepActivePromptOpen = false;
-    this.lastBackgroundAt = null;
-
-    if (!mounted) return;
-    if (!keepActive) {
-      await ref.read(driverRealtimeProvider.notifier).setOnline(false);
-    }
   }
 
   Future<void> openExternalNavigation({

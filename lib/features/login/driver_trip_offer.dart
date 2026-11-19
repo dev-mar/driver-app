@@ -30,6 +30,9 @@ class DriverTripOffer {
   final double? etaMinutes;
   final double? etaToDestinationMinutes;
   final double? distanceToPickupKm;
+  /// Mismo pasajero en dos tarjetas: la solicitud nueva reemplaza la anterior.
+  final String? passengerIdentityUserId;
+  final DateTime? tripCreatedAt;
   final String? passengerName;
   final double? passengerRating;
   final String? currencyCode;
@@ -74,12 +77,17 @@ class DriverTripOffer {
   final double? destinationLng;
   final String? routeOverviewEncoded;
 
+  /// Si es true, la zona del recojo permite contraoferta. Ausente = false.
+  final bool negotiationEnabled;
+
   const DriverTripOffer({
     required this.tripId,
     this.offeredPrice,
     this.etaMinutes,
     this.etaToDestinationMinutes,
     this.distanceToPickupKm,
+    this.passengerIdentityUserId,
+    this.tripCreatedAt,
     this.passengerName,
     this.passengerRating,
     this.currencyCode,
@@ -101,6 +109,7 @@ class DriverTripOffer {
     this.destinationLat,
     this.destinationLng,
     this.routeOverviewEncoded,
+    this.negotiationEnabled = false,
   });
 
   bool get isAdminWebDispatch =>
@@ -125,14 +134,65 @@ class DriverTripOffer {
       pickupLng != null &&
       destinationLat != null &&
       destinationLng != null;
+
+  DriverTripOffer withOfferedPrice(double price) {
+    final cover = companyGuaranteeToDriver;
+    double? cash = cashDuePassenger;
+    if (cover != null && cover > 0 && price > 0) {
+      final applied = cover < price ? cover : price;
+      cash = price - applied;
+      if (cash < 0) cash = 0;
+    }
+    return DriverTripOffer(
+      tripId: tripId,
+      offeredPrice: price,
+      cashDuePassenger: cash,
+      etaMinutes: etaMinutes,
+      etaToDestinationMinutes: etaToDestinationMinutes,
+      distanceToPickupKm: distanceToPickupKm,
+      passengerIdentityUserId: passengerIdentityUserId,
+      tripCreatedAt: tripCreatedAt,
+      passengerName: passengerName,
+      passengerRating: passengerRating,
+      currencyCode: currencyCode,
+      originAddress: originAddress,
+      destinationAddress: destinationAddress,
+      tripDistanceKm: tripDistanceKm,
+      requestSource: requestSource,
+      dispatchMode: dispatchMode,
+      paymentMethod: paymentMethod,
+      tripExtras: tripExtras,
+      tripSpecials: tripSpecials,
+      companyGuaranteeToDriver: companyGuaranteeToDriver,
+      promoDiscountAmount: promoDiscountAmount,
+      supportAmount: supportAmount,
+      supportSource: supportSource,
+      pickupLat: pickupLat,
+      pickupLng: pickupLng,
+      destinationLat: destinationLat,
+      destinationLng: destinationLng,
+      routeOverviewEncoded: routeOverviewEncoded,
+      negotiationEnabled: negotiationEnabled,
+    );
+  }
 }
 
 /// Construye [DriverTripOffer] desde payload socket o FCM (camelCase backend).
 DriverTripOffer driverTripOfferFromMap(Map<dynamic, dynamic> data) {
   final tripId = data['tripId']?.toString().trim() ?? '';
   final passengerNameRaw = data['passengerName']?.toString().trim();
+  final passengerIdRaw =
+      data['passengerIdentityUserId']?.toString().trim() ??
+      data['passenger_identity_user_id']?.toString().trim();
+  final createdRaw =
+      data['tripCreatedAt']?.toString() ?? data['trip_created_at']?.toString();
   return DriverTripOffer(
     tripId: tripId,
+    passengerIdentityUserId:
+        passengerIdRaw != null && passengerIdRaw.isNotEmpty
+            ? passengerIdRaw
+            : null,
+    tripCreatedAt: DateTime.tryParse(createdRaw ?? ''),
     offeredPrice: _parseOfferDouble(data['offeredPrice']),
     currencyCode: (data['currencyCode'] ?? data['currency'])?.toString(),
     etaMinutes: _parseOfferDouble(data['etaMinutes']),
@@ -188,6 +248,9 @@ DriverTripOffer driverTripOfferFromMap(Map<dynamic, dynamic> data) {
     routeOverviewEncoded: _trimOfferText(
       data['routeOverviewEncoded'] ?? data['route_overview_encoded'],
     ),
+    negotiationEnabled: _parseOfferBool(
+      data['negotiationEnabled'] ?? data['negotiation_enabled'],
+    ),
   );
 }
 
@@ -195,6 +258,13 @@ String? _trimOfferText(dynamic raw) {
   final value = raw?.toString().trim();
   if (value == null || value.isEmpty) return null;
   return value;
+}
+
+bool _parseOfferBool(dynamic raw) {
+  if (raw == true) return true;
+  if (raw is num) return raw != 0;
+  final text = raw?.toString().trim().toLowerCase() ?? '';
+  return text == 'true' || text == '1' || text == 'yes';
 }
 
 String normalizeDriverTripPaymentMethod(dynamic raw) {

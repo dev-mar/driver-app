@@ -98,6 +98,10 @@
   "driverHomeMenuSectionActivity": "Activity",
   "driverHomeMenuSectionSession": "Session",
   "driverHomeMenuTitle": "Menu",
+  "noticesInboxTitle": "Notices",
+  "noticesInboxEntry": "TEXIAPP notices",
+  "noticesMarkAll": "Read all",
+  "noticesEmpty": "No notices yet. When we send an update, it will show up here.",
   "driverEarningsCreditsMenu": "Earnings & credits",
   "driverPayoutMenu": "TEXIAPP payouts",
   "driverPayoutTitle": "TEXIAPP payouts",
@@ -514,6 +518,9 @@
   "driverNotifyPassengerEnRouteTitle": "The rider is on the way",
   "driverNotifyPassengerEnRouteBody": "The rider is heading to the pickup point.",
   "driverNotifyPickupGraceTitle": "Wait time is over",
+  "driverNotifyTripCancelledTitle": "Trip cancelled",
+  "driverNotifyTripCancelledBody": "The rider cancelled the request.",
+  "driverOnlineErrorTripEndedWhileAway": "The rider cancelled the trip. You can receive another request.",
   "driverNotifyPickupGraceBody": "You have {minutes} min of grace at the pickup point.",
   "@driverNotifyPickupGraceBody": {
     "placeholders": {"minutes": {"type": "int"}}
@@ -568,7 +575,31 @@
   },
   "driverTripReject": "Reject",
   "driverTripAccept": "Accept",
+  "driverTripCounter": "Offer",
+  "driverTripCounterTitle": "Counter-offer",
+  "driverTripCounterHint": "Choose how much to add to the current fare.",
+  "driverTripCounterCurrent": "Current fare",
+  "driverTripCounterAdd": "You can add",
+  "driverTripCounterTotal": "Total",
+  "driverTripCounterAddon": "+{amount}",
+  "@driverTripCounterAddon": {
+    "placeholders": {
+      "amount": { "type": "int" }
+    }
+  },
+  "driverTripCounterPercent": "{percent}%",
+  "@driverTripCounterPercent": {
+    "placeholders": {
+      "percent": { "type": "int" }
+    }
+  },
+  "driverTripCounterSend": "Send offer",
+  "driverTripCounterSent": "Counter-offer sent. The passenger can choose it.",
+  "driverTripCounterAboveCap": "That amount is above the allowed cap.",
+  "driverTripCounterNotHigher": "The offer must be higher than the current fare.",
+  "driverTripCounterFailed": "The counter-offer could not be sent.",
   "driverTripOfferDetail": "Details",
+  "driverTripOfferSeeOnMap": "See trip details on the map",
   "driverTripOfferDetailTitle": "Trip details",
   "driverTripOfferPreviewBack": "Back",
   "driverTripOfferPriceTbd": "To be agreed",
@@ -601,6 +632,7 @@
   "driverTripOfferBadgeNew": "New",
   "driverTripPaymentCash": "Cash",
   "driverTripPaymentQr": "QR",
+  "driverTripPaymentMethodLabel": "Payment method",
   "driverTripExtrasTitle": "Passenger notes",
   "driverTripExtrasHint": "Informational. Close to return to the request list.",
   "driverTripAddonsHint": "Review preferences and requirements. Close to return to the list.",
@@ -613,6 +645,11 @@
   "driverTripExtraWheelchairAlert": "Passenger with a wheelchair.",
   "driverTripExtraWheelchairDetail": "Needs trunk space for a folding wheelchair. Please assist if needed.",
   "driverTripExtraOver4": "More than 4 people",
+  "driverTripExtraLuggage": "Luggage",
+  "driverTripExtraAc": "A/C",
+  "driverTripSpecialSeats6": "Up to 6 seats",
+  "driverTripSpecialRoofRack": "Roof rack",
+  "driverTripSpecialCargo": "Cargo",
   "driverTripExtraLuggageAlert": "With luggage.",
   "driverTripExtraLuggageDetail": "The passenger has bags. Keep the trunk empty for luggage.",
   "driverTripExtraAcAlert": "Air conditioning.",
@@ -635,9 +672,9 @@
   "driverTripErrorGeneric": "Could not update trip status.",
   "driverTripNavigatePickup": "Navigate to pickup",
   "driverTripNavigateDestination": "Navigate to destination",
-  "driverTripOpenMapsCta": "Open map",
+  "driverTripOpenMapsCta": "Navigate",
   "@driverTripOpenMapsCta": {
-    "description": "Maps shortcut inside trip detail; must not look like Arrived/Start"
+    "description": "Compact external-navigation shortcut beside the trip addresses"
   },
   "driverRegisteredImagesMenu": "Registered images",
   "driverTripChatOpenCta": "Secure chat",
@@ -678,6 +715,8 @@
   "driverHomeBackgroundLocationBody": "So passengers can find you while the app is not open, allow \"Always\" (or \"Allow all the time\") location on the next step. It is only used while you are available as a driver. You can change this in system settings at any time.",
   "driverHomeBackgroundLocationLater": "Not now",
   "driverHomeBackgroundLocationContinue": "Continue",
+  "driverBackgroundOfferWindowTitle": "You're still online",
+  "driverBackgroundOfferWindowBody": "Texi has been in the background for 15 minutes. Open the app to keep receiving trips. If you don't, we'll set you offline.",
   "driverForegroundNotifyTitle": "Texi · Driver mode",
   "driverForegroundNotifyBodySearching": "Waiting for ride requests. GPS stays on for dispatch.",
   "driverForegroundNotifyBodyTrip": "On a trip · location shared with passengers.",
@@ -1147,5 +1186,38 @@
   "driverChangePasswordLogout": "Sign out",
   "driverChangePasswordErrorCurrent": "The temporary password is incorrect.",
   "driverChangePasswordErrorSame": "The new password must be different from the temporary one.",
-  "driverChangePasswordErrorGeneric": "Could not update the password."
+  "driverChangePasswordErrorGeneric": "Could not update the password.",
+  "driverTexiRutaEntry": "TEXI Ruta",
+  "driverTexiRutaTitle": "TEXI Ruta",
+  "driverTexiRutaIntro": "Here you see the departures assigned to you and the bookings on each one.",
+  "driverTexiRutaSwitch": "Switch to TEXI Ruta",
+  "driverTexiRutaConfirmTitle": "Change service",
+  "driverTexiRutaConfirmBody": "You will leave ride requests. You will not receive trips until you come back and turn availability on.",
+  "driverTexiRutaConfirmAction": "Yes, switch",
+  "driverTexiRutaLeave": "Back to requests",
+  "driverTexiRutaLeaveBody": "You will leave TEXI Ruta. You will not be available for requests until you turn it on.",
+  "driverTexiRutaNoTrips": "You have no assigned departures.",
+  "driverTexiRutaBookings": "Bookings",
+  "driverTexiRutaNoBookings": "This departure has no bookings yet.",
+  "driverTexiRutaOpen": "Open boarding",
+  "driverTexiRutaCode": "Booking code",
+  "driverTexiRutaConfirmBoard": "Confirm boarding",
+  "driverTexiRutaClose": "Close boarding",
+  "driverTexiRutaCloseBody": "Anyone who did not board will be marked as a no-show. This action needs a connection.",
+  "driverTexiRutaPassenger": "Passenger",
+  "driverTexiRutaSeats": "{count} seats",
+  "@driverTexiRutaSeats": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "driverTexiRutaStatusScheduled": "Scheduled",
+  "driverTexiRutaStatusAvailable": "Available",
+  "driverTexiRutaStatusBoarding": "Boarding",
+  "driverTexiRutaStatusProgress": "On the way",
+  "driverTexiRutaStatusDelayed": "Delayed",
+  "driverTexiRutaBookingConfirmed": "Waiting",
+  "driverTexiRutaBookingBoarded": "Boarded",
+  "driverTexiRutaBookingNoShow": "No-show",
+  "driverTexiRutaNetwork": "This action needs a connection. Try again."
 }

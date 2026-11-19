@@ -1,14 +1,20 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../gen_l10n/app_localizations.dart';
+import '../config/driver_backend_config.dart';
+import '../network/driver_api_client.dart';
+import '../storage/driver_secure_storage.dart';
 import '../theme/app_colors.dart';
 
 /// Foreground service (solo Android) mientras el conductor está **online**:
-/// notificación persistente tipo Uber/Bolt y prioridad de proceso, alineado con
-/// GPS + socket ya existentes. No sustituye FCM.
+/// notificación persistente y prioridad de proceso. Si no hay viaje activo,
+/// el isolate del servicio refresca `last_ping` por HTTP. El socket, el GPS
+/// y el viaje activo siguen en el isolate principal. No sustituye FCM.
 class DriverForegroundSession {
   DriverForegroundSession._();
   static final DriverForegroundSession instance = DriverForegroundSession._();
@@ -25,6 +31,8 @@ class DriverForegroundSession {
   bool _startingOrRunning = false;
   String? _lastNotificationBody;
   bool? _lastAvailabilitySessionActive;
+  bool _presenceLoopEnabled = false;
+  DateTime? _lastPresenceRefreshAt;
 
   AppLocalizations _l10nForCurrentLocale() {
     final raw = WidgetsBinding.instance.platformDispatcher.locale;
@@ -70,16 +78,17 @@ class DriverForegroundSession {
         showNotification: false,
         playSound: false,
       ),
-      foregroundTaskOptions: ForegroundTaskOptions(
-        eventAction: ForegroundTaskEventAction.nothing(),
+        foregroundTaskOptions: ForegroundTaskOptions(
+        eventAction: ForegroundTaskEventAction.repeat(20000),
         autoRunOnBoot: false,
         autoRunOnMyPackageReplaced: false,
         allowWakeLock: true,
         allowWifiLock: true,
         allowAutoRestart: false,
-        stopWithTask: true,
+        stopWithTask: false,
       ),
     );
+    FlutterForegroundTask.addTaskDataCallback(_onTaskData);
     _initialized = true;
     debugPrint('[DriverForeground] init Android OK.');
   }
@@ -105,7 +114,10 @@ class DriverForegroundSession {
       hasActiveTrip: hasActiveTrip,
     );
 
+    final presenceEnabled = availabilitySessionActive && !hasActiveTrip;
+
     if (!availabilitySessionActive) {
+      _presenceLoopEnabled = false;
       await _stopIfRunning();
       return;
     }
@@ -129,12 +141,16 @@ class DriverForegroundSession {
         } else {
           _lastAvailabilitySessionActive = availabilitySessionActive;
           _lastNotificationBody = body;
+          await _sendPresenceConfig(enabled: presenceEnabled);
         }
         return;
       }
 
       if (_lastAvailabilitySessionActive == availabilitySessionActive &&
           _lastNotificationBody == body) {
+        if (_presenceLoopEnabled != presenceEnabled) {
+          await _sendPresenceConfig(enabled: presenceEnabled);
+        }
         return;
       }
 
@@ -150,6 +166,7 @@ class DriverForegroundSession {
       } else {
         _lastAvailabilitySessionActive = availabilitySessionActive;
         _lastNotificationBody = body;
+        await _sendPresenceConfig(enabled: presenceEnabled);
       }
     } catch (e, st) {
       _startingOrRunning = false;
@@ -166,10 +183,48 @@ class DriverForegroundSession {
       } else {
         _lastAvailabilitySessionActive = false;
         _lastNotificationBody = null;
+        _presenceLoopEnabled = false;
       }
     } catch (e, st) {
       debugPrint('[DriverForeground] stop: $e $st');
     }
+  }
+
+  /// El servicio pide token nuevo tras un 401. No cierra la sesión.
+  static void _onTaskData(Object data) {
+    if (data is! Map || data['type'] != 'presence_unauthorized') return;
+    unawaited(instance._refreshPresenceToken());
+  }
+
+  Future<void> _refreshPresenceToken() async {
+    if (!_presenceLoopEnabled) return;
+    final now = DateTime.now();
+    final last = _lastPresenceRefreshAt;
+    if (last != null && now.difference(last) < const Duration(seconds: 45)) {
+      return;
+    }
+    _lastPresenceRefreshAt = now;
+    final ok = await DriverApiClient().tryRefreshSession();
+    if (!ok || !_presenceLoopEnabled) return;
+    await _sendPresenceConfig(enabled: true);
+  }
+
+  /// Solo mientras espera solicitudes. Con viaje activo el isolate no late.
+  Future<void> _sendPresenceConfig({required bool enabled}) async {
+    if (!Platform.isAndroid) return;
+    if (!await FlutterForegroundTask.isRunningService) return;
+    String? token;
+    if (enabled) {
+      token = await DriverSecureStorage.read(DriverApiClient.tokenStorageKey);
+      if (token == null || token.isEmpty) enabled = false;
+    }
+    _presenceLoopEnabled = enabled;
+    FlutterForegroundTask.sendDataToTask(<String, Object?>{
+      'type': 'presence',
+      'enabled': enabled,
+      'baseUrl': DriverBackendConfig.baseUrl,
+      'token': enabled ? token : null,
+    });
   }
 }
 
@@ -178,14 +233,86 @@ void _driverForegroundEntryPoint() {
   FlutterForegroundTask.setTaskHandler(_DriverForegroundTaskHandler());
 }
 
-/// Mantiene el servicio en primer plano; el trabajo real (socket, GPS) sigue en el isolate principal.
+/// Latido HTTP de solicitudes. El socket y el viaje activo siguen en el isolate principal.
 class _DriverForegroundTaskHandler extends TaskHandler {
+  bool _enabled = false;
+  String? _baseUrl;
+  String? _token;
+  bool _inFlight = false;
+  DateTime? _unauthorizedAt;
+  HttpClient? _client;
+
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {}
 
   @override
-  void onRepeatEvent(DateTime timestamp) {}
+  void onReceiveData(Object data) {
+    if (data is! Map || data['type'] != 'presence') return;
+    final enabled = data['enabled'] == true;
+    final base = data['baseUrl']?.toString().trim() ?? '';
+    final token = data['token']?.toString() ?? '';
+    if (!enabled || base.isEmpty || token.isEmpty || token.length > 8192) {
+      _enabled = false;
+      if (!enabled) _token = null;
+      return;
+    }
+    _baseUrl = base;
+    _token = token;
+    _enabled = true;
+  }
 
   @override
-  Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {}
+  void onRepeatEvent(DateTime timestamp) {
+    if (!_enabled || _inFlight) return;
+    unawaited(_postPresenceHeartbeat());
+  }
+
+  Future<void> _postPresenceHeartbeat() async {
+    final token = _token;
+    final base = _baseUrl;
+    if (!_enabled || token == null || base == null) return;
+    final uri = Uri.tryParse('$base/drivers/me/presence/heartbeat');
+    if (uri == null || !uri.hasScheme) return;
+    _inFlight = true;
+    final client = _client ??= HttpClient();
+    try {
+      final req = await client.postUrl(uri).timeout(const Duration(seconds: 8));
+      req.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
+      req.headers.set(HttpHeaders.acceptHeader, 'application/json');
+      req.headers.contentType = ContentType.json;
+      final body = utf8.encode('{}');
+      req.contentLength = body.length;
+      req.add(body);
+      final res = await req.close().timeout(const Duration(seconds: 8));
+      await res.drain<void>();
+      if (res.statusCode == 401) {
+        _signalUnauthorized();
+      }
+    } catch (_) {
+      // El siguiente ciclo reintenta. No se registra el token.
+    } finally {
+      _inFlight = false;
+    }
+  }
+
+  void _signalUnauthorized() {
+    _enabled = false;
+    final now = DateTime.now();
+    final last = _unauthorizedAt;
+    if (last != null && now.difference(last) < const Duration(seconds: 30)) {
+      return;
+    }
+    _unauthorizedAt = now;
+    FlutterForegroundTask.sendDataToMain(<String, String>{
+      'type': 'presence_unauthorized',
+    });
+  }
+
+  @override
+  Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {
+    _enabled = false;
+    _token = null;
+    _client?.close(force: true);
+    _client = null;
+  }
 }

@@ -4,6 +4,7 @@ import '../../features/login/driver_login_screen.dart';
 import '../../features/login/driver_password_reset_screen.dart';
 import '../../features/login/driver_change_password_screen.dart';
 import '../../features/login/driver_home_screen.dart';
+import '../../features/corridor/driver_corridor_screen.dart';
 import '../../features/login/driver_trip_history_screen.dart';
 import '../../features/earnings/driver_earnings_credits_screen.dart';
 import '../../features/earnings/driver_credits_topup_screen.dart';
@@ -16,6 +17,7 @@ import '../../features/profile/driver_registered_images_screen.dart';
 import '../../features/registration/driver_my_vehicles_screen.dart';
 import '../../features/registration/driver_registration_flow_screen.dart';
 import '../../features/settings/driver_app_settings_screen.dart';
+import '../../features/notices/driver_notices_screen.dart';
 import '../session/driver_internal_tools_gate.dart';
 import '../storage/driver_secure_storage.dart';
 
@@ -35,6 +37,7 @@ class AppRouter {
   static const String forgotPassword = 'driver_forgot_password';
   static const String changePassword = 'driver_change_password';
   static const String home = 'driver_home';
+  static const String texiRuta = 'driver_texi_ruta';
   static const String register = 'driver_register';
   static const String profile = 'driver_profile';
   static const String registeredImages = 'driver_registered_images';
@@ -43,6 +46,7 @@ class AppRouter {
   static const String creditsTopup = 'driver_credits_topup';
   static const String companyPayout = 'driver_company_payout';
   static const String club = 'driver_club';
+  static const String notices = 'driver_notices';
   static const String myVehicles = 'driver_my_vehicles';
   static const String settings = 'driver_settings';
 
@@ -84,6 +88,7 @@ class AppRouter {
         if (pending != null) return pending;
       }
       if (location == '/home' && !hasToken) return '/login';
+      if (location == '/texi-ruta' && !hasToken) return '/login';
       if (location == '/profile' && !hasToken) return '/login';
       if (location == '/my-vehicles' && !hasToken) return '/login';
       if (location == '/settings' && !hasToken) return '/login';
@@ -91,6 +96,7 @@ class AppRouter {
       if (location == '/credits-topup' && !hasToken) return '/login';
       if (location == '/company-payout' && !hasToken) return '/login';
       if (location == '/club' && !hasToken) return '/login';
+      if (location == '/notices' && !hasToken) return '/login';
       if (location == '/trip-history' && !hasToken) return '/login';
       if (location == '/registered-images') {
         if (!hasToken) return '/login';
@@ -201,6 +207,11 @@ class AppRouter {
         builder: (context, state) => const DriverHomeScreen(),
       ),
       GoRoute(
+        path: '/texi-ruta',
+        name: texiRuta,
+        builder: (context, state) => const DriverCorridorScreen(),
+      ),
+      GoRoute(
         path: '/my-vehicles',
         name: myVehicles,
         builder: (context, state) => const DriverMyVehiclesScreen(),
@@ -229,6 +240,13 @@ class AppRouter {
         path: '/club',
         name: club,
         builder: (context, state) => const DriverClubScreen(),
+      ),
+      GoRoute(
+        path: '/notices',
+        name: notices,
+        builder: (context, state) => DriverNoticesScreen(
+          highlightId: state.uri.queryParameters['id'],
+        ),
       ),
       GoRoute(
         path: '/profile',

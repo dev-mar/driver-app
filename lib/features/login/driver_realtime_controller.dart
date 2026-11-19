@@ -64,10 +64,15 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState>
   Timer? _presenceHeartbeatTimer;
   Timer? _gpsPresenceRetryTimer;
   Timer? _acceptOfferWatchdog;
+  Timer? _backgroundOfferWindowTimer;
+  Timer? _backgroundOfferOfflineTimer;
+  bool _appInBackground = false;
   final Random _reconnectJitterRandom = Random();
   int _availabilityReconnectAttempts = 0;
   int _tripReconnectAttempts = 0;
   final Set<String> _tripRatingInFlight = <String>{};
+  /// Solicitudes que el pasajero ya cerró. Una oferta tardía de ese viaje no vuelve a la lista.
+  final Map<String, int> _retiredOfferUntilMs = <String, int>{};
   final Map<int, Future<List<DriverRatingFeedbackItem>>>
   _ratingCatalogInFlight = <int, Future<List<DriverRatingFeedbackItem>>>{};
   DateTime? _lastTouchReconnect;
@@ -114,6 +119,7 @@ class DriverRealtimeController extends StateNotifier<DriverRealtimeState>
     _cancelGpsPresenceWatchdog();
     _acceptOfferWatchdog?.cancel();
     _acceptOfferWatchdog = null;
+    _cancelBackgroundOfferWindow();
     _userRequestedOffline = true;
     _availabilitySessionDesired = false;
     unawaited(_goOffline(internal: true, preserveTripState: false));

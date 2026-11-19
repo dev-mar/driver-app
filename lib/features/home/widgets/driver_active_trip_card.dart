@@ -59,6 +59,7 @@ class DriverActiveTripCard extends StatelessWidget {
     final hasPickupCoords = trip.pickupLat != null && trip.pickupLng != null;
     final hasDestCoords =
         trip.destinationLat != null && trip.destinationLng != null;
+    final canOpenExternalNav = hasPickupCoords || hasDestCoords;
     final hasOriginLine =
         (trip.originAddress != null && trip.originAddress!.isNotEmpty) ||
         hasPickupCoords;
@@ -188,12 +189,12 @@ class DriverActiveTripCard extends StatelessWidget {
                           const SizedBox(height: 8),
                           DriverTripPromoBreakdown(
                             l10n: l10n,
+                            tripFare: trip.estimatedPrice,
                             cashDuePassenger: trip.cashDuePassenger,
                             companyGuaranteeToDriver:
                                 trip.companyGuaranteeToDriver,
                             currencyCode: trip.currencyCode,
-                            isReferralSupport:
-                                trip.isPassengerReferralSupport,
+                            isReferralSupport: trip.isPassengerReferralSupport,
                             emphasizeCompanyLine: true,
                           ),
                         ],
@@ -235,12 +236,12 @@ class DriverActiveTripCard extends StatelessWidget {
                           const SizedBox(height: 8),
                           DriverTripPromoBreakdown(
                             l10n: l10n,
+                            tripFare: trip.estimatedPrice,
                             cashDuePassenger: trip.cashDuePassenger,
                             companyGuaranteeToDriver:
                                 trip.companyGuaranteeToDriver,
                             currencyCode: trip.currencyCode,
-                            isReferralSupport:
-                                trip.isPassengerReferralSupport,
+                            isReferralSupport: trip.isPassengerReferralSupport,
                             emphasizeCompanyLine: true,
                           ),
                         ],
@@ -304,99 +305,124 @@ class DriverActiveTripCard extends StatelessWidget {
                         color: AppColors.border.withValues(alpha: 0.5),
                       ),
                     ),
-                  if (trip.originAddress != null &&
-                      trip.originAddress!.isNotEmpty)
+                  if (hasOriginLine || hasDestLine)
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.place_rounded,
-                          size: 18,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            trip.originAddress!,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (trip.originAddress != null &&
+                                  trip.originAddress!.isNotEmpty)
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(
+                                      Icons.place_rounded,
+                                      size: 18,
+                                      color: AppColors.primary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        trip.originAddress!,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              else if (hasPickupCoords)
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(
+                                      Icons.place_rounded,
+                                      size: 18,
+                                      color: AppColors.primary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        '${l10n.driverMapPickupPoint}: ${trip.pickupLat!.toStringAsFixed(5)}, ${trip.pickupLng!.toStringAsFixed(5)}',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              if (hasOriginLine && hasDestLine)
+                                const SizedBox(height: 6),
+                              if (trip.destinationAddress != null &&
+                                  trip.destinationAddress!.isNotEmpty)
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(
+                                      Icons.flag_rounded,
+                                      size: 18,
+                                      color: AppColors.error,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        trip.destinationAddress!,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              else if (hasDestCoords)
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(
+                                      Icons.flag_rounded,
+                                      size: 18,
+                                      color: AppColors.error,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        '${l10n.driverMapDestinationPoint}: ${trip.destinationLat!.toStringAsFixed(5)}, ${trip.destinationLng!.toStringAsFixed(5)}',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                            ],
                           ),
                         ),
-                      ],
-                    )
-                  else if (hasPickupCoords)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.place_rounded,
-                          size: 18,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '${l10n.driverMapPickupPoint}: ${trip.pickupLat!.toStringAsFixed(5)}, ${trip.pickupLng!.toStringAsFixed(5)}',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                        if (canOpenExternalNav) ...[
+                          const SizedBox(width: AppFoundation.spacingSm),
+                          DriverAssistedTripNavButtons(
+                            showPickup: hasPickupCoords,
+                            showDestination: hasDestCoords,
+                            tripStatus: trip.status,
+                            l10n: l10n,
+                            onNavigateToPickup: onNavigateToPickup,
+                            onNavigateToDestination: onNavigateToDestination,
                           ),
-                        ),
-                      ],
-                    ),
-                  if (hasOriginLine && hasDestLine) const SizedBox(height: 6),
-                  if (trip.destinationAddress != null &&
-                      trip.destinationAddress!.isNotEmpty)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.flag_rounded,
-                          size: 18,
-                          color: AppColors.error,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            trip.destinationAddress!,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    )
-                  else if (hasDestCoords)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.flag_rounded,
-                          size: 18,
-                          color: AppColors.error,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '${l10n.driverMapDestinationPoint}: ${trip.destinationLat!.toStringAsFixed(5)}, ${trip.destinationLng!.toStringAsFixed(5)}',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
+                        ],
                       ],
                     ),
                   if ((hasOriginLine || hasDestLine) && hasMetrics)
@@ -445,30 +471,6 @@ class DriverActiveTripCard extends StatelessWidget {
                         ],
                       ],
                     ),
-                  if ((hasOriginLine || hasDestLine || hasMetrics) &&
-                      ((trip.pickupLat != null && trip.pickupLng != null) ||
-                          (trip.destinationLat != null &&
-                              trip.destinationLng != null))) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Divider(
-                        height: 1,
-                        color: AppColors.border.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    DriverAssistedTripNavButtons(
-                      showPickup:
-                          trip.pickupLat != null && trip.pickupLng != null,
-                      showDestination: trip.destinationLat != null &&
-                          trip.destinationLng != null,
-                      tripStatus: trip.status,
-                      pickupHint: trip.originAddress,
-                      destinationHint: trip.destinationAddress,
-                      l10n: l10n,
-                      onNavigateToPickup: onNavigateToPickup,
-                      onNavigateToDestination: onNavigateToDestination,
-                    ),
-                  ],
                 ],
               ),
             ),

@@ -3,6 +3,116 @@ part of 'driver_realtime_controller.dart';
 mixin _DriverRealtimeTripsMixin on StateNotifier<DriverRealtimeState> {
   DriverRealtimeController get _rt => this as DriverRealtimeController;
 
+  static const int _retiredOfferTtlMs = 10 * 60 * 1000;
+
+  void _retireOfferTripId(String tripId) {
+    final id = tripId.trim();
+    if (id.isEmpty) return;
+    _rt._retiredOfferUntilMs[id] =
+        DateTime.now().millisecondsSinceEpoch + _retiredOfferTtlMs;
+  }
+
+  bool _isRetiredOfferTripId(String tripId) {
+    final id = tripId.trim();
+    final until = _rt._retiredOfferUntilMs[id];
+    if (until == null) return false;
+    if (DateTime.now().millisecondsSinceEpoch > until) {
+      _rt._retiredOfferUntilMs.remove(id);
+      return false;
+    }
+    return true;
+  }
+
+  /// Una sola solicitud visible por pasajero. La más nueva gana.
+  /// Una oferta de un viaje ya cerrado no vuelve a entrar.
+  bool ingestPendingOffer(DriverTripOffer offer) {
+    final tripId = offer.tripId.trim();
+    if (tripId.isEmpty || state.activeTrip != null) return false;
+    if (_isRetiredOfferTripId(tripId)) return false;
+
+    var list = List<DriverTripOffer>.from(state.pendingOffers);
+    final passengerId = offer.passengerIdentityUserId?.trim() ?? '';
+    if (passengerId.isNotEmpty) {
+      final dropped = <String>[];
+      for (final existing in list) {
+        if (existing.tripId == tripId) continue;
+        final other = existing.passengerIdentityUserId?.trim() ?? '';
+        if (other != passengerId) continue;
+        final existingAt = existing.tripCreatedAt;
+        final incomingAt = offer.tripCreatedAt;
+        if (existingAt != null &&
+            incomingAt != null &&
+            !incomingAt.isAfter(existingAt)) {
+          _retireOfferTripId(tripId);
+          return false;
+        }
+        if (existingAt == null || incomingAt == null) continue;
+        dropped.add(existing.tripId);
+      }
+      if (dropped.isNotEmpty) {
+        for (final id in dropped) {
+          _retireOfferTripId(id);
+        }
+        list = list.where((o) => !dropped.contains(o.tripId)).toList();
+      }
+    }
+
+    final index = list.indexWhere((o) => o.tripId == tripId);
+    final isNew = index < 0;
+    if (index >= 0) {
+      final prev = list[index];
+      final incomingPrice = offer.offeredPrice;
+      final currentPrice = prev.offeredPrice;
+      if (incomingPrice != null &&
+          currentPrice != null &&
+          incomingPrice + 0.009 < currentPrice) {
+        return false;
+      }
+      list[index] = DriverTripOffer(
+        tripId: offer.tripId,
+        offeredPrice: offer.offeredPrice,
+        etaMinutes: offer.etaMinutes,
+        etaToDestinationMinutes: offer.etaToDestinationMinutes,
+        distanceToPickupKm: offer.distanceToPickupKm,
+        passengerIdentityUserId:
+            offer.passengerIdentityUserId ?? prev.passengerIdentityUserId,
+        tripCreatedAt: offer.tripCreatedAt ?? prev.tripCreatedAt,
+        passengerName: offer.passengerName ?? prev.passengerName,
+        passengerRating: offer.passengerRating,
+        currencyCode: offer.currencyCode,
+        originAddress: offer.originAddress,
+        destinationAddress: offer.destinationAddress,
+        tripDistanceKm: offer.tripDistanceKm,
+        requestSource: offer.requestSource,
+        dispatchMode: offer.dispatchMode,
+        paymentMethod: offer.paymentMethod,
+        tripExtras: offer.tripExtras,
+        tripSpecials: offer.tripSpecials,
+        cashDuePassenger: offer.cashDuePassenger ?? prev.cashDuePassenger,
+        companyGuaranteeToDriver:
+            offer.companyGuaranteeToDriver ?? prev.companyGuaranteeToDriver,
+        promoDiscountAmount: offer.promoDiscountAmount,
+        supportAmount: offer.supportAmount,
+        supportSource: offer.supportSource,
+        pickupLat: offer.pickupLat,
+        pickupLng: offer.pickupLng,
+        destinationLat: offer.destinationLat,
+        destinationLng: offer.destinationLng,
+        routeOverviewEncoded: offer.routeOverviewEncoded,
+        negotiationEnabled: offer.negotiationEnabled,
+      );
+    } else {
+      list.add(offer);
+    }
+    state = state.copyWith(
+      pendingOffers: list,
+      processingOfferTripId: null,
+      processingIsAccept: true,
+    );
+    _clearOfferErrorForTrip(tripId);
+    return isNew;
+  }
+
   void _clearOfferErrorForTrip(String tripId) {
     final codeMap = Map<String, String>.from(state.offersErrorCodeByTripId);
     final messageMap = Map<String, String>.from(
@@ -274,6 +384,65 @@ mixin _DriverRealtimeTripsMixin on StateNotifier<DriverRealtimeState> {
     );
   }
 
+  /// El pasajero (u otro actor) cerró el viaje mientras el socket no estaba.
+  /// Quita la carrera local, no abre calificación y deja aviso en home.
+  bool applyRemoteTripCancelled(String tripId) {
+    final id = tripId.trim();
+    if (id.isEmpty) return false;
+    _retireOfferTripId(id);
+    final matchesActive = state.activeTrip?.tripId == id;
+    final matchesPending = state.tripPendingRating?.tripId == id;
+    final hadOffer = state.pendingOffers.any((offer) => offer.tripId == id);
+    if (!matchesActive && !matchesPending && !hadOffer) return false;
+    final cleanedOffers = state.pendingOffers
+        .where((offer) => offer.tripId != id)
+        .toList(growable: false);
+    if (matchesActive || matchesPending) {
+      state = state.copyWith(
+        pendingOffers: cleanedOffers,
+        activeTrip: null,
+        tripPendingRating: null,
+        lastCompletedTripId: id,
+        processingTripAction: null,
+        tripErrorMessage: null,
+        errorCode: 'TRIP_ENDED_WHILE_AWAY',
+        ignoreActiveTripRestoreTripId: id,
+        ignoreActiveTripRestoreUntilMs: DateTime.now()
+            .add(const Duration(seconds: 60))
+            .millisecondsSinceEpoch,
+        chatMessages: const [],
+      );
+      _clearOfferErrorForTrip(id);
+      _rt._setAvailability('available');
+      unawaited(_rt._syncDriverForegroundSession());
+      return true;
+    }
+    state = state.copyWith(
+      pendingOffers: cleanedOffers,
+      processingTripAction: null,
+      processingOfferTripId: state.processingOfferTripId == id
+          ? null
+          : state.processingOfferTripId,
+    );
+    _clearOfferErrorForTrip(id);
+    return true;
+  }
+
+  /// `connection:ack` sin viaje activo: el servidor ya no tiene la carrera
+  /// (típico: el pasajero canceló con la app en Google Maps).
+  void releaseLocalTripIfServerHasNone() {
+    final pending = state.tripPendingRating;
+    if (pending != null && _shouldIgnoreRestoreTrip(pending.tripId)) {
+      if (state.activeTrip?.tripId == pending.tripId) {
+        state = state.copyWith(activeTrip: null);
+      }
+      return;
+    }
+    final localId = state.activeTrip?.tripId ?? pending?.tripId;
+    if (localId == null || localId.isEmpty) return;
+    applyRemoteTripCancelled(localId);
+  }
+
   Future<void> clearTripPendingRating() async {
     final completedTripId =
         state.tripPendingRating?.tripId ?? state.lastCompletedTripId;
@@ -299,6 +468,140 @@ mixin _DriverRealtimeTripsMixin on StateNotifier<DriverRealtimeState> {
     }
   }
 
+  /// Misma transición local que `trip:accepted` por socket. La usa también el HTTP.
+  void applyLocalTripAccepted(Map<String, dynamic> data) {
+    _rt._cancelAcceptWatchdog();
+    final tripId = data['tripId']?.toString();
+    final status = data['status']?.toString() ?? 'accepted';
+    final estimatedPriceRaw = data['estimatedPrice'];
+    final estimatedPrice = estimatedPriceRaw is num
+        ? estimatedPriceRaw.toDouble()
+        : null;
+    final currencyCode = (data['currencyCode'] ?? data['currency'])?.toString();
+    _rt._logVerbose('trip:accepted raw data tripId=$tripId');
+
+    final pickupParsed = parseDriverLatLng(data, 'pickupLat', 'pickupLng');
+    final (pickupLat, pickupLng) =
+        (pickupParsed.$1 != null && pickupParsed.$2 != null)
+        ? pickupParsed
+        : parseDriverLatLngFromMap(data['origin']);
+    final destParsed = parseDriverLatLng(
+      data,
+      'destinationLat',
+      'destinationLng',
+    );
+    final (destLat, destLng) = (destParsed.$1 != null && destParsed.$2 != null)
+        ? destParsed
+        : parseDriverLatLngFromMap(data['destination']);
+    final passengerName = data['passengerName']?.toString();
+    final passengerRating = parseDriverDouble(data['passengerRating']);
+    final originAddress = data['originAddress']?.toString();
+    final destinationAddress = data['destinationAddress']?.toString();
+    final tripDistanceRaw = data['tripDistanceKm'];
+    final tripDistanceKm = tripDistanceRaw is num
+        ? tripDistanceRaw.toDouble()
+        : null;
+    final etaDestRaw = data['etaToDestinationMinutes'];
+    final etaToDestinationMinutes = etaDestRaw is num
+        ? etaDestRaw.toDouble()
+        : null;
+    final rawRouteEnc = data['routeOverviewEncoded'];
+    final routeOverviewEncoded =
+        rawRouteEnc != null && rawRouteEnc.toString().trim().isNotEmpty
+        ? rawRouteEnc.toString().trim()
+        : null;
+    String? paymentFromOffer;
+    List<String> extrasFromOffer = const [];
+    List<String> specialsFromOffer = const [];
+    double? cashDueFromOffer;
+    double? guaranteeFromOffer;
+    String? supportSourceFromOffer;
+    if (tripId != null) {
+      for (final o in state.pendingOffers) {
+        if (o.tripId == tripId) {
+          paymentFromOffer = o.paymentMethod;
+          extrasFromOffer = o.tripExtras;
+          specialsFromOffer = o.tripSpecials;
+          cashDueFromOffer = o.cashDuePassenger;
+          guaranteeFromOffer = o.companyGuaranteeToDriver;
+          supportSourceFromOffer = o.supportSource;
+          break;
+        }
+      }
+    }
+    final paymentMethod = normalizeDriverTripPaymentMethod(
+      data['paymentMethod'] ?? data['payment_method'] ?? paymentFromOffer,
+    );
+    final parsedExtras = parseDriverTripExtras(
+      data['tripExtras'] ?? data['passenger_extras'] ?? data['extras'],
+    );
+    final tripExtras = parsedExtras.isNotEmpty ? parsedExtras : extrasFromOffer;
+    final parsedSpecials = parseDriverTripSpecials(
+      data['tripSpecials'] ?? data['passenger_specials'] ?? data['specials'],
+    );
+    final tripSpecials = parsedSpecials.isNotEmpty
+        ? parsedSpecials
+        : specialsFromOffer;
+    final cashDuePassenger =
+        parseDriverDouble(
+          data['cashDuePassenger'] ?? data['cash_due_passenger'],
+        ) ??
+        cashDueFromOffer;
+    final companyGuaranteeToDriver =
+        parseDriverDouble(
+          data['companyGuaranteeToDriver'] ??
+              data['company_guarantee_to_driver'],
+        ) ??
+        guaranteeFromOffer;
+    final supportSource =
+        (data['supportSource'] ?? data['support_source'])
+            ?.toString()
+            .trim() ??
+        supportSourceFromOffer;
+
+    if (tripId != null) {
+      state = state.copyWith(
+        pendingOffers: const [],
+        processingOfferTripId: null,
+        processingIsAccept: false,
+        activeTrip: applyPickupWaitFromPayload(
+          DriverActiveTrip(
+            tripId: tripId,
+            status: status,
+            estimatedPrice: estimatedPrice,
+            pickupLat: pickupLat,
+            pickupLng: pickupLng,
+            destinationLat: destLat,
+            destinationLng: destLng,
+            passengerName: passengerName,
+            passengerRating: passengerRating,
+            currencyCode: currencyCode,
+            originAddress: originAddress,
+            destinationAddress: destinationAddress,
+            tripDistanceKm: tripDistanceKm,
+            etaToDestinationMinutes: etaToDestinationMinutes,
+            routeOverviewEncoded: routeOverviewEncoded,
+            paymentMethod: paymentMethod,
+            tripExtras: tripExtras,
+            tripSpecials: tripSpecials,
+            cashDuePassenger: cashDuePassenger,
+            companyGuaranteeToDriver: companyGuaranteeToDriver,
+            supportSource: supportSource,
+          ),
+          data,
+        ),
+        processingTripAction: null,
+        tripErrorMessage: null,
+        chatMessages: const [],
+      );
+      _clearOfferErrorForTrip(tripId);
+      _rt._cancelBackgroundOfferWindow();
+    } else {
+      state = state.copyWith(processingOfferTripId: null);
+    }
+    unawaited(_rt._syncDriverForegroundSession());
+  }
+
   Future<void> acceptOffer(String tripId) async {
     if (state.activeTrip != null) {
       debugPrint(
@@ -320,13 +623,7 @@ mixin _DriverRealtimeTripsMixin on StateNotifier<DriverRealtimeState> {
       return;
     }
     if (_rt._socket?.connected != true) {
-      debugPrint('[DRIVER_RT] acceptOffer sin conexión de socket, abortando.');
-      state = state.copyWith();
-      _setOfferErrorForTrip(
-        tripId: tripId,
-        code: 'NO_CONNECTION',
-        message: null,
-      );
+      await _acceptOfferOverRest(tripId);
       return;
     }
 
@@ -338,6 +635,37 @@ mixin _DriverRealtimeTripsMixin on StateNotifier<DriverRealtimeState> {
     _clearOfferErrorForTrip(tripId);
     _rt._socket!.emit('trip:accept', {'tripId': tripId});
     _armAcceptWatchdog(tripId);
+  }
+
+  Future<void> _acceptOfferOverRest(String tripId) async {
+    state = state.copyWith(
+      processingOfferTripId: tripId,
+      processingIsAccept: true,
+    );
+    _clearOfferErrorForTrip(tripId);
+    _armAcceptWatchdog(tripId);
+    final result = await _rt._tripRest.acceptTripOffer(tripId);
+    if (_rt._disposed) return;
+    if (state.activeTrip != null && state.activeTrip!.tripId != tripId) return;
+    if (state.processingOfferTripId != null &&
+        state.processingOfferTripId != tripId) {
+      return;
+    }
+    final data = result.data;
+    if (result.ok && data != null) {
+      applyLocalTripAccepted(data);
+      return;
+    }
+    _rt._cancelAcceptWatchdog();
+    state = state.copyWith(
+      processingOfferTripId: null,
+      processingIsAccept: false,
+    );
+    _setOfferErrorForTrip(
+      tripId: tripId,
+      code: result.code ?? 'NO_CONNECTION',
+      message: null,
+    );
   }
 
   void _cancelAcceptWatchdog() {
@@ -450,4 +778,32 @@ mixin _DriverRealtimeTripsMixin on StateNotifier<DriverRealtimeState> {
     unawaited(_rt._syncDriverForegroundSession());
     return true;
   }
+
+  Future<String?> sendCounterOffer(String tripId, double amount) async {
+    final code = await _rt._tripRest.sendCounterOffer(
+      tripId: tripId,
+      amount: amount,
+    );
+    if (_counterOfferNoLongerAvailable(code)) {
+      state = state.copyWith(
+        pendingOffers: state.pendingOffers
+            .where((offer) => offer.tripId != tripId)
+            .toList(growable: false),
+        processingOfferTripId: state.processingOfferTripId == tripId
+            ? null
+            : state.processingOfferTripId,
+      );
+    }
+    return code;
+  }
+}
+
+bool _counterOfferNoLongerAvailable(String? code) {
+  return code == 'BID_NOT_FOUND' ||
+      code == 'TRIP_NOT_NEGOTIABLE' ||
+      code == 'OFFER_EXPIRED' ||
+      code == 'TRIP_ALREADY_ACCEPTED' ||
+      code == 'TRIP_ALREADY_PROCESSED' ||
+      code == 'TRIP_TAKEN' ||
+      code == 'TRIP_NOT_AVAILABLE';
 }

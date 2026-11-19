@@ -251,6 +251,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverHomeMenuTitle => 'Menu';
 
   @override
+  String get noticesInboxTitle => 'Notices';
+
+  @override
+  String get noticesInboxEntry => 'TEXIAPP notices';
+
+  @override
+  String get noticesMarkAll => 'Read all';
+
+  @override
+  String get noticesEmpty =>
+      'No notices yet. When we send an update, it will show up here.';
+
+  @override
   String get driverEarningsCreditsMenu => 'Earnings & credits';
 
   @override
@@ -1320,6 +1333,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverNotifyPickupGraceTitle => 'Wait time is over';
 
   @override
+  String get driverNotifyTripCancelledTitle => 'Trip cancelled';
+
+  @override
+  String get driverNotifyTripCancelledBody =>
+      'The rider cancelled the request.';
+
+  @override
+  String get driverOnlineErrorTripEndedWhileAway =>
+      'The rider cancelled the trip. You can receive another request.';
+
+  @override
   String driverNotifyPickupGraceBody(int minutes) {
     return 'You have $minutes min of grace at the pickup point.';
   }
@@ -1450,7 +1474,57 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverTripAccept => 'Accept';
 
   @override
+  String get driverTripCounter => 'Offer';
+
+  @override
+  String get driverTripCounterTitle => 'Counter-offer';
+
+  @override
+  String get driverTripCounterHint =>
+      'Choose how much to add to the current fare.';
+
+  @override
+  String get driverTripCounterCurrent => 'Current fare';
+
+  @override
+  String get driverTripCounterAdd => 'You can add';
+
+  @override
+  String get driverTripCounterTotal => 'Total';
+
+  @override
+  String driverTripCounterAddon(int amount) {
+    return '+$amount';
+  }
+
+  @override
+  String driverTripCounterPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get driverTripCounterSend => 'Send offer';
+
+  @override
+  String get driverTripCounterSent =>
+      'Counter-offer sent. The passenger can choose it.';
+
+  @override
+  String get driverTripCounterAboveCap =>
+      'That amount is above the allowed cap.';
+
+  @override
+  String get driverTripCounterNotHigher =>
+      'The offer must be higher than the current fare.';
+
+  @override
+  String get driverTripCounterFailed => 'The counter-offer could not be sent.';
+
+  @override
   String get driverTripOfferDetail => 'Details';
+
+  @override
+  String get driverTripOfferSeeOnMap => 'See trip details on the map';
 
   @override
   String get driverTripOfferDetailTitle => 'Trip details';
@@ -1497,6 +1571,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverTripPaymentQr => 'QR';
 
   @override
+  String get driverTripPaymentMethodLabel => 'Payment method';
+
+  @override
   String get driverTripExtrasTitle => 'Passenger notes';
 
   @override
@@ -1535,6 +1612,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverTripExtraOver4 => 'More than 4 people';
+
+  @override
+  String get driverTripExtraLuggage => 'Luggage';
+
+  @override
+  String get driverTripExtraAc => 'A/C';
+
+  @override
+  String get driverTripSpecialSeats6 => 'Up to 6 seats';
+
+  @override
+  String get driverTripSpecialRoofRack => 'Roof rack';
+
+  @override
+  String get driverTripSpecialCargo => 'Cargo';
 
   @override
   String get driverTripExtraLuggageAlert => 'With luggage.';
@@ -1611,7 +1703,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverTripNavigateDestination => 'Navigate to destination';
 
   @override
-  String get driverTripOpenMapsCta => 'Open map';
+  String get driverTripOpenMapsCta => 'Navigate';
 
   @override
   String get driverRegisteredImagesMenu => 'Registered images';
@@ -1698,6 +1790,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverHomeBackgroundLocationContinue => 'Continue';
+
+  @override
+  String get driverBackgroundOfferWindowTitle => 'You\'re still online';
+
+  @override
+  String get driverBackgroundOfferWindowBody =>
+      'Texi has been in the background for 15 minutes. Open the app to keep receiving trips. If you don\'t, we\'ll set you offline.';
 
   @override
   String get driverForegroundNotifyTitle => 'Texi · Driver mode';
@@ -2897,4 +2996,95 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get driverChangePasswordErrorGeneric =>
       'Could not update the password.';
+
+  @override
+  String get driverTexiRutaEntry => 'TEXI Ruta';
+
+  @override
+  String get driverTexiRutaTitle => 'TEXI Ruta';
+
+  @override
+  String get driverTexiRutaIntro =>
+      'Here you see the departures assigned to you and the bookings on each one.';
+
+  @override
+  String get driverTexiRutaSwitch => 'Switch to TEXI Ruta';
+
+  @override
+  String get driverTexiRutaConfirmTitle => 'Change service';
+
+  @override
+  String get driverTexiRutaConfirmBody =>
+      'You will leave ride requests. You will not receive trips until you come back and turn availability on.';
+
+  @override
+  String get driverTexiRutaConfirmAction => 'Yes, switch';
+
+  @override
+  String get driverTexiRutaLeave => 'Back to requests';
+
+  @override
+  String get driverTexiRutaLeaveBody =>
+      'You will leave TEXI Ruta. You will not be available for requests until you turn it on.';
+
+  @override
+  String get driverTexiRutaNoTrips => 'You have no assigned departures.';
+
+  @override
+  String get driverTexiRutaBookings => 'Bookings';
+
+  @override
+  String get driverTexiRutaNoBookings => 'This departure has no bookings yet.';
+
+  @override
+  String get driverTexiRutaOpen => 'Open boarding';
+
+  @override
+  String get driverTexiRutaCode => 'Booking code';
+
+  @override
+  String get driverTexiRutaConfirmBoard => 'Confirm boarding';
+
+  @override
+  String get driverTexiRutaClose => 'Close boarding';
+
+  @override
+  String get driverTexiRutaCloseBody =>
+      'Anyone who did not board will be marked as a no-show. This action needs a connection.';
+
+  @override
+  String get driverTexiRutaPassenger => 'Passenger';
+
+  @override
+  String driverTexiRutaSeats(int count) {
+    return '$count seats';
+  }
+
+  @override
+  String get driverTexiRutaStatusScheduled => 'Scheduled';
+
+  @override
+  String get driverTexiRutaStatusAvailable => 'Available';
+
+  @override
+  String get driverTexiRutaStatusBoarding => 'Boarding';
+
+  @override
+  String get driverTexiRutaStatusProgress => 'On the way';
+
+  @override
+  String get driverTexiRutaStatusDelayed => 'Delayed';
+
+  @override
+  String get driverTexiRutaBookingConfirmed => 'Waiting';
+
+  @override
+  String get driverTexiRutaBookingBoarded => 'Boarded';
+
+  @override
+  String get driverTexiRutaBookingNoShow => 'No-show';
+
+  @override
+  String get driverTexiRutaNetwork =>
+      'This action needs a connection. Try again.';
 }

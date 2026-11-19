@@ -8,12 +8,14 @@ import '../router/app_router.dart';
 final ValueNotifier<int> driverFcmTripOfferOpenBump = ValueNotifier<int>(0);
 final ValueNotifier<int> driverTripChatOpenBump = ValueNotifier<int>(0);
 final ValueNotifier<int> driverPassengerEnRouteBump = ValueNotifier<int>(0);
+final ValueNotifier<int> driverTripCancelledBump = ValueNotifier<int>(0);
 
 /// Datos de la última notificación de oferta abierta (se consume una vez en Home).
 Map<String, String>? _pendingTripOfferFromNotification;
 String? _pendingTripChatTripIdFromNotification;
 String? _pendingPassengerEnRouteTripId;
 DateTime? _pendingPassengerEnRouteAt;
+String? _pendingTripCancelledId;
 
 /// Obtiene y borra el payload guardado al abrir desde la notificación.
 Map<String, String>? takePendingTripOfferFromNotification() {
@@ -25,6 +27,19 @@ Map<String, String>? takePendingTripOfferFromNotification() {
 String? takePendingTripChatTripIdFromNotification() {
   final id = _pendingTripChatTripIdFromNotification;
   _pendingTripChatTripIdFromNotification = null;
+  return id;
+}
+
+void ingestDriverTripCancelledPush({required String tripId}) {
+  final id = tripId.trim();
+  if (id.isEmpty) return;
+  _pendingTripCancelledId = id;
+  driverTripCancelledBump.value = driverTripCancelledBump.value + 1;
+}
+
+String? takePendingTripCancelled() {
+  final id = _pendingTripCancelledId;
+  _pendingTripCancelledId = null;
   return id;
 }
 
@@ -69,6 +84,20 @@ void _markPendingDriverTripChatOpen(String tripId) {
 /// Llamar desde [FirebaseMessaging.onMessageOpenedApp] y [getInitialMessage].
 void handleDriverFcmNotificationOpen(RemoteMessage message) {
   final event = message.data['event']?.toString();
+  if (event == 'trip_cancelled') {
+    final tripId = message.data['tripId']?.toString().trim();
+    if (tripId != null && tripId.isNotEmpty) {
+      ingestDriverTripCancelledPush(tripId: tripId);
+    }
+    try {
+      AppRouter.router.go('/home');
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[DriverFCM] router.go(/home) trip_cancelled: $e $st');
+      }
+    }
+    return;
+  }
   if (event == 'passenger_en_route') {
     final tripId = message.data['tripId']?.toString().trim();
     if (tripId != null && tripId.isNotEmpty) {
@@ -84,11 +113,16 @@ void handleDriverFcmNotificationOpen(RemoteMessage message) {
     return;
   }
   if (event == 'ops_notice') {
+    final campaignId = message.data['campaignId']?.toString().trim() ?? '';
     try {
-      AppRouter.router.go('/home');
+      AppRouter.router.go(
+        campaignId.isEmpty
+            ? '/notices'
+            : '/notices?id=${Uri.encodeQueryComponent(campaignId)}',
+      );
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('[DriverFCM] router.go(/home) ops_notice: $e $st');
+        debugPrint('[DriverFCM] router.go(/notices) ops_notice: $e $st');
       }
     }
     return;
@@ -135,6 +169,22 @@ void handleDriverFcmNotificationOpen(RemoteMessage message) {
 }
 
 void handleDriverLocalNotificationTap(String? payload) {
+  final raw = payload?.trim() ?? '';
+  if (raw.startsWith('ops:')) {
+    final campaignId = raw.substring(4).trim();
+    try {
+      AppRouter.router.go(
+        campaignId.isEmpty
+            ? '/notices'
+            : '/notices?id=${Uri.encodeQueryComponent(campaignId)}',
+      );
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[DriverFCM] router.go(/notices) local ops: $e $st');
+      }
+    }
+    return;
+  }
   final parsed = _parseDriverNotificationPayload(payload);
   final tripId = parsed.tripId;
   if (tripId != null && tripId.isNotEmpty && parsed.openChat) {

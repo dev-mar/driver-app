@@ -15,6 +15,7 @@ class DriverTripPromoBreakdown extends StatelessWidget {
     required this.l10n,
     required this.cashDuePassenger,
     required this.companyGuaranteeToDriver,
+    this.tripFare,
     this.currencyCode,
     this.isReferralSupport = false,
     this.emphasizeCompanyLine = false,
@@ -23,6 +24,11 @@ class DriverTripPromoBreakdown extends StatelessWidget {
   final AppLocalizations l10n;
   final double? cashDuePassenger;
   final double? companyGuaranteeToDriver;
+
+  /// Precio que ve el conductor. Si es mayor que la tarifa con la que se
+  /// calculó el beneficio, el pasajero paga la diferencia y TEXIAPP sigue
+  /// cubriendo el mismo abono.
+  final double? tripFare;
   final String? currencyCode;
   final bool isReferralSupport;
   final bool emphasizeCompanyLine;
@@ -31,12 +37,20 @@ class DriverTripPromoBreakdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fare = tripFare;
+    final cover = companyGuaranteeToDriver;
+    final shownCover = (fare != null && fare > 0 && cover != null && cover > 0 && cover > fare)
+        ? fare
+        : cover;
+    final shownCash = (fare != null && fare > 0 && shownCover != null && shownCover > 0)
+        ? (fare - shownCover < 0 ? 0.0 : fare - shownCover)
+        : cashDuePassenger;
     final cashAmount = formatTripMoney(
-      cashDuePassenger,
+      shownCash,
       currencyCode: currencyCode,
     );
     final companyAmount = formatTripMoney(
-      companyGuaranteeToDriver,
+      shownCover,
       currencyCode: currencyCode,
     );
     final companyLabel = l10n.driverTripPromoCompanyCoversLabel;

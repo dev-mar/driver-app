@@ -181,186 +181,47 @@ void _bindDriverRealtimeSocketHandlers(
             final inForeground = DriverAppVisibility.isInForeground.value;
             final isBusy = state.activeTrip != null;
   
-            final existingIndex = state.pendingOffers.indexWhere(
-              (offer) => offer.tripId == tripId,
-            );
-            final isNewOffer = existingIndex < 0;
-  
+            final isNewOffer = _rt.ingestPendingOffer(newOffer);
+
             if (inForeground && isNewOffer && !isBusy) {
               SystemSound.play(SystemSoundType.alert);
             }
-  
-            final updatedOffers = List<DriverTripOffer>.from(state.pendingOffers);
-            if (existingIndex >= 0) {
-              updatedOffers[existingIndex] = newOffer;
-            } else {
-              updatedOffers.add(newOffer);
-            }
-  
-            state = state.copyWith(
-              pendingOffers: updatedOffers,
-              // Al recibir una nueva oferta, limpiamos estados previos de procesamiento/errores.
-              processingOfferTripId: null,
-              processingIsAccept: true,
-            );
-            _rt._clearOfferErrorForTrip(tripId);
             unawaited(_rt._syncDriverForegroundSession());
           } catch (e) {
             debugPrint('[DRIVER_RT] Error parseando trip:offer: $e');
           }
         });
+
+        socket.on('trip:passenger_offer_updated', (data) {
+          try {
+            if (data is! Map) return;
+            final tripId = data['tripId']?.toString().trim() ?? '';
+            final rawPrice = data['offeredPrice'];
+            final price = rawPrice is num
+                ? rawPrice.toDouble()
+                : double.tryParse(rawPrice?.toString() ?? '');
+            if (tripId.isEmpty || price == null) return;
+            final index = state.pendingOffers.indexWhere((offer) => offer.tripId == tripId);
+            if (index < 0) return;
+            final currentPrice = state.pendingOffers[index].offeredPrice;
+            if (currentPrice != null && price + 0.009 < currentPrice) return;
+            final updated = List<DriverTripOffer>.from(state.pendingOffers);
+            updated[index] = updated[index].withOfferedPrice(price);
+            state = state.copyWith(pendingOffers: updated);
+          } catch (e) {
+            debugPrint('[DRIVER_RT] Error en trip:passenger_offer_updated: $e');
+          }
+        });
   
         socket.on('trip:accepted', (data) {
           try {
-            _rt._cancelAcceptWatchdog();
             if (data is! Map) return;
-            final tripId = data['tripId']?.toString();
-            final status = data['status']?.toString() ?? 'accepted';
-            final estimatedPriceRaw = data['estimatedPrice'];
-            final estimatedPrice = estimatedPriceRaw is num
-                ? estimatedPriceRaw.toDouble()
-                : null;
-            final currencyCode = (data['currencyCode'] ?? data['currency'])
-                ?.toString();
-            _rt._logVerbose('trip:accepted raw data=$data');
-  
-            final pickupParsed = parseDriverLatLng(data, 'pickupLat', 'pickupLng');
-            final (
-              pickupLat,
-              pickupLng,
-            ) = (pickupParsed.$1 != null && pickupParsed.$2 != null)
-                ? pickupParsed
-                : parseDriverLatLngFromMap(data['origin']);
-            final destParsed = parseDriverLatLng(
-              data,
-              'destinationLat',
-              'destinationLng',
-            );
-            final (
-              destLat,
-              destLng,
-            ) = (destParsed.$1 != null && destParsed.$2 != null)
-                ? destParsed
-                : parseDriverLatLngFromMap(data['destination']);
-            final passengerName = data['passengerName']?.toString();
-            final passengerRating = parseDriverDouble(data['passengerRating']);
-            final originAddress = data['originAddress']?.toString();
-            final destinationAddress = data['destinationAddress']?.toString();
-            final tripDistanceRaw = data['tripDistanceKm'];
-            final tripDistanceKm = tripDistanceRaw is num
-                ? tripDistanceRaw.toDouble()
-                : null;
-            final etaDestRaw = data['etaToDestinationMinutes'];
-            final etaToDestinationMinutes = etaDestRaw is num
-                ? etaDestRaw.toDouble()
-                : null;
-            final rawRouteEnc = data['routeOverviewEncoded'];
-            final routeOverviewEncoded =
-                rawRouteEnc != null && rawRouteEnc.toString().trim().isNotEmpty
-                ? rawRouteEnc.toString().trim()
-                : null;
-            String? paymentFromOffer;
-            List<String> extrasFromOffer = const [];
-            List<String> specialsFromOffer = const [];
-            double? cashDueFromOffer;
-            double? guaranteeFromOffer;
-            String? supportSourceFromOffer;
-            if (tripId != null) {
-              for (final o in state.pendingOffers) {
-                if (o.tripId == tripId) {
-                  paymentFromOffer = o.paymentMethod;
-                  extrasFromOffer = o.tripExtras;
-                  specialsFromOffer = o.tripSpecials;
-                  cashDueFromOffer = o.cashDuePassenger;
-                  guaranteeFromOffer = o.companyGuaranteeToDriver;
-                  supportSourceFromOffer = o.supportSource;
-                  break;
-                }
-              }
-            }
-            final paymentMethod = normalizeDriverTripPaymentMethod(
-              data['paymentMethod'] ??
-                  data['payment_method'] ??
-                  paymentFromOffer,
-            );
-            final parsedExtras = parseDriverTripExtras(
-              data['tripExtras'] ??
-                  data['passenger_extras'] ??
-                  data['extras'],
-            );
-            final tripExtras =
-                parsedExtras.isNotEmpty ? parsedExtras : extrasFromOffer;
-            final parsedSpecials = parseDriverTripSpecials(
-              data['tripSpecials'] ??
-                  data['passenger_specials'] ??
-                  data['specials'],
-            );
-            final tripSpecials =
-                parsedSpecials.isNotEmpty ? parsedSpecials : specialsFromOffer;
-            final cashDuePassenger = parseDriverDouble(
-                  data['cashDuePassenger'] ?? data['cash_due_passenger'],
-                ) ??
-                cashDueFromOffer;
-            final companyGuaranteeToDriver = parseDriverDouble(
-                  data['companyGuaranteeToDriver'] ??
-                      data['company_guarantee_to_driver'],
-                ) ??
-                guaranteeFromOffer;
-            final supportSource =
-                (data['supportSource'] ?? data['support_source'])
-                    ?.toString()
-                    .trim() ??
-                supportSourceFromOffer;
-            _rt._logVerbose(
-              'trip:accepted recibido tripId=$tripId status=$status '
-              'pickup=($pickupLat,$pickupLng) dest=($destLat,$destLng)',
-            );
-  
-            if (tripId != null) {
-              state = state.copyWith(
-                pendingOffers: const [],
-                processingOfferTripId: null,
-                processingIsAccept: false,
-                activeTrip: applyPickupWaitFromPayload(
-                  DriverActiveTrip(
-                    tripId: tripId,
-                    status: status,
-                    estimatedPrice: estimatedPrice,
-                    pickupLat: pickupLat,
-                    pickupLng: pickupLng,
-                    destinationLat: destLat,
-                    destinationLng: destLng,
-                    passengerName: passengerName,
-                    passengerRating: passengerRating,
-                    currencyCode: currencyCode,
-                    originAddress: originAddress,
-                    destinationAddress: destinationAddress,
-                    tripDistanceKm: tripDistanceKm,
-                    etaToDestinationMinutes: etaToDestinationMinutes,
-                    routeOverviewEncoded: routeOverviewEncoded,
-                    paymentMethod: paymentMethod,
-                    tripExtras: tripExtras,
-                    tripSpecials: tripSpecials,
-                    cashDuePassenger: cashDuePassenger,
-                    companyGuaranteeToDriver: companyGuaranteeToDriver,
-                    supportSource: supportSource,
-                  ),
-                  data,
-                ),
-                processingTripAction: null,
-                tripErrorMessage: null,
-                chatMessages: const [],
-              );
-              _rt._clearOfferErrorForTrip(tripId);
-            } else {
-              state = state.copyWith(processingOfferTripId: null);
-            }
-            unawaited(_rt._syncDriverForegroundSession());
+            _rt.applyLocalTripAccepted(Map<String, dynamic>.from(data));
           } catch (e) {
             debugPrint('[DRIVER_RT] Error manejando trip:accepted: $e');
           }
         });
-  
+
         socket.on('trip:rejected', (data) {
           try {
             if (data is! Map) return;
@@ -390,6 +251,7 @@ void _bindDriverRealtimeSocketHandlers(
             if (data is! Map) return;
             final tripId = data['tripId']?.toString();
             if (tripId == null || tripId.isEmpty) return;
+            _rt._retireOfferTripId(tripId);
             if (state.activeTrip?.tripId == tripId) return;
             final updatedOffers = state.pendingOffers
                 .where((offer) => offer.tripId != tripId)
@@ -429,6 +291,17 @@ void _bindDriverRealtimeSocketHandlers(
             final targetTripId = (tripId != null && tripId.isNotEmpty)
                 ? tripId
                 : state.processingOfferTripId;
+            final retireClosedOffer =
+                normalized == 'TRIP_TAKEN' ||
+                normalized == 'TRIP_ALREADY_ACCEPTED' ||
+                normalized == 'TRIP_ALREADY_PROCESSED' ||
+                normalized == 'TRIP_NOT_AVAILABLE' ||
+                normalized == 'OFFER_ALREADY_TAKEN';
+            if (retireClosedOffer &&
+                targetTripId != null &&
+                targetTripId.isNotEmpty) {
+              _rt._retireOfferTripId(targetTripId);
+            }
             final updatedOffers =
                 (isOfferNoLongerAvailable && targetTripId != null)
                 ? state.pendingOffers
@@ -652,23 +525,9 @@ void _bindDriverRealtimeSocketHandlers(
             debugPrint(
               '[DRIVER_RT] trip:cancelled tripId=$tripId reason=$reason',
             );
-            if (tripId != null && state.activeTrip?.tripId == tripId) {
-              state = state.copyWith(
-                pendingOffers: cleanedPendingOffers,
-                activeTrip: null,
-                tripPendingRating: null,
-                lastCompletedTripId: tripId,
-                processingTripAction: null,
-                tripErrorMessage: null,
-                ignoreActiveTripRestoreTripId: tripId,
-                ignoreActiveTripRestoreUntilMs: DateTime.now()
-                    .add(const Duration(seconds: 60))
-                    .millisecondsSinceEpoch,
-                chatMessages: const [],
-              );
-              _rt._clearOfferErrorForTrip(tripId);
-              _rt._setAvailability('available');
-            } else {
+            if (tripId == null) {
+              state = state.copyWith(pendingOffers: cleanedPendingOffers);
+            } else if (!_rt.applyRemoteTripCancelled(tripId)) {
               state = state.copyWith(
                 pendingOffers: cleanedPendingOffers,
                 processingTripAction: null,
@@ -676,9 +535,6 @@ void _bindDriverRealtimeSocketHandlers(
                     ? null
                     : state.processingOfferTripId,
               );
-              if (tripId != null) {
-                _rt._clearOfferErrorForTrip(tripId);
-              }
             }
             unawaited(_rt._syncDriverForegroundSession());
           } catch (e) {
@@ -992,12 +848,19 @@ void _bindDriverRealtimeSocketHandlers(
                           ?.toString()
                           .trim();
                   if (tripId != null) {
-                if (_rt._shouldIgnoreRestoreTrip(tripId)) {
+                final serverStillActive = !isFinal;
+                // Un viaje que el servidor sigue atendiendo se recupera aunque
+                // el cliente haya abierto calificación por error.
+                if (!serverStillActive && _rt._shouldIgnoreRestoreTrip(tripId)) {
+                  final keepRating = state.tripPendingRating;
                   state = state.copyWith(
                     activeTrip: null,
-                    tripPendingRating: state.tripPendingRating,
+                    tripPendingRating: keepRating,
                     processingTripAction: null,
                     tripErrorMessage: null,
+                    errorCode: keepRating == null
+                        ? 'TRIP_ENDED_WHILE_AWAY'
+                        : state.errorCode,
                   );
                 } else {
                   final existingTrip = state.activeTrip;
@@ -1072,13 +935,24 @@ void _bindDriverRealtimeSocketHandlers(
                         )
                       : parsedTrip;
   
-                  // Si ya estamos en flujo de rating para este mismo trip, no
-                  // restauremos el mapa aunque el backend aÃºn mande estados
-                  // intermedios (evita que reaparezca "trayecto" despuÃ©s de
-                  // finalizar).
+                  // El servidor manda la verdad. Una calificación local no puede
+                  // tapar un viaje que sigue en accepted/arrived/started.
                   final existingPending = state.tripPendingRating;
-                  if (existingPending != null &&
-                      existingPending.tripId == tripId) {
+                  final samePending =
+                      existingPending != null && existingPending.tripId == tripId;
+                  if (!isFinal) {
+                    state = state.copyWith(
+                      activeTrip: mergedTrip,
+                      tripPendingRating: null,
+                      processingTripAction: null,
+                      errorCode: state.errorCode == 'TRIP_ENDED_WHILE_AWAY'
+                          ? null
+                          : state.errorCode,
+                    );
+                    debugPrint(
+                      '[DRIVER_RT] connection:ack restaurado activeTrip=$tripId status=$status',
+                    );
+                  } else if (status == 'completed' && samePending) {
                     state = state.copyWith(
                       activeTrip: null,
                       tripPendingRating: existingPending,
@@ -1086,17 +960,15 @@ void _bindDriverRealtimeSocketHandlers(
                       tripErrorMessage: null,
                     );
                     debugPrint(
-                      '[DRIVER_RT] connection:ack llegÃ³ durante rating -> ignorando restore mapa tripId=$tripId',
+                      '[DRIVER_RT] connection:ack durante rating de viaje completado tripId=$tripId',
                     );
-                  } else if (isFinal) {
-                    // Si el backend ya considera el viaje final, NO lo restauramos
-                    // como "viaje activo" (para que no vuelva el mapa y el estado).
+                  } else if (status == 'completed') {
                     final ignoreUntilMs = DateTime.now()
                         .add(const Duration(seconds: 60))
                         .millisecondsSinceEpoch;
                     state = state.copyWith(
                       activeTrip: null,
-                      tripPendingRating: mergedTrip,
+                      tripPendingRating: mergedTrip.copyWith(status: 'completed'),
                       lastCompletedTripId: tripId,
                       processingTripAction: null,
                       tripErrorMessage: null,
@@ -1104,20 +976,18 @@ void _bindDriverRealtimeSocketHandlers(
                       ignoreActiveTripRestoreUntilMs: ignoreUntilMs,
                     );
                     debugPrint(
-                      '[DRIVER_RT] connection:ack recibiÃ³ viaje final -> guardando para rating tripId=$tripId status=$status',
+                      '[DRIVER_RT] connection:ack viaje completado -> rating tripId=$tripId',
                     );
                   } else {
-                    state = state.copyWith(
-                      activeTrip: mergedTrip,
-                      tripPendingRating: null,
-                      processingTripAction: null,
-                    );
+                    _rt.applyRemoteTripCancelled(tripId);
                     debugPrint(
-                      '[DRIVER_RT] connection:ack restaurado activeTrip=$tripId status=$status',
+                      '[DRIVER_RT] connection:ack viaje final no completable -> cerrado tripId=$tripId status=$status',
                     );
                   }
                 }
               }
+            } else {
+              _rt.releaseLocalTripIfServerHasNone();
             }
           } catch (e) {
             debugPrint('[DRIVER_RT] Error manejando connection:ack: $e');
